@@ -1,0 +1,13 @@
+[package]
+name = "objectscale-client-examples"
+version = "0.1.0"
+edition = "2021"
+categories = ["network-programming"]
+keywords = ["objectscale", "client"]
+description = "Examples for ObjectScale Management client."
+authors = ["Luis Liu <luis_liu@dell.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+objectscale-client = { path = "../", version = "0.1.0"}
