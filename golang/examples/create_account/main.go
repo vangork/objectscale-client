@@ -1,0 +1,29 @@
+package main
+
+import (
+	objectscale "github.com/vangork/objectscale-client/golang/pkg"
+)
+
+func main() {
+	endpoint := "https://10.225.108.186:443"
+	username := "root"
+	password := "Password123!"
+	insecure := true
+
+	client, err := objectscale.NewClient(endpoint, username, password, insecure)
+	if err != nil {
+		println("Fail to create objectscale client:", err.Error())
+		return
+	}
+	defer client.Close()
+
+	alias := "test"
+	account, err := client.CreateAccount(alias)
+	if err != nil {
+		println("Fail to create account:", err.Error())
+		return
+	} else {
+		println("Created account:", account.AccountId)
+		return
+	}
+}

@@ -11,6 +11,7 @@ authors = ["Luis Liu <luis_liu@dell.com>"]
 
 [workspace]
 members = [
+    "golang",
     "examples",
 ]
 
