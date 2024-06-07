@@ -13,22 +13,15 @@ type Account struct {
 }
 
 func NewAccount(iamAccount *C.IamAccount) *Account {
-	id := C.GoString(iamAccount.account_id)
-	C.free_string(iamAccount.account_id)
-
-	C.iam_account_destroy(iamAccount)
-
 	acccount := Account{
-		AccountId: string(id),
+		AccountId: C.GoString(iamAccount.account_id),
 	}
-
+	C.iam_account_destroy(iamAccount)
 	return &acccount
 }
 
 // Create a OjectScale client.
-// E.g.
-//
-//	client, err := NewAPIClient(config)
+// E.g. client, err := NewAPIClient(config)
 func NewClient(endpoint string, username string, password string, insecure bool) (*Client, error) {
 	msg := C.Buffer{}
 	cEndpoint := C.CString(endpoint)
@@ -48,7 +41,8 @@ func NewClient(endpoint string, username string, password string, insecure bool)
 	}, nil
 }
 
-// Close the APIClient. Stop the reactor goroutine and release the resources
+// Close the APIClient.
+// Make sure to call this function when you are done using the client.
 func (client *Client) Close() {
 	C.client_destroy(client.client)
 }

@@ -18,5 +18,5 @@ objectscale-client = { path = "../", version = "0.1.0"}
 cbindgen = "0.26.0"
 
 [lib]
-name = "objectscale_client_c"
+name = "objectscale_client_go"
 crate-type = ["cdylib"]

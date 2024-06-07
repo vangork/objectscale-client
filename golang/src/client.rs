@@ -15,6 +15,8 @@ pub struct IamAccount {
     pub account_id: *const c_char,
 }
 
+// IamAccount is cloned from Account
+// But transform each field into ctypes
 impl IamAccount {
     pub fn new(account: Account) -> Self {
         let account_id = CString::new(account.account_id).expect("cstring account_id");
@@ -22,12 +24,6 @@ impl IamAccount {
             account_id: account_id.into_raw(),
         }
     }
-}
-
-#[no_mangle]
-pub unsafe extern fn free_string(ptr: *const c_char) {
-    // Take the ownership back to rust and drop the owner
-    let _ = CString::from_raw(ptr as *mut _);
 }
 
 #[no_mangle]
@@ -126,11 +122,10 @@ pub unsafe extern "C" fn client_create_account(
 }
 
 #[no_mangle]
-pub extern "C" fn iam_account_destroy(account: *mut IamAccount) {
+pub unsafe extern "C" fn iam_account_destroy(account: *mut IamAccount) {
     if !account.is_null() {
-        unsafe {
-            drop(Box::from_raw(account));
-        }
+        let account = Box::from_raw(account);
+        let _ = CString::from_raw(account.account_id as *mut _);
     }
 }
 
