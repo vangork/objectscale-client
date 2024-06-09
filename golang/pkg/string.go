@@ -22,21 +22,28 @@ type (
 	cbool  = C.bool
 )
 
-func copyAndDestroyBuffer(b C.Buffer) []byte {
-	if emptyBuffer(b) {
+func copyAndDestroyRCString(b C.RCString) []byte {
+	if isRCStringEmpty(b) {
 		return nil
 	}
 	res := C.GoBytes(unsafe.Pointer(b.ptr), cint(b.len))
-	C.free_buffer(b)
+	C.free_rcstring(b)
 	return res
 }
 
-func emptyBuffer(b C.Buffer) bool {
+func isRCStringEmpty(b C.RCString) bool {
 	return b.ptr == cu8ptr(nil) || b.len == usize(0) || b.cap == usize(0)
 }
 
-func errorWithMessage(err error, b C.Buffer) error {
-	msg := copyAndDestroyBuffer(b)
+func readRCString(b *C.RCString) string {
+	if isRCStringEmpty(*b) {
+		return ""
+	}
+	return string(C.GoBytes(unsafe.Pointer((*b).ptr), cint((*b).len)))
+}
+
+func errorWithMessage(err error, b C.RCString) error {
+	msg := copyAndDestroyRCString(b)
 	if msg == nil {
 		return err
 	}

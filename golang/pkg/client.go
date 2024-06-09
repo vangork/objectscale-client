@@ -14,21 +14,21 @@ type Account struct {
 
 func NewAccount(iamAccount *C.IamAccount) *Account {
 	acccount := Account{
-		AccountId: C.GoString(iamAccount.account_id),
+		AccountId: readRCString(iamAccount.account_id),
 	}
-	C.iam_account_destroy(iamAccount)
+	C.destroy_iam_account(iamAccount)
 	return &acccount
 }
 
 // Create a OjectScale client.
 // E.g. client, err := NewAPIClient(config)
 func NewClient(endpoint string, username string, password string, insecure bool) (*Client, error) {
-	msg := C.Buffer{}
+	msg := C.RCString{}
 	cEndpoint := C.CString(endpoint)
 	cUsername := C.CString(username)
 	cPassword := C.CString(password)
 	cInsecure := cbool(insecure)
-	client, err := C.client_new(cEndpoint, cUsername, cPassword, cInsecure, &msg)
+	client, err := C.new_client(cEndpoint, cUsername, cPassword, cInsecure, &msg)
 	freeCString(cEndpoint)
 	freeCString(cUsername)
 	freeCString(cPassword)
@@ -44,12 +44,12 @@ func NewClient(endpoint string, username string, password string, insecure bool)
 // Close the APIClient.
 // Make sure to call this function when you are done using the client.
 func (client *Client) Close() {
-	C.client_destroy(client.client)
+	C.destroy_client(client.client)
 }
 
 // Create account with a given alias.
 func (client *Client) CreateAccount(alias string) (*Account, error) {
-	msg := C.Buffer{}
+	msg := C.RCString{}
 	cAlias := C.CString(alias)
 	iamAccount, err := C.client_create_account(client.client, cAlias, &msg)
 	freeCString(cAlias)
@@ -62,7 +62,7 @@ func (client *Client) CreateAccount(alias string) (*Account, error) {
 
 // Delete account with a given id.
 func (client *Client) DeleteAccount(id string) error {
-	msg := C.Buffer{}
+	msg := C.RCString{}
 	cId := C.CString(id)
 	_, err := C.client_delete_account(client.client, cId, &msg)
 	freeCString(cId)

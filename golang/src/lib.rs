@@ -1,3 +1,3 @@
 mod client;
-mod buffer;
+mod string;
 mod error;

@@ -1,7 +1,7 @@
-use crate::buffer::Buffer;
+use crate::string::RCString;
 use crate::error::{clear_error, set_error};
 use objectscale_client::api_client::{Account, APIClient};
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
@@ -12,27 +12,27 @@ pub struct Client {
 
 #[repr(C)]
 pub struct IamAccount {
-    pub account_id: *const c_char,
+    pub account_id: *mut RCString,
 }
 
 // IamAccount is cloned from Account
 // But transform each field into ctypes
 impl IamAccount {
     pub fn new(account: Account) -> Self {
-        let account_id = CString::new(account.account_id).expect("cstring account_id");
+        let account_id = RCString::from_str(account.account_id.as_str());
         Self {
-            account_id: account_id.into_raw(),
+            account_id: Box::into_raw(Box::new(account_id)),
         }
     }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn client_new(
+pub unsafe extern "C" fn new_client(
     endpoint: *const c_char,
     username: *const c_char,
     password: *const c_char,
     insecure: bool,
-    err: Option<&mut Buffer>,
+    err: Option<&mut RCString>,
 ) -> *mut Client {
     let endpoint = match CStr::from_ptr(endpoint).to_str() {
         Ok(s) => s,
@@ -78,7 +78,7 @@ pub unsafe extern "C" fn client_new(
 }
 
 #[no_mangle]
-pub extern "C" fn client_destroy(client: *mut Client) {
+pub extern "C" fn destroy_client(client: *mut Client) {
     if !client.is_null() {
         unsafe {
             drop(Box::from_raw(client));
@@ -90,7 +90,7 @@ pub extern "C" fn client_destroy(client: *mut Client) {
 pub unsafe extern "C" fn client_create_account(
     client: *mut Client,
     alias: *const c_char,
-    err: Option<&mut Buffer>,
+    err: Option<&mut RCString>,
 ) -> *mut IamAccount {
     let alias = match CStr::from_ptr(alias).to_str() {
         Ok(s) => s,
@@ -122,10 +122,11 @@ pub unsafe extern "C" fn client_create_account(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn iam_account_destroy(account: *mut IamAccount) {
+pub unsafe extern "C" fn destroy_iam_account(account: *mut IamAccount) {
     if !account.is_null() {
         let account = Box::from_raw(account);
-        let _ = CString::from_raw(account.account_id as *mut _);
+        let account_id = Box::from_raw(account.account_id as *mut RCString);
+        let _ = account_id.to_vec();
     }
 }
 
@@ -133,7 +134,7 @@ pub unsafe extern "C" fn iam_account_destroy(account: *mut IamAccount) {
 pub unsafe extern "C" fn client_delete_account(
     client: *mut Client,
     account_id: *const c_char,
-    err: Option<&mut Buffer>,
+    err: Option<&mut RCString>,
 ) {
     let account_id = match CStr::from_ptr(account_id).to_str() {
         Ok(s) => s,
