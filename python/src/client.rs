@@ -8,7 +8,7 @@ pub(crate) struct Client {
 }
 
 #[pyclass(get_all)]
-pub(crate) struct IamAccount {
+pub(crate) struct PyAccount {
     account_id: String,
     objscale: String,
     create_date: String,
@@ -20,7 +20,7 @@ pub(crate) struct IamAccount {
     tso_id: String,
 }
 
-impl IamAccount {
+impl PyAccount {
     pub fn new(account: Account) -> Self {
         Self {
             account_id: account.account_id,
@@ -54,11 +54,11 @@ impl Client {
     /// Create a Account.
     ///
     #[pyo3(text_signature = "($self, alias)")]
-    pub fn create_account(&mut self, alias: &str) -> PyResult<IamAccount> {
+    pub fn create_account(&mut self, alias: &str) -> PyResult<PyAccount> {
         let result = self.api_client.create_account(alias);
 
         match result {
-            Ok(account) => Ok(IamAccount::new(account)),
+            Ok(account) => Ok(PyAccount::new(account)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }

@@ -11,13 +11,13 @@ pub struct Client {
 }
 
 #[repr(C)]
-pub struct IamAccount {
+pub struct CAccount {
     pub account_id: *mut RCString,
 }
 
 // IamAccount is cloned from Account
 // But transform each field into ctypes
-impl IamAccount {
+impl CAccount {
     pub fn new(account: Account) -> Self {
         let account_id = RCString::from_str(account.account_id.as_str());
         Self {
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn client_create_account(
     client: *mut Client,
     alias: *const c_char,
     err: Option<&mut RCString>,
-) -> *mut IamAccount {
+) -> *mut CAccount {
     let alias = match CStr::from_ptr(alias).to_str() {
         Ok(s) => s,
         Err(_) => {
@@ -106,7 +106,7 @@ pub unsafe extern "C" fn client_create_account(
     })) {
         Ok(result) => match result {
             Ok(account) => {
-                let iam_account = IamAccount::new(account);
+                let iam_account = CAccount::new(account);
                 Box::into_raw(Box::new(iam_account))
             },
             Err(e) => {
@@ -122,7 +122,7 @@ pub unsafe extern "C" fn client_create_account(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn destroy_iam_account(account: *mut IamAccount) {
+pub unsafe extern "C" fn destroy_caccount(account: *mut CAccount) {
     if !account.is_null() {
         let account = Box::from_raw(account);
         let account_id = Box::from_raw(account.account_id as *mut RCString);

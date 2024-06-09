@@ -6,7 +6,7 @@ username = "root"
 password = "Password123!"
 insecure = True
 
-account_id = "osaic463fff931683810"
+account_id = "osai2d8127b93f415b87"
 
 client = objectscale_client.Client(endpoint, username, password, insecure)
 

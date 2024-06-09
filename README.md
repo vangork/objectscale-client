@@ -31,6 +31,6 @@ python -m venv .env
 source .env/bin/activate
 pip install maturin
 maturin develop
-python examples/delete_account.py
 python examples/create_account.py
+python examples/delete_account.py
 ```

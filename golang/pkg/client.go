@@ -12,11 +12,11 @@ type Account struct {
 	AccountId string
 }
 
-func NewAccount(iamAccount *C.IamAccount) *Account {
+func NewAccount(iamAccount *C.CAccount) *Account {
 	acccount := Account{
 		AccountId: readRCString(iamAccount.account_id),
 	}
-	C.destroy_iam_account(iamAccount)
+	C.destroy_caccount(iamAccount)
 	return &acccount
 }
 
@@ -51,12 +51,12 @@ func (client *Client) Close() {
 func (client *Client) CreateAccount(alias string) (*Account, error) {
 	msg := C.RCString{}
 	cAlias := C.CString(alias)
-	iamAccount, err := C.client_create_account(client.client, cAlias, &msg)
+	cAccount, err := C.client_create_account(client.client, cAlias, &msg)
 	freeCString(cAlias)
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account := NewAccount(iamAccount)
+	account := NewAccount(cAccount)
 	return account, nil
 }
 
