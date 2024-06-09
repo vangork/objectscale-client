@@ -38,6 +38,6 @@ impl RCString {
 }
 
 #[no_mangle]
-pub extern "C" fn free_rcstring(buf: RCString) {
-    let _ = buf.to_vec();
+pub extern "C" fn free_rcstring(rcstring: RCString) {
+    let _ = rcstring.to_vec();
 }
