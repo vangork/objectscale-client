@@ -92,7 +92,7 @@ pub struct DisableAccountResponse {
 impl APIClient {
     pub fn new(endpoint: &str, username: &str, password: &str, insecure: bool) -> Self {
         let timeout = Duration::new(5, 0);
-        let client = ClientBuilder::new().timeout(timeout).danger_accept_invalid_certs(insecure).build().expect("build client");
+        let client = ClientBuilder::new().timeout(timeout).danger_accept_invalid_certs(insecure).use_rustls_tls().build().expect("build client");
         Self {
             client,
             endpoint: endpoint.to_string(),
