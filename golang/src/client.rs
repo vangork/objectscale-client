@@ -1,13 +1,14 @@
-use crate::string::RCString;
 use crate::error::{clear_error, set_error};
-use objectscale_client::api_client::{Account, APIClient};
+use crate::string::RCString;
+use objectscale_client::client::ManagementClient;
+use objectscale_client::iam::{Account, AccountBuilder};
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
 
 pub struct Client {
-    api_client: APIClient,
+    management_client: ManagementClient,
 }
 
 #[repr(C)]
@@ -56,15 +57,8 @@ pub unsafe extern "C" fn new_client(
         }
     };
 
-    match catch_unwind(|| {
-        Client {
-            api_client: APIClient::new(
-                endpoint,
-                username,
-                password,
-                insecure,
-            )
-        }
+    match catch_unwind(|| Client {
+        management_client: ManagementClient::new(endpoint, username, password, insecure),
     }) {
         Ok(client) => {
             clear_error();
@@ -102,13 +96,17 @@ pub unsafe extern "C" fn client_create_account(
 
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
-        client.api_client.create_account(alias)
+        let account = AccountBuilder::default()
+            .alias(alias)
+            .build()
+            .expect("build account");
+        client.management_client.create_account(account)
     })) {
         Ok(result) => match result {
             Ok(account) => {
                 let iam_account = CAccount::new(account);
                 Box::into_raw(Box::new(iam_account))
-            },
+            }
             Err(e) => {
                 set_error(e.to_string().as_str(), err);
                 ptr::null_mut()
@@ -145,13 +143,13 @@ pub unsafe extern "C" fn client_delete_account(
     };
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
-        client.api_client.delete_account(account_id)
+        client.management_client.delete_account(account_id)
     })) {
         Ok(result) => {
             if let Err(e) = result {
                 set_error(e.to_string().as_str(), err);
             }
-        },
+        }
         Err(_) => {
             set_error("caught panic during account deletion", err);
         }

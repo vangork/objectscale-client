@@ -1,10 +1,28 @@
-use objectscale_client::api_client::{Account, APIClient};
+use objectscale_client::client::ManagementClient;
+use objectscale_client::iam::{Account, AccountBuilder, Tag};
 use pyo3::prelude::*;
 use pyo3::{exceptions, PyResult};
+use std::convert::From;
 
 #[pyclass]
 pub(crate) struct Client {
-    api_client: APIClient,
+    management_client: ManagementClient,
+}
+
+#[derive(Clone)]
+#[pyclass(get_all)]
+pub(crate) struct PyTag {
+    key: String,
+    value: String,
+}
+
+impl From<Tag> for PyTag {
+    fn from(tag: Tag) -> Self {
+        Self {
+            key: tag.key,
+            value: tag.value,
+        }
+    }
 }
 
 #[pyclass(get_all)]
@@ -18,10 +36,11 @@ pub(crate) struct PyAccount {
     description: String,
     protection_enabled: bool,
     tso_id: String,
+    tags: Vec<PyTag>,
 }
 
-impl PyAccount {
-    pub fn new(account: Account) -> Self {
+impl From<Account> for PyAccount {
+    fn from(account: Account) -> Self {
         Self {
             account_id: account.account_id,
             objscale: account.objscale,
@@ -32,6 +51,7 @@ impl PyAccount {
             description: account.description,
             protection_enabled: account.protection_enabled,
             tso_id: account.tso_id,
+            tags: account.tags.into_iter().map(PyTag::from).collect(),
         }
     }
 }
@@ -40,14 +60,9 @@ impl PyAccount {
 impl Client {
     #[new]
     #[pyo3(text_signature = "(endpoint, username, password, insecure)")]
-    fn new(
-        endpoint: &str,
-        username: &str,
-        password: &str,
-        insecure: bool,
-    ) -> Self {
-        let api_client = APIClient::new(endpoint, username, password, insecure);
-        Self { api_client }
+    fn new(endpoint: &str, username: &str, password: &str, insecure: bool) -> Self {
+        let management_client = ManagementClient::new(endpoint, username, password, insecure);
+        Self { management_client }
     }
 
     ///
@@ -55,10 +70,11 @@ impl Client {
     ///
     #[pyo3(text_signature = "($self, alias)")]
     pub fn create_account(&mut self, alias: &str) -> PyResult<PyAccount> {
-        let result = self.api_client.create_account(alias);
+        let account = AccountBuilder::default().alias(alias).build().unwrap();
+        let result = self.management_client.create_account(account);
 
         match result {
-            Ok(account) => Ok(PyAccount::new(account)),
+            Ok(account) => Ok(PyAccount::from(account)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -68,7 +84,7 @@ impl Client {
     ///
     #[pyo3(text_signature = "($self, account_id)")]
     pub fn delete_account(&mut self, account_id: &str) -> PyResult<()> {
-        let result = self.api_client.delete_account(account_id);
+        let result = self.management_client.delete_account(account_id);
 
         match result {
             Ok(_) => Ok(()),
