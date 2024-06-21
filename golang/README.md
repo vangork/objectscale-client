@@ -1,0 +1,1 @@
+# ObjectScale Golang client

@@ -122,12 +122,10 @@ impl ManagementClient {
         } else {
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             if self.expires_in.unwrap() > now {
+            } else if self.refresh_expires_in.unwrap() > now {
+                self.refresh_auth_token()?;
             } else {
-                if self.refresh_expires_in.unwrap() > now {
-                    self.refresh_auth_token()?;
-                } else {
-                    self.obtain_auth_token()?;
-                }
+                self.obtain_auth_token()?;
             }
         }
         Ok(())
