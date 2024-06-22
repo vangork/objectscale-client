@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 categories = ["network-programming"]
 keywords = ["objectscale", "client"]
-description = "ObjectScale Management python client."
+description = "ObjectScale python client."
 authors = ["Luis Liu <luis_liu@dell.com>"]
 readme = "README.md"
 license = "Apache-2.0"
@@ -13,7 +13,7 @@ repository = "https://github.com/dell/objectscale-client"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-objectscale-client = { path = "../", version = "0.1.0"}
+objectscale-client = { path = "../" }
 pyo3 = { version = "0.21.2" , features = ["extension-module"]}
 
 [lib]

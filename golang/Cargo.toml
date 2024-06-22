@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 categories = ["network-programming"]
 keywords = ["objectscale", "client"]
-description = "ObjectScale Management golang client."
+description = "ObjectScale golang client."
 authors = ["Luis Liu <luis_liu@dell.com>"]
 readme = "README.md"
 license = "Apache-2.0"
@@ -15,7 +15,7 @@ build = "build.rs"
 
 [dependencies]
 errno = "0.2"
-objectscale-client = { path = "../", version = "0.1.0"}
+objectscale-client = { path = "../" }
 
 [build-dependencies]
 cbindgen = "0.26.0"

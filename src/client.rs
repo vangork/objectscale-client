@@ -1,3 +1,16 @@
+//
+// Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+
+//! Applications should always use this ManagementClient to manage ObjectScale resources.
+//!
+
 use crate::iam::Account;
 use crate::response::get_content_text;
 use anyhow::{Context as _, Result};
@@ -6,6 +19,25 @@ use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+/// ManagementClient manages ObjectScale resources with the ObjectScale REST API calls.
+/// It also gets and manages tokens for authentication.
+///
+/// # Examples
+/// ```no_run
+/// use objectscale_client::client::ManagementClient;
+/// use objectscale_client::iam::AccountBuilder;
+///
+/// fn main() {
+///     let endpoint = "https://192.168.1.1:443";
+///     let username = "admin";
+///     let password = "pass";
+///     let insecure = false;
+///     let account_alias = "test";
+///     let mut client = ManagementClient::new(endpoint, username, password, insecure);
+///     let account = AccountBuilder::default().alias(account_alias).build().expect("build account");
+///     client.create_account(account).expect("create account");
+/// }
+/// ```
 #[derive(Debug, Default)]
 pub struct ManagementClient {
     pub(crate) http_client: Client,
@@ -20,13 +52,13 @@ pub struct ManagementClient {
 }
 
 #[derive(Debug, Serialize)]
-pub struct BasicAuth {
+struct BasicAuth {
     pub username: String,
     pub password: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct AuthLoginResponse {
+struct AuthLoginResponse {
     pub access_token: String,
     pub expires_in: u64,
     pub refresh_token: String,
@@ -34,7 +66,7 @@ pub struct AuthLoginResponse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct RefreshTokenResponse {
+struct RefreshTokenResponse {
     pub access_token: String,
     pub expires_in: u64,
     pub refresh_token: String,
@@ -43,6 +75,9 @@ pub struct RefreshTokenResponse {
 }
 
 impl ManagementClient {
+    ///
+    /// Build a new ManagementClient.
+    ///
     pub fn new(endpoint: &str, username: &str, password: &str, insecure: bool) -> Self {
         let timeout = Duration::new(5, 0);
         let http_client = ClientBuilder::new()
@@ -131,6 +166,9 @@ impl ManagementClient {
         Ok(())
     }
 
+    ///
+    /// Create an IAM account.
+    ///
     pub fn create_account(&mut self, account: Account) -> Result<Account> {
         self.auth()?;
         if account.tags.is_empty() {
@@ -143,11 +181,17 @@ impl ManagementClient {
         }
     }
 
+    ///
+    /// Get an IAM account.
+    ///
     pub fn get_account(&mut self, account_id: &str) -> Result<Account> {
         self.auth()?;
         Account::get_account(self, account_id)
     }
 
+    ///
+    /// Delete an IAM account.
+    ///
     pub fn delete_account(&mut self, account_id: &str) -> Result<()> {
         self.auth()?;
         let account = Account::get_account(self, account_id)?;

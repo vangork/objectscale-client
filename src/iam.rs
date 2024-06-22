@@ -1,3 +1,16 @@
+//
+// Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+
+//! Implements the API interface for identity and access management operations.
+//!
+
 use crate::client::ManagementClient;
 use crate::response::{deserialize_bool, get_content_text};
 use anyhow::{Context as _, Result};
@@ -7,54 +20,58 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct CreateAccountResult {
+struct CreateAccountResult {
     pub account: Account,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct ResponseMetadata {
+struct ResponseMetadata {
     pub request_id: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct CreateAccountResponse {
+struct CreateAccountResponse {
     pub create_account_result: CreateAccountResult,
     pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct TagAccountResponse {
+struct TagAccountResponse {
     pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct GetAccountResult {
+struct GetAccountResult {
     pub account: Account,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct GetAccountResponse {
+struct GetAccountResponse {
     pub get_account_result: GetAccountResult,
     pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct DeleteAccountResponse {
+struct DeleteAccountResponse {
     pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct DisableAccountResponse {
+struct DisableAccountResponse {
     pub response_metadata: ResponseMetadata,
 }
 
+/// Tag.
+///
+/// Lables for IAM account, role and user.
+///
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Tag {
@@ -62,7 +79,25 @@ pub struct Tag {
     pub value: String,
 }
 
-// AccountBuilder: alias, encryption_enabled, description, tags
+/// IAM Account.
+///
+/// You can build an Account with AccountBuilder and pass to [`create_account`](`ManagementClient::create_account`) method.
+///  [`get_account`](`ManagementClient::get_account`) would fetch the existing Account from ObjectScale server.
+///
+/// # Examples
+/// ```no_run
+/// use objectscale_client::iam::{AccountBuilder, Tag};
+/// let account = AccountBuilder::default()
+///     .alias("test")
+///     .encryption_enabled(true)
+///     .description("test")
+///     .tags(vec![Tag {
+///         key: "key1".to_string(),
+///         value: "value1".to_string(),
+///     }])
+///     .build()
+///     .expect("account");
+/// ```
 #[derive(Builder, Clone, Debug, Default, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
