@@ -27,4 +27,11 @@ fn test_account() {
 
     let resp = client.delete_account(&account.account_id);
     assert!(resp.is_ok());
+
+    let account = AccountBuilder::default()
+        .alias("!test-123")
+        .build()
+        .expect("build account");
+    let account = client.create_account(account);
+    assert!(account.is_err());
 }
