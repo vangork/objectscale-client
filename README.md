@@ -34,3 +34,15 @@ maturin develop
 python examples/create_account.py
 python examples/delete_account.py
 ```
+
+### development
+```
+rustup component add clippy rustfmt
+cargo install cargo-tarpaulin
+
+cargo fmt
+cargo clippy
+cargo test
+cargo doc
+cargo tarpaulin --out Html
+```
