@@ -1,7 +1,7 @@
 use crate::error::{clear_error, set_error};
+use crate::iam::{new_account, CAccount};
 use crate::string::RCString;
 use objectscale_client::client::ManagementClient;
-use objectscale_client::iam::{Account, AccountBuilder};
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -9,22 +9,6 @@ use std::ptr;
 
 pub struct Client {
     management_client: ManagementClient,
-}
-
-#[repr(C)]
-pub struct CAccount {
-    pub account_id: *mut RCString,
-}
-
-// IamAccount is cloned from Account
-// But transform each field into ctypes
-impl CAccount {
-    pub fn new(account: Account) -> Self {
-        let account_id = RCString::from_str(account.account_id.as_str());
-        Self {
-            account_id: Box::into_raw(Box::new(account_id)),
-        }
-    }
 }
 
 #[no_mangle]
@@ -83,29 +67,18 @@ pub extern "C" fn destroy_client(client: *mut Client) {
 #[no_mangle]
 pub unsafe extern "C" fn client_create_account(
     client: *mut Client,
-    alias: *const c_char,
+    caccount: &CAccount,
     err: Option<&mut RCString>,
 ) -> *mut CAccount {
-    let alias = match CStr::from_ptr(alias).to_str() {
-        Ok(s) => s,
-        Err(_) => {
-            set_error("invalid alias", err);
-            return ptr::null_mut();
-        }
-    };
-
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
-        let account = AccountBuilder::default()
-            .alias(alias)
-            .build()
-            .expect("build account");
+        let account = new_account(caccount);
         client.management_client.create_account(account)
     })) {
         Ok(result) => match result {
             Ok(account) => {
-                let iam_account = CAccount::new(account);
-                Box::into_raw(Box::new(iam_account))
+                let caccount = CAccount::from(account);
+                Box::into_raw(Box::new(caccount))
             }
             Err(e) => {
                 set_error(e.to_string().as_str(), err);
@@ -116,15 +89,6 @@ pub unsafe extern "C" fn client_create_account(
             set_error("caught panic during account creation", err);
             ptr::null_mut()
         }
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn destroy_caccount(account: *mut CAccount) {
-    if !account.is_null() {
-        let account = Box::from_raw(account);
-        let account_id = Box::from_raw(account.account_id as *mut RCString);
-        let _ = account_id.to_vec();
     }
 }
 

@@ -18,7 +18,8 @@ func main() {
 	defer client.Close()
 
 	alias := "test"
-	account, err := client.CreateAccount(alias)
+	account := objectscale.NewAccountBuilder().SetAlias(alias).Build()
+	account, err = client.CreateAccount(account)
 	if err != nil {
 		println("Fail to create account:", err.Error())
 		return

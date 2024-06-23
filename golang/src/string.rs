@@ -1,4 +1,5 @@
 use std::mem;
+use std::slice;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -34,6 +35,17 @@ impl RCString {
 
     pub fn is_empty(&self) -> bool {
         self.ptr.is_null() || self.len == 0 || self.cap == 0
+    }
+
+    pub fn to_string(&self) -> String {
+        if self.is_empty() {
+            String::new()
+        } else {
+            unsafe { 
+                let arr = slice::from_raw_parts(self.ptr, self.len);
+                std::str::from_utf8(arr).expect("from utf8").to_string()
+            }
+        }
     }
 }
 

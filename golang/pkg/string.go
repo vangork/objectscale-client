@@ -7,6 +7,7 @@ package pkg
 import "C"
 import (
 	"fmt"
+	"reflect"
 	"unsafe"
 )
 
@@ -35,11 +36,11 @@ func isRCStringEmpty(b C.RCString) bool {
 	return b.ptr == cu8ptr(nil) || b.len == usize(0) || b.cap == usize(0)
 }
 
-func readRCString(b *C.RCString) string {
-	if isRCStringEmpty(*b) {
+func readRCString(b C.RCString) string {
+	if isRCStringEmpty(b) {
 		return ""
 	}
-	return string(C.GoBytes(unsafe.Pointer((*b).ptr), cint((*b).len)))
+	return string(C.GoBytes(unsafe.Pointer(b.ptr), cint(b.len)))
 }
 
 func errorWithMessage(err error, b C.RCString) error {
@@ -52,4 +53,14 @@ func errorWithMessage(err error, b C.RCString) error {
 
 func freeCString(str *C.char) {
 	C.free(unsafe.Pointer(str))
+}
+
+func intoRCString(s string) C.RCString {
+	p := (*reflect.StringHeader)(unsafe.Pointer(&s))
+
+	return C.RCString{
+		ptr: cu8ptr(unsafe.Pointer(p.Data)),
+		len: cusize(p.Len),
+		cap: cusize(p.Len),
+	}
 }
