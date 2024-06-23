@@ -84,15 +84,16 @@ func newAccount(caccount *C.CAccount) *Account {
 }
 
 func newCAccount(account *Account) *C.CAccount {
-	caccount := C.CAccount{}
-	caccount.account_id = intoRCString(account.AccountId)
-	caccount.objscale = intoRCString(account.Objscale)
-	caccount.create_date = intoRCString(account.CreateDate)
-	caccount.encryption_enabled = cbool(account.EncryptionEnabled)
-	caccount.account_disabled = cbool(account.accountDisabled)
-	caccount.alias = intoRCString(account.Alias)
-	caccount.description = intoRCString(account.Description)
-	caccount.protection_enabled = cbool(account.ProtectionEnabled)
-	caccount.tso_id = intoRCString(account.TsoId)
+	caccount := C.CAccount{
+        account_id:         intoRCString(account.AccountId),
+        objscale:           intoRCString(account.Objscale),
+        create_date:        intoRCString(account.CreateDate),
+        encryption_enabled: cbool(account.EncryptionEnabled),
+        account_disabled:   cbool(account.accountDisabled),
+        alias:              intoRCString(account.Alias),
+        description:        intoRCString(account.Description),
+        protection_enabled: cbool(account.ProtectionEnabled),
+        tso_id:             intoRCString(account.TsoId),
+    }
 	return &caccount
 }

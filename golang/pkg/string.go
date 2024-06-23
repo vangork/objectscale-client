@@ -55,6 +55,8 @@ func freeCString(str *C.char) {
 	C.free(unsafe.Pointer(str))
 }
 
+// according to https://pkg.go.dev/unsafe#Pointer case 6.
+// StringHeader is valid to interprete the content of an actual string value
 func intoRCString(s string) C.RCString {
 	p := (*reflect.StringHeader)(unsafe.Pointer(&s))
 

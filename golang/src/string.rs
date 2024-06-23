@@ -41,7 +41,7 @@ impl RCString {
         if self.is_empty() {
             String::new()
         } else {
-            unsafe { 
+            unsafe {
                 let arr = slice::from_raw_parts(self.ptr, self.len);
                 std::str::from_utf8(arr).expect("from utf8").to_string()
             }

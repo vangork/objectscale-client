@@ -12,14 +12,11 @@ type Client struct {
 // E.g. client, err := NewAPIClient(config)
 func NewClient(endpoint string, username string, password string, insecure bool) (*Client, error) {
 	msg := C.RCString{}
-	cEndpoint := C.CString(endpoint)
-	cUsername := C.CString(username)
-	cPassword := C.CString(password)
+	cEndpoint := intoRCString(endpoint)
+	cUsername := intoRCString(username)
+	cPassword := intoRCString(password)
 	cInsecure := cbool(insecure)
 	client, err := C.new_client(cEndpoint, cUsername, cPassword, cInsecure, &msg)
-	freeCString(cEndpoint)
-	freeCString(cUsername)
-	freeCString(cPassword)
 
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
@@ -50,9 +47,8 @@ func (client *Client) CreateAccount(account *Account) (*Account, error) {
 // Get account with a given id.
 func (client *Client) GetAccount(id string) error {
 	msg := C.RCString{}
-	cId := C.CString(id)
+	cId := intoRCString(id)
 	_, err := C.client_delete_account(client.client, cId, &msg)
-	freeCString(cId)
 	if err != nil {
 		return errorWithMessage(err, msg)
 	}
@@ -62,9 +58,8 @@ func (client *Client) GetAccount(id string) error {
 // Delete account with a given id.
 func (client *Client) DeleteAccount(id string) error {
 	msg := C.RCString{}
-	cId := C.CString(id)
+	cId := intoRCString(id)
 	_, err := C.client_delete_account(client.client, cId, &msg)
-	freeCString(cId)
 	if err != nil {
 		return errorWithMessage(err, msg)
 	}
