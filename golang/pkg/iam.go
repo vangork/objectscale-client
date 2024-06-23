@@ -21,52 +21,6 @@ type Account struct {
 	Tags              []Tag
 }
 
-type AccountBuilder interface {
-	SetAlias(alias string) AccountBuilder
-	SetDescription(description string) AccountBuilder
-	SetEncryptionEnabled(encryptionEnabled bool) AccountBuilder
-	SetTags(tags []Tag) AccountBuilder
-	Build() *Account
-}
-
-type accountBuilder struct {
-	account *Account
-}
-
-func NewAccountBuilder() AccountBuilder {
-	return &accountBuilder{
-		account: &Account{
-			Description:       "",
-			EncryptionEnabled: false,
-			Tags:              make([]Tag, 0),
-		},
-	}
-}
-
-func (b *accountBuilder) SetAlias(alias string) AccountBuilder {
-	b.account.Alias = alias
-	return b
-}
-
-func (b *accountBuilder) SetDescription(description string) AccountBuilder {
-	b.account.Description = description
-	return b
-}
-
-func (b *accountBuilder) SetEncryptionEnabled(encryptionEnabled bool) AccountBuilder {
-	b.account.EncryptionEnabled = encryptionEnabled
-	return b
-}
-
-func (b *accountBuilder) SetTags(tags []Tag) AccountBuilder {
-	b.account.Tags = tags
-	return b
-}
-
-func (b *accountBuilder) Build() *Account {
-	return b.account
-}
-
 func newAccount(caccount *C.CAccount) *Account {
 	account := Account{
 		AccountId:         readRCString(caccount.account_id),

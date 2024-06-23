@@ -65,9 +65,37 @@ pub unsafe extern "C" fn client_create_account(
                 set_error(e.to_string().as_str(), err);
                 ptr::null_mut()
             }
-        },
+        }
         Err(_) => {
             set_error("caught panic during account creation", err);
+            ptr::null_mut()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn client_get_account(
+    client: *mut Client,
+    account_id: RCString,
+    err: Option<&mut RCString>,
+) -> *mut CAccount {
+    let client = &mut *client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let account_id = account_id.to_string();
+        client.management_client.get_account(&account_id)
+    })) {
+        Ok(result) => match result {
+            Ok(account) => {
+                let caccount = CAccount::from(account);
+                Box::into_raw(Box::new(caccount))
+            }
+            Err(e) => {
+                set_error(e.to_string().as_str(), err);
+                ptr::null_mut()
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during account get", err);
             ptr::null_mut()
         }
     }

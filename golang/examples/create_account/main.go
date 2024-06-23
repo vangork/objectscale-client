@@ -18,13 +18,14 @@ func main() {
 	defer client.Close()
 
 	alias := "test"
-	account := objectscale.NewAccountBuilder().SetAlias(alias).Build()
+	account := &objectscale.Account{
+		Alias: alias,
+	}
 	account, err = client.CreateAccount(account)
 	if err != nil {
 		println("Fail to create account:", err.Error())
 		return
 	} else {
 		println("Created account:", account.AccountId)
-		return
 	}
 }

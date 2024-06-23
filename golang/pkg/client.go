@@ -36,23 +36,24 @@ func (client *Client) Close() {
 func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	msg := C.RCString{}
 	cAccount := newCAccount(account)
-	cAcc, err := C.client_create_account(client.client, cAccount, &msg)
+	cAccount, err := C.client_create_account(client.client, cAccount, &msg)
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	acc := newAccount(cAcc)
-	return acc, nil
+	account = newAccount(cAccount)
+	return account, nil
 }
 
 // Get account with a given id.
-func (client *Client) GetAccount(id string) error {
+func (client *Client) GetAccount(id string) (*Account, error) {
 	msg := C.RCString{}
 	cId := intoRCString(id)
-	_, err := C.client_delete_account(client.client, cId, &msg)
+	cAccount, err := C.client_get_account(client.client, cId, &msg)
 	if err != nil {
-		return errorWithMessage(err, msg)
+		return nil, errorWithMessage(err, msg)
 	}
-	return nil
+	account := newAccount(cAccount)
+	return account, nil
 }
 
 // Delete account with a given id.
