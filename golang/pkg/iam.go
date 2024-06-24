@@ -2,12 +2,10 @@ package pkg
 
 // #include "objectscale_client.h"
 import "C"
+import "unsafe"
 
-type Tag struct {
-	key   string
-	value string
-}
-
+// default value for struct fields
+// https://stackoverflow.com/a/28625828
 type Account struct {
 	AccountId         string
 	Objscale          string
@@ -21,33 +19,61 @@ type Account struct {
 	Tags              []Tag
 }
 
-func newAccount(caccount *C.CAccount) *Account {
+func fromCAccount(caccount *C.CAccount) *Account {
 	account := Account{
-		AccountId:         readRCString(caccount.account_id),
-		Objscale:          readRCString(caccount.objscale),
-		CreateDate:        readRCString(caccount.create_date),
+		AccountId:         fromRCString(caccount.account_id),
+		Objscale:          fromRCString(caccount.objscale),
+		CreateDate:        fromRCString(caccount.create_date),
 		EncryptionEnabled: bool(caccount.encryption_enabled),
 		accountDisabled:   bool(caccount.account_disabled),
-		Alias:             readRCString(caccount.alias),
-		Description:       readRCString(caccount.description),
+		Alias:             fromRCString(caccount.alias),
+		Description:       fromRCString(caccount.description),
 		ProtectionEnabled: bool(caccount.protection_enabled),
-		TsoId:             readRCString(caccount.tso_id),
+		TsoId:             fromRCString(caccount.tso_id),
+		Tags:              fromRCArrayCTag(caccount.tags),
 	}
 	C.destroy_caccount(caccount)
 	return &account
 }
 
-func newCAccount(account *Account) *C.CAccount {
+func intoCAccount(account *Account) *C.CAccount {
 	caccount := C.CAccount{
-        account_id:         intoRCString(account.AccountId),
-        objscale:           intoRCString(account.Objscale),
-        create_date:        intoRCString(account.CreateDate),
-        encryption_enabled: cbool(account.EncryptionEnabled),
-        account_disabled:   cbool(account.accountDisabled),
-        alias:              intoRCString(account.Alias),
-        description:        intoRCString(account.Description),
-        protection_enabled: cbool(account.ProtectionEnabled),
-        tso_id:             intoRCString(account.TsoId),
-    }
+		account_id:         intoRCString(account.AccountId),
+		objscale:           intoRCString(account.Objscale),
+		create_date:        intoRCString(account.CreateDate),
+		encryption_enabled: cbool(account.EncryptionEnabled),
+		account_disabled:   cbool(account.accountDisabled),
+		alias:              intoRCString(account.Alias),
+		description:        intoRCString(account.Description),
+		protection_enabled: cbool(account.ProtectionEnabled),
+		tso_id:             intoRCString(account.TsoId),
+	}
 	return &caccount
+}
+
+type Tag struct {
+	Key   string
+	Value string
+}
+
+func fromCTag(ctag *C.CTag, destroy bool) *Tag {
+	tag := Tag{
+		Key:   fromRCString(ctag.key),
+		Value: fromRCString(ctag.value),
+	}
+	if destroy {
+		C.destroy_ctag(ctag)
+	}
+	return &tag
+}
+
+func fromRCArrayCTag(s C.RCArray_CTag) []Tag {
+	tags := make([]Tag, 0, s.len)
+	array := (*[1 << 30]C.CTag)(unsafe.Pointer(s.ptr))[:s.len:s.len]
+	for i := 0; i < int(s.len); i++ {
+		t := fromCTag(&array[i], false)
+		tags = append(tags, *t)
+	}
+	C.free_rcarray_ctag(s)
+	return tags
 }

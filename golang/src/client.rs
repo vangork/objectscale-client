@@ -1,5 +1,5 @@
 use crate::error::{clear_error, set_error};
-use crate::iam::{new_account, CAccount};
+use crate::iam::{from_caccount, CAccount};
 use crate::string::RCString;
 use objectscale_client::client::ManagementClient;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -53,7 +53,7 @@ pub unsafe extern "C" fn client_create_account(
 ) -> *mut CAccount {
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
-        let account = new_account(caccount);
+        let account = from_caccount(caccount);
         client.management_client.create_account(account)
     })) {
         Ok(result) => match result {

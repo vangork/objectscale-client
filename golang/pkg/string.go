@@ -36,11 +36,13 @@ func isRCStringEmpty(b C.RCString) bool {
 	return b.ptr == cu8ptr(nil) || b.len == usize(0) || b.cap == usize(0)
 }
 
-func readRCString(b C.RCString) string {
+func fromRCString(b C.RCString) string {
 	if isRCStringEmpty(b) {
 		return ""
 	}
-	return string(C.GoBytes(unsafe.Pointer(b.ptr), cint(b.len)))
+	str := string(C.GoBytes(unsafe.Pointer(b.ptr), cint(b.len)))
+	C.free_rcstring(b)
+	return str
 }
 
 func errorWithMessage(err error, b C.RCString) error {

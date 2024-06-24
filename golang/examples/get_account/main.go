@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	objectscale "github.com/vangork/objectscale-client/golang/pkg"
 )
 
@@ -17,12 +19,13 @@ func main() {
 	}
 	defer client.Close()
 
-	id := "osai9664f2b98bf9584b"
-	err = client.DeleteAccount(id)
+	id := "osai0a9250592a131336"
+	account, err := client.GetAccount(id)
 	if err != nil {
-		println("Fail to delete account:", err.Error())
+		println("Fail to get account:", err.Error())
 		return
 	} else {
-		println("Deleted account:", id)
+		println("Got account:", account.Alias)
+		fmt.Println("%v", account.Tags)
 	}
 }

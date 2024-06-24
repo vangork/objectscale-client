@@ -35,12 +35,12 @@ func (client *Client) Close() {
 // Create account with a given account.
 func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	msg := C.RCString{}
-	cAccount := newCAccount(account)
+	cAccount := intoCAccount(account)
 	cAccount, err := C.client_create_account(client.client, cAccount, &msg)
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account = newAccount(cAccount)
+	account = fromCAccount(cAccount)
 	return account, nil
 }
 
@@ -52,7 +52,7 @@ func (client *Client) GetAccount(id string) (*Account, error) {
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account := newAccount(cAccount)
+	account := fromCAccount(cAccount)
 	return account, nil
 }
 

@@ -11,13 +11,13 @@ pub struct RCString {
 
 impl RCString {
     pub fn from_vec(mut v: Vec<u8>) -> Self {
-        let buf = RCString {
+        let rcstring = RCString {
             ptr: v.as_mut_ptr(),
             len: v.len(),
             cap: v.capacity(),
         };
         mem::forget(v);
-        buf
+        rcstring
     }
 
     pub fn to_vec(self) -> Vec<u8> {
@@ -52,4 +52,51 @@ impl RCString {
 #[no_mangle]
 pub extern "C" fn free_rcstring(rcstring: RCString) {
     let _ = rcstring.to_vec();
+}
+
+#[repr(C)]
+pub struct RCArray<T> where T: Clone {
+    pub ptr: *mut T,
+    pub len: usize,
+    pub cap: usize,
+}
+
+impl<T> RCArray<T> where T: Clone {
+    pub fn from_vec(v: Vec<T>) -> Self {
+        let boxed_slice = v.into_boxed_slice();
+
+        let arr = RCArray {
+            ptr: boxed_slice.as_ptr() as *mut T,
+            len: boxed_slice.len(),
+            cap: boxed_slice.len(),
+        };
+        mem::forget(boxed_slice);
+        arr
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.ptr.is_null() || self.len == 0
+    }
+
+    pub fn to_vec(self) -> Vec<T> {
+        if self.is_empty() {
+            return Vec::new();
+        }
+        let mut v = unsafe { Vec::from_raw_parts(self.ptr, self.len, self.cap) };
+        v.shrink_to_fit();
+        v
+    }
+
+    pub fn copy_to_vec(&self) -> Vec<T> {
+        if self.is_empty() {
+            vec![]
+        } else {
+            let mut v = Vec::with_capacity(self.len);
+            unsafe {
+                let arr = slice::from_raw_parts(self.ptr, self.len);
+                v.extend_from_slice(arr);
+                v
+            }
+        }
+    }
 }
