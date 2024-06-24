@@ -2,7 +2,11 @@ package pkg
 
 // #include "objectscale_client.h"
 import "C"
-import "unsafe"
+
+import (
+	"runtime"
+	"unsafe"
+)
 
 // default value for struct fields
 // https://stackoverflow.com/a/28625828
@@ -36,7 +40,8 @@ func fromCAccount(caccount *C.CAccount) *Account {
 	return &account
 }
 
-func intoCAccount(account *Account) *C.CAccount {
+func intoCAccount(account *Account) (*C.CAccount, runtime.Pinner) {
+	tags, p1 := intoRCArrayCTag(account.Tags)
 	caccount := C.CAccount{
 		account_id:         intoRCString(account.AccountId),
 		objscale:           intoRCString(account.Objscale),
@@ -47,8 +52,9 @@ func intoCAccount(account *Account) *C.CAccount {
 		description:        intoRCString(account.Description),
 		protection_enabled: cbool(account.ProtectionEnabled),
 		tso_id:             intoRCString(account.TsoId),
+		tags:               tags,
 	}
-	return &caccount
+	return &caccount, p1
 }
 
 type Tag struct {
@@ -67,6 +73,14 @@ func fromCTag(ctag *C.CTag, destroy bool) *Tag {
 	return &tag
 }
 
+func intoCTag(tag *Tag) *C.CTag {
+	ctag := C.CTag{
+		key:   intoRCString(tag.Key),
+		value: intoRCString(tag.Value),
+	}
+	return &ctag
+}
+
 func fromRCArrayCTag(s C.RCArray_CTag) []Tag {
 	tags := make([]Tag, 0, s.len)
 	array := (*[1 << 30]C.CTag)(unsafe.Pointer(s.ptr))[:s.len:s.len]
@@ -76,4 +90,20 @@ func fromRCArrayCTag(s C.RCArray_CTag) []Tag {
 	}
 	C.free_rcarray_ctag(s)
 	return tags
+}
+
+func intoRCArrayCTag(tags []Tag) (C.RCArray_CTag, runtime.Pinner) {
+	ctags := []C.CTag{}
+	for _, t := range tags {
+		ctags = append(ctags, *intoCTag(&t))
+	}
+
+	var p runtime.Pinner
+	p.Pin(&ctags[0])
+	s := C.RCArray_CTag{
+		ptr: (*C.CTag)(unsafe.Pointer(&ctags[0])),
+		len: cusize(len(tags)),
+		cap: cusize(len(tags)),
+	}
+	return s, p
 }

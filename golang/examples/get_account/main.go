@@ -26,6 +26,6 @@ func main() {
 		return
 	} else {
 		println("Got account:", account.Alias)
-		fmt.Println("%v", account.Tags)
+		fmt.Printf("%v\n", account.Tags)
 	}
 }

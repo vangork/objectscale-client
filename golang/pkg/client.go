@@ -35,8 +35,9 @@ func (client *Client) Close() {
 // Create account with a given account.
 func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	msg := C.RCString{}
-	cAccount := intoCAccount(account)
+	cAccount, p1 := intoCAccount(account)
 	cAccount, err := C.client_create_account(client.client, cAccount, &msg)
+	p1.Unpin()
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}

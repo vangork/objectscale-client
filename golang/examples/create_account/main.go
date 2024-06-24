@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	objectscale "github.com/vangork/objectscale-client/golang/pkg"
 )
 
@@ -20,6 +21,7 @@ func main() {
 	alias := "test"
 	account := &objectscale.Account{
 		Alias: alias,
+		Tags:  []objectscale.Tag{{Key: "key1", Value: "value1"}, {Key: "key2", Value: "value2"}},
 	}
 	account, err = client.CreateAccount(account)
 	if err != nil {
@@ -27,5 +29,6 @@ func main() {
 		return
 	} else {
 		println("Created account:", account.AccountId)
+		fmt.Printf("%v\n", account.Tags)
 	}
 }
