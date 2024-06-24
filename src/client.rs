@@ -200,4 +200,12 @@ impl ManagementClient {
         }
         Account::delete_account(self, account_id)
     }
+
+    ///
+    /// List all IAM accounts.
+    /// 
+    pub fn list_accounts(&mut self) -> Result<Vec<Account>> {
+        self.auth()?;
+        Account::list_accounts(self)
+    }
 }

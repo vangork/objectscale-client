@@ -13,7 +13,7 @@
 
 use crate::client::ManagementClient;
 use crate::response::{deserialize_bool, get_content_text};
-use anyhow::{Context as _, Result};
+use anyhow::{anyhow, Context as _, Result};
 use derive_builder::Builder;
 use reqwest::header::{ACCEPT, AUTHORIZATION};
 use serde::Deserialize;
@@ -33,8 +33,8 @@ struct ResponseMetadata {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct CreateAccountResponse {
-    pub create_account_result: CreateAccountResult,
     pub response_metadata: ResponseMetadata,
+    pub create_account_result: CreateAccountResult,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,8 +52,8 @@ struct GetAccountResult {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct GetAccountResponse {
-    pub get_account_result: GetAccountResult,
     pub response_metadata: ResponseMetadata,
+    pub get_account_result: GetAccountResult,
 }
 
 #[derive(Debug, Deserialize)]
@@ -66,6 +66,22 @@ struct DeleteAccountResponse {
 #[serde(rename_all = "PascalCase")]
 struct DisableAccountResponse {
     pub response_metadata: ResponseMetadata,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListAccountsResult {
+    pub account_metadata: Vec<Account>,
+    pub is_truncated: bool,
+    pub marker: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListAccountsResponse {
+    // Does not align with API description
+    pub response_metadata: ResponseMetadata,
+    pub list_accounts_result: ListAccountsResult,
 }
 
 /// Tag.
@@ -116,6 +132,8 @@ pub struct Account {
     pub description: String,
     #[serde(deserialize_with = "deserialize_bool")]
     pub protection_enabled: bool,
+    // list account API won't return tso_id
+    #[serde(default)]
     pub tso_id: String,
     // If tags are not set, it won't have the field of "Tags" in create/get account reponse
     #[builder(setter(skip = false), default)]
@@ -250,5 +268,49 @@ impl Account {
             )
         })?;
         Ok(())
+    }
+
+    pub(crate) fn list_accounts(client: &mut ManagementClient) -> Result<Vec<Account>> {
+        let mut accounts: Vec<Account> = vec![];
+        let request_url = format!(
+            "{}/iam?Action=ListAccounts",
+            client.endpoint
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp)?;
+        let mut resp: ListAccountsResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise ListAccountsResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        accounts.extend(resp.list_accounts_result.account_metadata);
+        while resp.list_accounts_result.is_truncated {
+            let request_url = format!(
+                "{}/iam?Action=ListAccounts?Marker={}",
+                client.endpoint,
+                resp.list_accounts_result.marker.ok_or_else(|| anyhow!("No marker found"))?,
+            );
+            let response = client
+                .http_client
+                .post(request_url)
+                .header(ACCEPT, "application/json")
+                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .send()?;
+            let text = get_content_text(response)?;
+            resp = serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListAccountsResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+            accounts.extend(resp.list_accounts_result.account_metadata);
+        }
+        Ok(accounts)
     }
 }

@@ -25,6 +25,9 @@ fn test_account() {
     assert_eq!(account.encryption_enabled, true);
     assert_eq!(account.tags.len(), 1);
 
+    let accounts = client.list_accounts().expect("list accounts");
+    assert_ne!(accounts.len(), 0);
+
     let resp = client.delete_account(&account.account_id);
     assert!(resp.is_ok());
 
