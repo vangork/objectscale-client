@@ -62,7 +62,7 @@ func intoCAccount(account *Account) (*C.CAccount, runtime.Pinner) {
 func fromRCArrayCAccount(s C.RCArray_CAccount) []Account {
 	accounts := make([]Account, 0, s.len)
 	if s.len > 0 {
-		caccounts := (*[1 << 20]C.CAccount)(unsafe.Pointer(s.ptr))[:s.len:s.len]
+		caccounts := (*[1 << 30]C.CAccount)(unsafe.Pointer(s.ptr))[:s.len:s.len]
 		for i := 0; i < int(s.len); i++ {
 			caccount := fromCAccount(&caccounts[i], false)
 			accounts = append(accounts, *caccount)
