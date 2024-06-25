@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	objectscale "github.com/vangork/objectscale-client/golang/pkg"
 )
@@ -14,8 +14,7 @@ func main() {
 
 	client, err := objectscale.NewClient(endpoint, username, password, insecure)
 	if err != nil {
-		println("Fail to create objectscale client:", err.Error())
-		return
+		log.Panicln("Fail to create objectscale client:", err.Error())
 	}
 	defer client.Close()
 
@@ -26,9 +25,8 @@ func main() {
 	}
 	account, err = client.CreateAccount(account)
 	if err != nil {
-		println("Fail to create account:", err.Error())
-		return
+		log.Panicln("Fail to create account:", err.Error())
 	} else {
-		fmt.Printf("Created account: %v\n", account)
+		log.Printf("Created account: %v\n", account)
 	}
 }
