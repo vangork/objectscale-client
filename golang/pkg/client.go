@@ -41,7 +41,7 @@ func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account = fromCAccount(cAccount)
+	account = fromCAccount(cAccount, true)
 	return account, nil
 }
 
@@ -53,7 +53,7 @@ func (client *Client) GetAccount(id string) (*Account, error) {
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account := fromCAccount(cAccount)
+	account := fromCAccount(cAccount, true)
 	return account, nil
 }
 
@@ -66,4 +66,15 @@ func (client *Client) DeleteAccount(id string) error {
 		return errorWithMessage(err, msg)
 	}
 	return nil
+}
+
+// List accounts.
+func (client *Client) ListAccounts() ([]Account, error) {
+	msg := C.RCString{}
+	caccounts, err := C.client_list_accounts(client.client, &msg)
+	if err != nil {
+		return nil, errorWithMessage(err, msg)
+	}
+	accounts := fromRCArrayCAccount(caccounts)
+	return accounts, nil
 }

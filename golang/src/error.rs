@@ -1,4 +1,4 @@
-use crate::string::RCString;
+use crate::ffi::RCString;
 use errno::{set_errno, Errno};
 
 pub fn clear_error() {

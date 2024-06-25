@@ -54,6 +54,7 @@ pub extern "C" fn free_rcstring(rcstring: RCString) {
     let _ = rcstring.to_vec();
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct RCArray<T> where T: Clone {
     pub ptr: *mut T,
@@ -62,6 +63,14 @@ pub struct RCArray<T> where T: Clone {
 }
 
 impl<T> RCArray<T> where T: Clone {
+    pub fn null() -> Self {
+        Self {
+            ptr: std::ptr::null_mut(),
+            len: 0,
+            cap: 0,
+        }
+    }
+
     pub fn from_vec(v: Vec<T>) -> Self {
         let boxed_slice = v.into_boxed_slice();
 

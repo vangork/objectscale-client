@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	objectscale "github.com/vangork/objectscale-client/golang/pkg"
 )
 
@@ -28,7 +29,6 @@ func main() {
 		println("Fail to create account:", err.Error())
 		return
 	} else {
-		println("Created account:", account.AccountId)
-		fmt.Printf("%v\n", account.Tags)
+		fmt.Printf("Created account: %v\n", account)
 	}
 }

@@ -1,6 +1,6 @@
 use crate::error::{clear_error, set_error};
 use crate::iam::{from_caccount, CAccount};
-use crate::string::RCString;
+use crate::ffi::{RCArray, RCString};
 use objectscale_client::client::ManagementClient;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
@@ -119,6 +119,31 @@ pub unsafe extern "C" fn client_delete_account(
         }
         Err(_) => {
             set_error("caught panic during account deletion", err);
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn client_list_accounts(
+    client: *mut Client,
+    err: Option<&mut RCString>,
+) -> RCArray<CAccount> {
+    let client = &mut *client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        client.management_client.list_accounts()
+    })) {
+        Ok(result) => match result {
+            Ok(accounts) => {
+                RCArray::from_vec(accounts.into_iter().map(CAccount::from).collect())
+            }
+            Err(e) => {
+                set_error(e.to_string().as_str(), err);
+                RCArray::null()
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during account list", err);
+            RCArray::null()
         }
     }
 }

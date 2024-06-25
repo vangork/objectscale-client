@@ -1,7 +1,8 @@
-use crate::string::{RCArray, RCString};
+use crate::ffi::{RCArray, RCString};
 use objectscale_client::iam::{Account, Tag};
 use std::convert::From;
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct CAccount {
     pub account_id: RCString,
@@ -52,8 +53,13 @@ pub unsafe extern "C" fn destroy_caccount(caccount: *mut CAccount) {
     }
 }
 
-#[repr(C)]
+#[no_mangle]
+pub extern "C" fn free_rcarray_caccount(rcarray: RCArray<CAccount>) {
+    let _ = rcarray.to_vec();
+}
+
 #[derive(Clone)]
+#[repr(C)]
 pub struct CTag {
     pub key: RCString,
     pub value: RCString,

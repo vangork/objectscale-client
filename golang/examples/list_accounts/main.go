@@ -19,12 +19,11 @@ func main() {
 	}
 	defer client.Close()
 
-	id := "osai0a9250592a131336"
-	account, err := client.GetAccount(id)
+	accounts, err := client.ListAccounts()
 	if err != nil {
-		println("Fail to get account:", err.Error())
+		println("Fail to list accounts:", err.Error())
 		return
 	} else {
-		fmt.Printf("Got account: %v\n", account)
+		fmt.Printf("List accounts: %v\n", accounts)
 	}
 }

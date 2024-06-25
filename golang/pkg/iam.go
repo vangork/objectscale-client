@@ -23,7 +23,7 @@ type Account struct {
 	Tags              []Tag
 }
 
-func fromCAccount(caccount *C.CAccount) *Account {
+func fromCAccount(caccount *C.CAccount, destroy bool) *Account {
 	account := Account{
 		AccountId:         fromRCString(caccount.account_id),
 		Objscale:          fromRCString(caccount.objscale),
@@ -36,7 +36,9 @@ func fromCAccount(caccount *C.CAccount) *Account {
 		TsoId:             fromRCString(caccount.tso_id),
 		Tags:              fromRCArrayCTag(caccount.tags),
 	}
-	C.destroy_caccount(caccount)
+	if destroy {
+		C.destroy_caccount(caccount)
+	}
 	return &account
 }
 
@@ -55,6 +57,19 @@ func intoCAccount(account *Account) (*C.CAccount, runtime.Pinner) {
 		tags:               tags,
 	}
 	return &caccount, p1
+}
+
+func fromRCArrayCAccount(s C.RCArray_CAccount) []Account {
+	accounts := make([]Account, 0, s.len)
+	if s.len > 0 {
+		caccounts := (*[1 << 20]C.CAccount)(unsafe.Pointer(s.ptr))[:s.len:s.len]
+		for i := 0; i < int(s.len); i++ {
+			caccount := fromCAccount(&caccounts[i], false)
+			accounts = append(accounts, *caccount)
+		}
+		C.free_rcarray_caccount(s)
+	}
+	return accounts
 }
 
 type Tag struct {
@@ -83,12 +98,14 @@ func intoCTag(tag *Tag) *C.CTag {
 
 func fromRCArrayCTag(s C.RCArray_CTag) []Tag {
 	tags := make([]Tag, 0, s.len)
-	array := (*[1 << 30]C.CTag)(unsafe.Pointer(s.ptr))[:s.len:s.len]
-	for i := 0; i < int(s.len); i++ {
-		t := fromCTag(&array[i], false)
-		tags = append(tags, *t)
+	if s.len > 0 {
+		ctags := (*[1 << 30]C.CTag)(unsafe.Pointer(s.ptr))[:s.len:s.len]
+		for i := 0; i < int(s.len); i++ {
+			tag := fromCTag(&ctags[i], false)
+			tags = append(tags, *tag)
+		}
+		C.free_rcarray_ctag(s)
 	}
-	C.free_rcarray_ctag(s)
 	return tags
 }
 
