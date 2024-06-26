@@ -1,6 +1,6 @@
 package pkg
 
-// #include "objectscale_client.h"
+// #include "./objectscale_client.h"
 import "C"
 
 // Client is responsible for ObjectScale management
