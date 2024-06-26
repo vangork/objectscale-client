@@ -1,7 +1,7 @@
 package pkg
 
 /*
-#cgo LDFLAGS: -L${SRCDIR}/../../target/release/ -lobjectscale_client -Wl,-rpath,${SRCDIR}/../../target/release/
+#cgo LDFLAGS: -L${SRCDIR}/../../target/release/ -lobjectscale_client -Wl,-rpath,${SRCDIR}/../../target/release/ -Wl,-rpath,$ORIGIN
 #include "./objectscale_client.h"
 */
 import "C"
