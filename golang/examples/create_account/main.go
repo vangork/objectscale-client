@@ -9,7 +9,7 @@ import (
 func main() {
 	endpoint := "https://10.225.108.186:443"
 	username := "root"
-	password := "Password123!"
+	password := "Password123@"
 	insecure := true
 
 	client, err := objectscale.NewClient(endpoint, username, password, insecure)

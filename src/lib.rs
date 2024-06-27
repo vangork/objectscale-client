@@ -24,7 +24,10 @@
     clippy::needless_borrow,
     clippy::similar_names
 )]
-#![allow(clippy::needless_doctest_main)]
+#![allow(
+    clippy::multiple_crate_versions,
+    clippy::needless_doctest_main
+)]
 
 //! A Rust client for [ObjectScale].
 //!

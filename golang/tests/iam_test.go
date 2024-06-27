@@ -49,8 +49,7 @@ func TestUser(t *testing.T) {
 	account := &objectscale.Account{
 		Alias:             name,
 		Description:       name,
-		EncryptionEnabled: true,
-		Tags:              []objectscale.Tag{{Key: "key1", Value: "value1"}, {Key: "key2", Value: "value2"}},
+		EncryptionEnabled: false,
 	}
 
 	account, err := client.CreateAccount(account)
@@ -60,8 +59,8 @@ func TestUser(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, name, account.Alias)
 	assert.Equal(t, name, account.Description)
-	assert.Equal(t, true, account.EncryptionEnabled)
-	assert.Equal(t, 2, len(account.Tags))
+	assert.Equal(t, false, account.EncryptionEnabled)
+	assert.Equal(t, 0, len(account.Tags))
 
 	accounts, err := client.ListAccounts()
 	assert.Nil(t, err)

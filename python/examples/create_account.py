@@ -3,7 +3,7 @@ import pprint
 
 endpoint = "https://10.225.108.186:443"
 username = "root"
-password = "Password123!"
+password = "Password123@"
 insecure = True
 
 alias = "test"

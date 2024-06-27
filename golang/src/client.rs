@@ -1,6 +1,6 @@
 use crate::error::{clear_error, set_error};
-use crate::iam::{from_caccount, CAccount};
-use crate::ffi::{RCArray, RCString};
+use crate::ffi::RCString;
+use anyhow::anyhow;
 use objectscale_client::client::ManagementClient;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
@@ -48,27 +48,30 @@ pub extern "C" fn destroy_client(client: *mut Client) {
 #[no_mangle]
 pub unsafe extern "C" fn client_create_account(
     client: *mut Client,
-    caccount: &CAccount,
+    caccount: RCString,
     err: Option<&mut RCString>,
-) -> *mut CAccount {
+) -> RCString {
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
-        let account = from_caccount(caccount);
+        let account = caccount.to_string();
+        let account: objectscale_client::iam::Account =
+            serde_json::from_str(&account).expect("deserialize account");
         client.management_client.create_account(account)
     })) {
-        Ok(result) => match result {
-            Ok(account) => {
-                let caccount = CAccount::from(account);
-                Box::into_raw(Box::new(caccount))
-            }
-            Err(e) => {
-                set_error(e.to_string().as_str(), err);
-                ptr::null_mut()
+        Ok(result) => {
+            let result =
+                result.and_then(|account| serde_json::to_string(&account).map_err(|e| anyhow!(e)));
+            match result {
+                Ok(account) => RCString::from_str(account.as_str()),
+                Err(e) => {
+                    set_error(e.to_string().as_str(), err);
+                    RCString::null()
+                }
             }
         }
         Err(_) => {
             set_error("caught panic during account creation", err);
-            ptr::null_mut()
+            RCString::null()
         }
     }
 }
@@ -78,25 +81,26 @@ pub unsafe extern "C" fn client_get_account(
     client: *mut Client,
     account_id: RCString,
     err: Option<&mut RCString>,
-) -> *mut CAccount {
+) -> RCString {
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
         let account_id = account_id.to_string();
         client.management_client.get_account(&account_id)
     })) {
-        Ok(result) => match result {
-            Ok(account) => {
-                let caccount = CAccount::from(account);
-                Box::into_raw(Box::new(caccount))
-            }
-            Err(e) => {
-                set_error(e.to_string().as_str(), err);
-                ptr::null_mut()
+        Ok(result) => {
+            let result =
+                result.and_then(|account| serde_json::to_string(&account).map_err(|e| anyhow!(e)));
+            match result {
+                Ok(account) => RCString::from_str(account.as_str()),
+                Err(e) => {
+                    set_error(e.to_string().as_str(), err);
+                    RCString::null()
+                }
             }
         }
         Err(_) => {
             set_error("caught panic during account get", err);
-            ptr::null_mut()
+            RCString::null()
         }
     }
 }
@@ -127,23 +131,25 @@ pub unsafe extern "C" fn client_delete_account(
 pub unsafe extern "C" fn client_list_accounts(
     client: *mut Client,
     err: Option<&mut RCString>,
-) -> RCArray<CAccount> {
+) -> RCString {
     let client = &mut *client;
     match catch_unwind(AssertUnwindSafe(move || {
         client.management_client.list_accounts()
     })) {
-        Ok(result) => match result {
-            Ok(accounts) => {
-                RCArray::from_vec(accounts.into_iter().map(CAccount::from).collect())
-            }
-            Err(e) => {
-                set_error(e.to_string().as_str(), err);
-                RCArray::null()
+        Ok(result) => {
+            let result = result
+                .and_then(|accounts| serde_json::to_string(&accounts).map_err(|e| anyhow!(e)));
+            match result {
+                Ok(account) => RCString::from_str(account.as_str()),
+                Err(e) => {
+                    set_error(e.to_string().as_str(), err);
+                    RCString::null()
+                }
             }
         }
         Err(_) => {
             set_error("caught panic during account list", err);
-            RCArray::null()
+            RCString::null()
         }
     }
 }

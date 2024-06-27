@@ -203,7 +203,7 @@ impl ManagementClient {
 
     ///
     /// List all IAM accounts.
-    /// 
+    ///
     pub fn list_accounts(&mut self) -> Result<Vec<Account>> {
         self.auth()?;
         Account::list_accounts(self)

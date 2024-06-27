@@ -9,7 +9,7 @@ import (
 func main() {
 	endpoint := "https://10.225.108.186:443"
 	username := "root"
-	password := "Password123!"
+	password := "Password123@"
 	insecure := true
 
 	client, err := objectscale.NewClient(endpoint, username, password, insecure)
@@ -18,7 +18,7 @@ func main() {
 	}
 	defer client.Close()
 
-	id := "osaib1e32bf98e3df0d6"
+	id := "osaide6244399dca21bc"
 	err = client.DeleteAccount(id)
 	if err != nil {
 		log.Panicln("Fail to delete account:", err.Error())

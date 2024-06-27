@@ -2,6 +2,7 @@ package pkg
 
 // #include "./objectscale_client.h"
 import "C"
+import "encoding/json"
 
 // Client is responsible for ObjectScale management
 type Client struct {
@@ -35,14 +36,22 @@ func (client *Client) Close() {
 // Create account with a given account.
 func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	msg := C.RCString{}
-	cAccount, p1 := intoCAccount(account)
-	cAccount, err := C.client_create_account(client.client, cAccount, &msg)
-	p1.Unpin()
+	bytes, err := json.Marshal(account)
+	if err != nil {
+		return nil, err
+	}
+	cAccount := intoRCString(string(bytes))
+	cAccount, err = C.client_create_account(client.client, cAccount, &msg)
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account = fromCAccount(cAccount, true)
-	return account, nil
+	accountJson := fromRCString(cAccount)
+	var newAccount Account
+	err = json.Unmarshal([]byte(accountJson), &newAccount)
+	if err != nil {
+		return nil, err
+	}
+	return &newAccount, nil
 }
 
 // Get account with a given id.
@@ -53,8 +62,13 @@ func (client *Client) GetAccount(id string) (*Account, error) {
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	account := fromCAccount(cAccount, true)
-	return account, nil
+	accountJson := fromRCString(cAccount)
+	var account Account
+	err = json.Unmarshal([]byte(accountJson), &account)
+	if err != nil {
+		return nil, err
+	}
+	return &account, nil
 }
 
 // Delete account with a given id.
@@ -71,10 +85,15 @@ func (client *Client) DeleteAccount(id string) error {
 // List accounts.
 func (client *Client) ListAccounts() ([]Account, error) {
 	msg := C.RCString{}
-	caccounts, err := C.client_list_accounts(client.client, &msg)
+	cAccounts, err := C.client_list_accounts(client.client, &msg)
 	if err != nil {
 		return nil, errorWithMessage(err, msg)
 	}
-	accounts := fromRCArrayCAccount(caccounts)
+	accountsJson := fromRCString(cAccounts)
+	var accounts []Account
+	err = json.Unmarshal([]byte(accountsJson), &accounts)
+	if err != nil {
+		return nil, err
+	}
 	return accounts, nil
 }

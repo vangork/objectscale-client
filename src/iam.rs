@@ -12,11 +12,12 @@
 //!
 
 use crate::client::ManagementClient;
-use crate::response::{deserialize_bool, get_content_text};
+use crate::response::get_content_text;
 use anyhow::{anyhow, Context as _, Result};
 use derive_builder::Builder;
 use reqwest::header::{ACCEPT, AUTHORIZATION};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_aux::field_attributes::{deserialize_bool_from_anything, deserialize_default_from_null};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -88,7 +89,7 @@ struct ListAccountsResponse {
 ///
 /// Lables for IAM account, role and user.
 ///
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Tag {
     pub key: String,
@@ -114,7 +115,7 @@ pub struct Tag {
 ///     .build()
 ///     .expect("account");
 /// ```
-#[derive(Builder, Clone, Debug, Default, Deserialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct Account {
@@ -122,22 +123,22 @@ pub struct Account {
     pub objscale: String,
     pub create_date: String,
     #[builder(setter(skip = false), default = "false")]
-    #[serde(deserialize_with = "deserialize_bool")]
+    #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub encryption_enabled: bool,
-    #[serde(deserialize_with = "deserialize_bool")]
+    #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub account_disabled: bool,
     #[builder(setter(into))]
     pub alias: String,
     #[builder(setter(into), default)]
     pub description: String,
-    #[serde(deserialize_with = "deserialize_bool")]
+    #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub protection_enabled: bool,
     // list account API won't return tso_id
     #[serde(default)]
     pub tso_id: String,
     // If tags are not set, it won't have the field of "Tags" in create/get account reponse
     #[builder(setter(skip = false), default)]
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_default_from_null")]
     pub tags: Vec<Tag>,
 }
 
@@ -272,10 +273,7 @@ impl Account {
 
     pub(crate) fn list_accounts(client: &mut ManagementClient) -> Result<Vec<Account>> {
         let mut accounts: Vec<Account> = vec![];
-        let request_url = format!(
-            "{}/iam?Action=ListAccounts",
-            client.endpoint
-        );
+        let request_url = format!("{}/iam?Action=ListAccounts", client.endpoint);
         let resp = client
             .http_client
             .post(request_url)
@@ -294,7 +292,9 @@ impl Account {
             let request_url = format!(
                 "{}/iam?Action=ListAccounts?Marker={}",
                 client.endpoint,
-                resp.list_accounts_result.marker.ok_or_else(|| anyhow!("No marker found"))?,
+                resp.list_accounts_result
+                    .marker
+                    .ok_or_else(|| anyhow!("No marker found"))?,
             );
             let response = client
                 .http_client

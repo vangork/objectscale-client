@@ -6,7 +6,7 @@ use url::Url;
 pub fn create_management_client() -> ManagementClient {
     let endpoint = "https://10.225.108.186:443";
     let username = "root";
-    let password = "Password123!";
+    let password = "Password123@";
     let insecure = true;
 
     let url = Url::parse(endpoint).expect("parse url");
