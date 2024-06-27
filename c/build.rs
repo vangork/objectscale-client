@@ -7,5 +7,5 @@ fn main() {
 
     cbindgen::generate(crate_dir)
         .expect("Unable to generate bindings")
-        .write_to_file("./pkg/objectscale_client.h");
+        .write_to_file("./objectscale_client.h");
 }

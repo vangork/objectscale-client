@@ -14,8 +14,8 @@ repository = "https://github.com/dell/objectscale-client"
 
 [workspace]
 members = [
+    "c",
     "examples",
-    "golang",
     "python",
 ]
 

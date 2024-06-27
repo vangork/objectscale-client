@@ -677,14 +677,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "objectscale-client-examples"
-version = "0.1.0"
-dependencies = [
- "objectscale-client",
-]
-
-[[package]]
-name = "objectscale-client-golang"
+name = "objectscale-client-c"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -692,6 +685,13 @@ dependencies = [
  "errno 0.2.8",
  "objectscale-client",
  "serde_json",
+]
+
+[[package]]
+name = "objectscale-client-examples"
+version = "0.1.0"
+dependencies = [
+ "objectscale-client",
 ]
 
 [[package]]

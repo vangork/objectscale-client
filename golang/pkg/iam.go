@@ -1,6 +1,6 @@
 package pkg
 
-// #include "./objectscale_client.h"
+// #include "objectscale_client.h"
 import "C"
 
 // default value for struct fields
