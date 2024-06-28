@@ -18,6 +18,10 @@ impl RCString {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.ptr.is_null() || self.len == 0 || self.cap == 0
+    }
+
     pub fn from_vec(mut v: Vec<u8>) -> Self {
         let rcstring = RCString {
             ptr: v.as_mut_ptr(),
@@ -39,10 +43,6 @@ impl RCString {
 
     pub fn from_str(str: &str) -> Self {
         Self::from_vec(str.as_bytes().to_vec())
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.ptr.is_null() || self.len == 0 || self.cap == 0
     }
 
     pub fn to_string(&self) -> String {
