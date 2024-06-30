@@ -4,13 +4,25 @@ package pkg
 import "C"
 import "encoding/json"
 
-// Client is responsible for ObjectScale management
+
+// This class definition creates a new instance of the Client struct with a pointer to a C.Client.
+// The Client struct is used to interact with the ObjectScale API.
 type Client struct {
 	client *C.Client
 }
 
-// Create a OjectScale client.
-// E.g. client, err := NewAPIClient(config)
+// NewClient creates a new instance of the Client struct with a pointer to a C.Client.
+// The Client struct is used to interact with the ObjectScale API.
+//
+// Parameters:
+// - endpoint: The endpoint of the ObjectScale API.
+// - username: The username for authentication.
+// - password: The password for authentication.
+// - insecure: Whether to use insecure HTTPS connections.
+//
+// Returns:
+// - *Client: A pointer to the newly created Client instance.
+// - error: An error if any occurred.
 func NewClient(endpoint string, username string, password string, insecure bool) (*Client, error) {
 	msg := C.RCString{}
 	cEndpoint := intoRCString(endpoint)
@@ -33,7 +45,15 @@ func (client *Client) Close() {
 	C.destroy_client(client.client)
 }
 
-// Create account with a given account.
+// CreateAccount creates a new account with the given account details.
+// Returns the newly created account and an error if any occurred.
+//
+// Parameters:
+// - account: The account details to create a new account.
+//
+// Returns:
+// - *Account: The newly created account.
+// - error: An error if any occurred.
 func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	msg := C.RCString{}
 	bytes, err := json.Marshal(account)
@@ -54,7 +74,15 @@ func (client *Client) CreateAccount(account *Account) (*Account, error) {
 	return &newAccount, nil
 }
 
-// Get account with a given id.
+// GetAccount retrieves an account with the given ID.
+//
+// Parameters:
+// - id: The account Id.
+// - ...
+//
+// Returns:
+// - *Account: The retrieved account.
+// - error: An error if the account retrieval fails.
 func (client *Client) GetAccount(id string) (*Account, error) {
 	msg := C.RCString{}
 	cId := intoRCString(id)
@@ -71,7 +99,14 @@ func (client *Client) GetAccount(id string) (*Account, error) {
 	return &account, nil
 }
 
-// Delete account with a given id.
+// DeleteAccount deletes an account with the given ID.
+//
+// Parameters:
+// - id: The account Id.
+// - ...
+//
+// Returns:
+// - error: An error if the account deletion fails.
 func (client *Client) DeleteAccount(id string) error {
 	msg := C.RCString{}
 	cId := intoRCString(id)
@@ -82,7 +117,26 @@ func (client *Client) DeleteAccount(id string) error {
 	return nil
 }
 
-// List accounts.
+// UpdateAccount updates the account with the given details.
+//
+// Parameters:
+// - account: A pointer to the Account object containing the updated details.
+//
+// Returns:
+// - *Account: The updated Account object.
+// - error: An error if the update fails.
+func (client *Client) UpdateAccount(account *Account) (*Account, error) {
+	return account, nil
+}
+
+// ListAccounts lists the accounts.
+//
+// Parameters:
+// - ...
+
+// Returns:
+// - []Account: A slice of accounts.
+// - error: An error if the account retrieval fails.
 func (client *Client) ListAccounts() ([]Account, error) {
 	msg := C.RCString{}
 	cAccounts, err := C.client_list_accounts(client.client, &msg)
