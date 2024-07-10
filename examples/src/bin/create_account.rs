@@ -2,7 +2,7 @@ use objectscale_client::client::ManagementClient;
 use objectscale_client::iam::{AccountBuilder, Tag};
 
 fn main() {
-    let endpoint = "https://10.225.108.186:443";
+    let endpoint = "https://10.225.108.189:443";
     let username = "root";
     let password = "Password123!";
     let insecure = true;

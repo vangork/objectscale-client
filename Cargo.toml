@@ -17,6 +17,7 @@ members = [
     "c",
     "examples",
     "python",
+    "auto-bindgen"
 ]
 
 [dependencies]

@@ -1,28 +1,28 @@
 use crate::error::{clear_error, set_error};
 use crate::ffi::RCString;
 use anyhow::anyhow;
-use objectscale_client::client::ManagementClient;
+use objectscale_client::client;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
 
-pub struct Client {
-    management_client: ManagementClient,
+pub struct ManagementClient {
+    management_client: client::ManagementClient,
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn new_client(
+pub unsafe extern "C" fn new_management_client(
     endpoint: RCString,
     username: RCString,
     password: RCString,
     insecure: bool,
     err: Option<&mut RCString>,
-) -> *mut Client {
+) -> *mut ManagementClient {
     match catch_unwind(|| {
         let endpoint = endpoint.to_string();
         let username = username.to_string();
         let password = password.to_string();
-        Client {
-            management_client: ManagementClient::new(&endpoint, &username, &password, insecure),
+        ManagementClient {
+            management_client: client::ManagementClient::new(&endpoint, &username, &password, insecure),
         }
     }) {
         Ok(client) => {
@@ -37,26 +37,26 @@ pub unsafe extern "C" fn new_client(
 }
 
 #[no_mangle]
-pub extern "C" fn destroy_client(client: *mut Client) {
-    if !client.is_null() {
+pub extern "C" fn destroy_management_client(management_client: *mut ManagementClient) {
+    if !management_client.is_null() {
         unsafe {
-            drop(Box::from_raw(client));
+            drop(Box::from_raw(management_client));
         }
     }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn client_create_account(
-    client: *mut Client,
+pub unsafe extern "C" fn management_client_create_account(
+    management_client: *mut ManagementClient,
     caccount: RCString,
     err: Option<&mut RCString>,
 ) -> RCString {
-    let client = &mut *client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let account = caccount.to_string();
         let account: objectscale_client::iam::Account =
             serde_json::from_str(&account).expect("deserialize account");
-        client.management_client.create_account(account)
+            management_client.management_client.create_account(account)
     })) {
         Ok(result) => {
             let result =
@@ -77,15 +77,15 @@ pub unsafe extern "C" fn client_create_account(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn client_get_account(
-    client: *mut Client,
+pub unsafe extern "C" fn management_client_get_account(
+    management_client: *mut ManagementClient,
     account_id: RCString,
     err: Option<&mut RCString>,
 ) -> RCString {
-    let client = &mut *client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let account_id = account_id.to_string();
-        client.management_client.get_account(&account_id)
+        management_client.management_client.get_account(&account_id)
     })) {
         Ok(result) => {
             let result =
@@ -106,15 +106,15 @@ pub unsafe extern "C" fn client_get_account(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn client_delete_account(
-    client: *mut Client,
+pub unsafe extern "C" fn management_client_delete_account(
+    management_client: *mut ManagementClient,
     account_id: RCString,
     err: Option<&mut RCString>,
 ) {
-    let client = &mut *client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let account_id = account_id.to_string();
-        client.management_client.delete_account(&account_id)
+        management_client.management_client.delete_account(&account_id)
     })) {
         Ok(result) => {
             if let Err(e) = result {
@@ -128,13 +128,13 @@ pub unsafe extern "C" fn client_delete_account(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn client_list_accounts(
-    client: *mut Client,
+pub unsafe extern "C" fn management_client_list_accounts(
+    management_client: *mut ManagementClient,
     err: Option<&mut RCString>,
 ) -> RCString {
-    let client = &mut *client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
-        client.management_client.list_accounts()
+        management_client.management_client.list_accounts()
     })) {
         Ok(result) => {
             let result = result

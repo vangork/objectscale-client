@@ -7,18 +7,18 @@ import (
 )
 
 func main() {
-	endpoint := "https://10.225.108.186:443"
+	endpoint := "https://10.225.108.189:443"
 	username := "root"
 	password := "Password123@"
 	insecure := true
 
-	client, err := objectscale.NewClient(endpoint, username, password, insecure)
+	client, err := objectscale.NewManagementClient(endpoint, username, password, insecure)
 	if err != nil {
 		log.Panicln("Fail to create objectscale client:", err.Error())
 	}
 	defer client.Close()
 
-	id := "osaide6244399dca21bc"
+	id := "osai41e9b3b9d9e45246"
 	err = client.DeleteAccount(id)
 	if err != nil {
 		log.Panicln("Fail to delete account:", err.Error())

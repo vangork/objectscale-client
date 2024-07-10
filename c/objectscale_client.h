@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct Client Client;
+typedef struct ManagementClient ManagementClient;
 
 typedef struct RCString {
   uint8_t *ptr;
@@ -20,25 +20,28 @@ typedef struct RCString {
   uintptr_t cap;
 } RCString;
 
-struct Client *new_client(struct RCString endpoint,
-                          struct RCString username,
-                          struct RCString password,
-                          bool insecure,
-                          struct RCString *err);
+struct ManagementClient *new_management_client(struct RCString endpoint,
+                                               struct RCString username,
+                                               struct RCString password,
+                                               bool insecure,
+                                               struct RCString *err);
 
-void destroy_client(struct Client *client);
+void destroy_management_client(struct ManagementClient *management_client);
 
-struct RCString client_create_account(struct Client *client,
-                                      struct RCString caccount,
+struct RCString management_client_create_account(struct ManagementClient *management_client,
+                                                 struct RCString caccount,
+                                                 struct RCString *err);
+
+struct RCString management_client_get_account(struct ManagementClient *management_client,
+                                              struct RCString account_id,
+                                              struct RCString *err);
+
+void management_client_delete_account(struct ManagementClient *management_client,
+                                      struct RCString account_id,
                                       struct RCString *err);
 
-struct RCString client_get_account(struct Client *client,
-                                   struct RCString account_id,
-                                   struct RCString *err);
-
-void client_delete_account(struct Client *client, struct RCString account_id, struct RCString *err);
-
-struct RCString client_list_accounts(struct Client *client, struct RCString *err);
+struct RCString management_client_list_accounts(struct ManagementClient *management_client,
+                                                struct RCString *err);
 
 void free_rcstring(struct RCString rcstring);
 

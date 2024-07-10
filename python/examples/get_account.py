@@ -1,4 +1,5 @@
 import objectscale_client
+from pprint import pprint
 
 def main():
     endpoint = "https://10.225.108.189:443"
@@ -6,15 +7,15 @@ def main():
     password = "Password123@"
     insecure = True
 
-    account_id = "osaid378d579df56865c"
+    account_id = "osai0a9250592a131336"
 
     client = objectscale_client.ManagementClient(endpoint, username, password, insecure)
 
     try:
-        client.delete_account(account_id)
-        print("Deleted account:", account_id)
+        account = client.get_account(account_id)
+        print("Get account:", account.alias)
     except Exception as e:
-        print("Failed to delete account:", e)
+        print("Failed to get account:", e)
 
 
 if __name__ == '__main__':

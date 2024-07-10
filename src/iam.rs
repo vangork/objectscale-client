@@ -85,18 +85,18 @@ struct ListAccountsResponse {
     pub list_accounts_result: ListAccountsResult,
 }
 
-/// Tag.
-///
 /// Lables for IAM account, role and user.
 ///
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Tag {
+    /// tag key
     pub key: String,
+    /// tag value
     pub value: String,
 }
 
-/// IAM Account.
+/// An ObjectScale Account is a logical construct that corresponds to a customer business unit, tenant, project, and so on.
 ///
 /// You can build an Account with AccountBuilder and pass to [`create_account`](`ManagementClient::create_account`) method.
 ///  [`get_account`](`ManagementClient::get_account`) would fetch the existing Account from ObjectScale server.
@@ -119,23 +119,33 @@ pub struct Tag {
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct Account {
+    /// The Id of the account
     pub account_id: String,
+    /// The name/id of the object scale that the account is associated with
     pub objscale: String,
+    /// The date and time, in the format of YYYY-MM-DDTHH:mm:ssZ, when the account created
     pub create_date: String,
+    /// Indicate if encryption is enabled for the account
     #[builder(setter(skip = false), default = "false")]
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub encryption_enabled: bool,
+    /// account disabled
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub account_disabled: bool,
     #[builder(setter(into))]
+    /// An Alias for an account
     pub alias: String,
     #[builder(setter(into), default)]
+    /// The description for an account
     pub description: String,
+    /// protection enabled
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub protection_enabled: bool,
+    /// Tso id
     // list account API won't return tso_id
     #[serde(default)]
     pub tso_id: String,
+    /// Labels
     // If tags are not set, it won't have the field of "Tags" in create/get account reponse
     #[builder(setter(skip = false), default)]
     #[serde(default, deserialize_with = "deserialize_default_from_null")]

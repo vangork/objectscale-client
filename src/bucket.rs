@@ -10,19 +10,18 @@
 
 //! Implements the API interface for provisioning and managing buckets.
 //!
+use anyhow::Result;
+use crate::client::ManagementClient;
 
 pub struct Bucket {
     name: String,
 }
 
 impl Bucket {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.to_string(),
-        }
-    }
-
-    pub fn create_bucket(&self) {
-        println!("create bucket: {}", self.name);
+    pub(crate) fn create_bucket(
+        _client: &mut ManagementClient,
+        bucket: Bucket,
+    ) -> Result<Bucket> {
+        Ok(Bucket { name: bucket.name })
     }
 }
