@@ -1,5 +1,4 @@
 import objectscale_client
-from pprint import pprint
 
 def main():
     endpoint = "https://10.225.108.189:443"
@@ -12,7 +11,7 @@ def main():
     try:
         accounts = client.list_accounts()
         for account in accounts:
-            print("Get account:", account.alias)
+            print(account)
     except Exception as e:
         print("Failed to list accounts:", e)
 

@@ -6,7 +6,7 @@ def main():
     password = "Password123@"
     insecure = True
 
-    account_id = "osaid378d579df56865c"
+    account_id = "osai67352f19dfb5bba6"
 
     client = objectscale_client.ManagementClient(endpoint, username, password, insecure)
 

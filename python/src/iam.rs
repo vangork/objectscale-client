@@ -2,7 +2,7 @@ use objectscale_client::iam;
 use pyo3::prelude::*;
 use std::convert::From;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 #[pyclass(get_all)]
 pub(crate) struct Tag {
     #[pyo3(set)]
@@ -35,10 +35,14 @@ impl Tag {
     fn new() -> Self {
         Self::default()
     }
+
+    fn __str__(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 #[pyclass(get_all)]
 pub(crate) struct Account {
     account_id: String,
@@ -96,5 +100,9 @@ impl Account {
     #[new]
     fn new() -> Self {
         Self::default()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{:?}", self)
     }
 }
