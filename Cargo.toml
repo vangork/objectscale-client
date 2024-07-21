@@ -1,6 +1,6 @@
 [package]
 name = "objectscale-client"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 categories = ["network-programming"]
 keywords = ["objectscale", "client"]
@@ -9,6 +9,7 @@ authors = ["Luis Liu <luis_liu@dell.com>"]
 readme = "README.md"
 license = "Apache-2.0"
 repository = "https://github.com/vangork/objectscale-client"
+documentation = "https://docs.rs/objectscale-client"
 exclude = [
     "golang/*",
     "tests/*",

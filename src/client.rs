@@ -8,7 +8,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 //
 
-//! Applications should always use this ManagementClient to manage ObjectScale resources.
+//! Applications should use create ManagementClient and ObjectstoreClient to manage ObjectScale resources.
 //!
 
 use crate::bucket::Bucket;
