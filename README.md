@@ -19,7 +19,7 @@ cargo run --bin delete_account
 ### golang
 
 ```
-cargo build --release
+cd c && cargo build --release
 cd golang
 go build examples/create_account/main.go
 ./main
