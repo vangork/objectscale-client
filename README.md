@@ -1,8 +1,8 @@
 # ObjectScale-Client
 
-This repo provides a rust client for Dell ObjectScale for Identity and Access Management (IAM), bucket, multi-tenancy management.
+This repo provides a rust client for Dell ObjectScale which could be used for identity and access management (IAM), bucket and multi-tenancy management.
 
-It also contains Rust FFI bindings for golang & python clients.
+It also contains the according golang & python client via rust FFI binding.
 
 ## Examples
 
