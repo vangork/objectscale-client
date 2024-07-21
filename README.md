@@ -1,8 +1,12 @@
 # ObjectScale-Client
 
-This repo demonstrate how to binding Rust based ObjectScale Management Client to other languages safely and productively
+This repo provides a rust client for Dell ObjectScale for Identity and Access Management (IAM), bucket, multi-tenancy management.
 
-It generates Rust FFI bindings to golang & python libraries.
+It also contains Rust FFI bindings for golang & python clients.
+
+## Examples
+
+Some examples for each languages:
 
 ### rust
 
@@ -15,8 +19,8 @@ cargo run --bin delete_account
 ### golang
 
 ```
-cd golang
 cargo build --release
+cd golang
 go build examples/create_account/main.go
 ./main
 go build examples/delete_account/main.go
@@ -35,7 +39,7 @@ python examples/create_account.py
 python examples/delete_account.py
 ```
 
-### development
+## Development
 ```
 rustup component add clippy rustfmt
 cargo install cargo-tarpaulin

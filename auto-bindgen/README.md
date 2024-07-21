@@ -1,7 +1,10 @@
+# ObjectScale client auto bindgen
+
+Auto generate Objectscale golang & python client from rust client.
+
 ```
 cargo run
 
-cargo fmt
-cd c && cargo build --release
-cd golang && go fmt ./examples/ ./pkg/ ./tests/
+cd .. && cargo fmt
+cd golang && go fmt ./...
 ```
