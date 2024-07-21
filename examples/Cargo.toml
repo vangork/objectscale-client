@@ -7,7 +7,7 @@ keywords = ["objectscale", "client"]
 description = "Examples for ObjectScale client."
 authors = ["Luis Liu <luis_liu@dell.com>"]
 license = "Apache-2.0"
-repository = "https://github.com/dell/objectscale-client"
+repository = "https://github.com/vangork/objectscale-client"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

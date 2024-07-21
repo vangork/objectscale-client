@@ -6,11 +6,10 @@ def main():
     password = "Password123@"
     insecure = True
 
-    account_id = "osai67352f19dfb5bba6"
-
-    client = objectscale_client.ManagementClient(endpoint, username, password, insecure)
+    account_id = "osai8f36c29a17795572"
 
     try:
+        client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
         client.delete_account(account_id)
         print("Deleted account:", account_id)
     except Exception as e:

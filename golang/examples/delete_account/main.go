@@ -18,7 +18,7 @@ func main() {
 	}
 	defer client.Close()
 
-	id := "osai41e9b3b9d9e45246"
+	id := "osai697f6dd9f47ca078"
 	err = client.DeleteAccount(id)
 	if err != nil {
 		log.Panicln("Fail to delete account:", err.Error())

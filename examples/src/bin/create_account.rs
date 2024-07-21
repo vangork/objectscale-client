@@ -7,7 +7,8 @@ fn main() {
     let password = "Password123!";
     let insecure = true;
 
-    let mut client = ManagementClient::new(endpoint, username, password, insecure);
+    let mut client =
+        ManagementClient::new(endpoint, username, password, insecure).expect("management client");
     let account = AccountBuilder::default()
         .alias("test")
         .encryption_enabled(true)

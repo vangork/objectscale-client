@@ -8,9 +8,8 @@ def main():
 
     account_id = "osai0a9250592a131336"
 
-    client = objectscale_client.ManagementClient(endpoint, username, password, insecure)
-
     try:
+        client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
         account = client.get_account(account_id)
         print("Get account:", account)
     except Exception as e:

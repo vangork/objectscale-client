@@ -49,6 +49,7 @@ func fromRCString(b C.RCString) string {
 func errorWithMessage(err error, b C.RCString) error {
 	msg := copyAndDestroyRCString(b)
 	if msg == nil {
+		fmt.Println("errorWithMessage: msg is nil")
 		return err
 	}
 	return fmt.Errorf("%s", string(msg))

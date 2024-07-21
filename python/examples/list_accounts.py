@@ -6,9 +6,8 @@ def main():
     password = "Password123@"
     insecure = True
 
-    client = objectscale_client.ManagementClient(endpoint, username, password, insecure)
-
     try:
+        client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
         accounts = client.list_accounts()
         for account in accounts:
             print(account)

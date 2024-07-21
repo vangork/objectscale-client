@@ -8,9 +8,12 @@ description = "Auto generate clients for other languages with Rust codebase"
 authors = ["Luis Liu <luis_liu@dell.com>"]
 readme = "README.md"
 license = "Apache-2.0"
-repository = "https://github.com/dell/objectscale-client"
+repository = "https://github.com/vangork/objectscale-client"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "auto_bindgen"
 
 [dependencies]
 anyhow = "1.0"

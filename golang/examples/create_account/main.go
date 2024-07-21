@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	endpoint := "https://10.225.108.186:443"
+	endpoint := "https://10.225.108.189:443"
 	username := "root"
 	password := "Password123@"
 	insecure := true

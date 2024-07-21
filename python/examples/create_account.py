@@ -7,12 +7,11 @@ def main():
     insecure = True
 
     alias = "test"
-
-    client = objectscale_client.ManagementClient(endpoint, username, password, insecure)
     account = objectscale_client.iam.Account()
     account.alias = alias
 
     try:
+        client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
         new_account = client.create_account(account)
         print("Created account:", new_account)
     except Exception as e:

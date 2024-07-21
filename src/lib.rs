@@ -32,17 +32,20 @@
 //! built for the toughest applications and workloads— AI, analytics and more.
 //!
 //! ObjectScale client in Rust provides a few APIs at high level:
-//! * [Client] creates an ObjectScale client.
-//! * [Bucket] is for provisioning and managing buckets.
-//! * [IAM] is for identity and access management operations.
+//! * [client] manages an ObjectScale client and contains CRUD interfaces for all the resources.
+//! * [bucket] is for bucket management.
+//! * [iam] is for identity and access management resources management.
+//! * [tenant] is for tenant management.
 //!
 //! [ObjectScale]: https://www.dell.com/en-hk/dt/storage/objectscale.htm
-//! [Client]: crate::client
-//! [IAM]: crate::iam
-//! [Bucket]: crate::bucket
+//! [client]: crate::client
+//! [bucket]: crate::bucket
+//! [iam]: crate::iam
+//! [tenant]: crate::tenant
 //!
 
 pub mod bucket;
 pub mod client;
 pub mod iam;
 mod response;
+pub mod tenant;
