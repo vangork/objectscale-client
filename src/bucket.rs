@@ -11,7 +11,7 @@
 //! Define the bucket details.
 //!
 use crate::client::ObjectstoreClient;
-use crate::client::{AUTH_HEADER_KEY, ManagementClient};
+use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
 use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
@@ -61,7 +61,7 @@ pub struct SearchMetaData {
     /// Getter for maxKeys.
     pub max_keys: i32,
     /// Getter for the mdTokens flag.
-    #[serde(alias="metadata_tokens")]
+    #[serde(alias = "metadata_tokens")]
     pub metadata_tokens: bool,
 }
 
@@ -78,9 +78,7 @@ pub struct BucketTag {
 /// Buckets are object containers that are used to control access to objects. ObjectScale supports bucket-to-bucket replication of the objects within a bucket.
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
 #[builder(setter(skip))]
-#[serde(
-    rename(serialize = "object_bucket_create")
-)]
+#[serde(rename(serialize = "object_bucket_create"))]
 pub struct Bucket {
     /// Name assigned to this resource in ECS. The resource name is set by a user and can be changed at any time. It is not a unique identifier.
     #[builder(setter(into))]
@@ -160,9 +158,15 @@ pub struct Bucket {
     /// Enable advanced metadata search
     #[serde(alias = "enableAdvancedMetadataSearch")]
     pub enable_advanced_metadata_search: bool,
-    #[serde(alias="advancedMetadataSearchTargetName", deserialize_with = "deserialize_default_from_null")]
+    #[serde(
+        alias = "advancedMetadataSearchTargetName",
+        deserialize_with = "deserialize_default_from_null"
+    )]
     pub advanced_metadata_search_target_name: String,
-    #[serde(alias="advancedMetadataSearchTargetStream", deserialize_with = "deserialize_default_from_null")]
+    #[serde(
+        alias = "advancedMetadataSearchTargetStream",
+        deserialize_with = "deserialize_default_from_null"
+    )]
     pub advanced_metadata_search_target_stream: String,
     /// Optional. If true the bucket is in the process of being deleted. The bucket will be read only and no changes will be allowed on the bucket until the operation completes.
     pub is_empty_bucket_in_progress: bool,
@@ -364,10 +368,7 @@ impl Bucket {
             .http_client
             .get(request_url)
             .header(ACCEPT, "application/json")
-            .header(
-                AUTH_HEADER_KEY,
-                client.access_token.as_ref().unwrap(),
-            )
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp)?;
         let mut resp: ListBucketsResponse = serde_json::from_str(&text).with_context(|| {
@@ -387,10 +388,7 @@ impl Bucket {
                 .http_client
                 .get(request_url)
                 .header(ACCEPT, "application/json")
-                .header(
-                    AUTHORIZATION,
-                    client.access_token.as_ref().unwrap(),
-                )
+                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
                 .send()?;
             let text = get_content_text(response)?;
             resp = serde_json::from_str(&text).with_context(|| {

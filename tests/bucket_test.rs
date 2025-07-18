@@ -62,7 +62,7 @@ fn test_bucket() {
     assert_eq!(bucket.namespace, account.account_id);
     assert_eq!(bucket.tags.len(), 1);
 
-    let buckets = objectstore_client
+    let buckets = management_client
         .list_buckets(&account.account_id, "")
         .expect("list buckets");
     assert_ne!(buckets.len(), 0);

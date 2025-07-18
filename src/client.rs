@@ -17,8 +17,9 @@ use crate::iam::{
     LoginProfile, Policy, Role, RolePolicyAttachment, User, UserGroupMembership,
     UserPolicyAttachment,
 };
+use crate::response::get_content_text;
 use crate::tenant::Tenant;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context as _, Result};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use reqwest::Url;
@@ -94,17 +95,14 @@ struct BasicAuth {
 }
 
 #[derive(Debug, Deserialize)]
-struct AuthLoginResponse {
-    pub access_token: String,
-    pub expires_in: u64,
-    pub refresh_token: String,
-    pub refresh_expires_in: u64,
+struct AuthResponse {
+    pub user: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct RefreshTokenResponse {
-    pub access_token: String,
-    pub expires_in: u64,
+impl Drop for ManagementClient {
+    fn drop(&mut self) {
+        self.log_out().expect("log out");
+    }
 }
 
 impl ManagementClient {
@@ -136,7 +134,7 @@ impl ManagementClient {
         })
     }
 
-    fn obtain_auth_token(&mut self) -> Result<()> {
+    fn login(&mut self) -> Result<()> {
         let request_url = format!("{}login", self.endpoint);
         let resp = self
             .http_client
@@ -150,28 +148,60 @@ impl ManagementClient {
         if status.is_client_error() || status.is_server_error() {
             bail!("Login failed: {}", resp.text()?);
         }
-        
-        let token = resp.headers().get("X-SDS-AUTH-TOKEN").ok_or_else(|| {
-            anyhow!("X-SDS-AUTH-TOKEN header not found")
-        })?;
+
+        let token = resp
+            .headers()
+            .get("X-SDS-AUTH-TOKEN")
+            .ok_or_else(|| anyhow!("X-SDS-AUTH-TOKEN header not found"))?;
         self.access_token = Some(token.to_str()?.to_string());
         let obtain_time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        let age = resp.headers().get("X-SDS-AUTH-MAX-AGE").ok_or_else(|| {
-            anyhow!("X-SDS-AUTH-MAX-AGE header not found")
-        })?;
+        let age = resp
+            .headers()
+            .get("X-SDS-AUTH-MAX-AGE")
+            .ok_or_else(|| anyhow!("X-SDS-AUTH-MAX-AGE header not found"))?;
         let age = age.to_str()?.parse::<u64>()?;
         self.expires_in = Some(age + obtain_time);
+
+        let text = resp.text()?;
+        let _: AuthResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise login AuthResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+
+        Ok(())
+    }
+
+    fn log_out(&mut self) -> Result<()> {
+        let request_url = format!("{}logout", self.endpoint);
+        let resp = self
+            .http_client
+            .get(request_url)
+            .header(AUTH_HEADER_KEY, self.access_token.as_ref().unwrap())
+            .header(ACCEPT, "application/json")
+            .basic_auth(&self.username, Some(&self.password))
+            .send()?;
+        let text = get_content_text(resp)?;
+        let _: AuthResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise logout AuthResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        self.access_token = None;
+        self.expires_in = None;
         Ok(())
     }
 
     fn auth(&mut self) -> Result<()> {
         if self.access_token.is_none() {
-            self.obtain_auth_token()?;
+            self.login()?;
         } else {
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             if self.expires_in.unwrap() > now {
             } else {
-                self.obtain_auth_token()?;
+                self.login()?;
             }
         }
         Ok(())

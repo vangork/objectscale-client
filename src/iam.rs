@@ -11,7 +11,7 @@
 //! Defines identity and access resources details.
 //!
 
-use crate::client::ManagementClient;
+use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
 use anyhow::{anyhow, Context as _, Result};
 use derive_builder::Builder;
@@ -602,7 +602,7 @@ impl User {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header("X-SDS-AUTH-TOKEN", client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
