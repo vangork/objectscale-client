@@ -11,6 +11,7 @@
 //! Define the bucket details.
 //!
 use crate::client::ObjectstoreClient;
+use crate::client::{AUTH_HEADER_KEY, ManagementClient};
 use crate::response::get_content_text;
 use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
@@ -26,7 +27,6 @@ pub struct Link {
 }
 
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "camelCase"))]
 pub struct MinMaxGovernor {
     pub enforce_retention: bool,
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -57,11 +57,12 @@ pub struct SearchMetaData {
     /// Getter for the enabled flag.
     pub is_enabled: bool,
     #[serde(deserialize_with = "deserialize_default_from_null")]
-    pub meta_data: Vec<MetaData>,
+    pub metadata: Vec<MetaData>,
     /// Getter for maxKeys.
     pub max_keys: i32,
     /// Getter for the mdTokens flag.
-    pub md_tokens: bool,
+    #[serde(alias="metadata_tokens")]
+    pub metadata_tokens: bool,
 }
 
 /// Lables for bucket.
@@ -78,7 +79,6 @@ pub struct BucketTag {
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
 #[builder(setter(skip))]
 #[serde(
-    rename_all(serialize = "snake_case", deserialize = "camelCase"),
     rename(serialize = "object_bucket_create")
 )]
 pub struct Bucket {
@@ -92,19 +92,20 @@ pub struct Bucket {
     #[builder(setter(into))]
     /// Namespace
     pub namespace: String,
-    pub replication: String,
+    pub vpool: String,
     /// "Locked" status of a bucket
     pub locked: bool,
     /// Bucket "file system access enabled" status
-    pub fs_acess_enabled: bool,
+    pub fs_access_enabled: bool,
     /// Bucket soft quota
+    #[serde(alias = "softquota")]
     pub soft_quota: String,
     /// Bucket creation time
     pub created: String,
     /// Bucket isStaleAllowed flag
     pub is_stale_allowed: bool,
     /// If true Object Lock and ADO can be enabled together. See the Admin Guide for more information.
-    pub object_lock_with_ado_allowed: bool,
+    pub is_object_lock_with_ado_allowed: bool,
     /// Bucket isStaleAllowed flag
     pub is_tso_read_only: bool,
     /// Default object lock retention mode
@@ -119,12 +120,16 @@ pub struct Bucket {
     /// Default bucket retention
     pub default_retention: i64,
     /// Block size in GB
-    pub block_size_in_g_b: i64,
+    pub block_size: i64,
     /// auto-commit interval
     pub auto_commit_period: i64,
     /// Notification size in GB
-    pub notification_size_in_g_b: i64,
+    pub notification_size: i64,
+    /// Block size in count
+    #[serde(alias = "blockSizeInCount")]
     pub block_size_in_count: i64,
+    /// Notification size in count
+    #[serde(alias = "notificationSizeInCount")]
     pub notification_size_in_count: i64,
     /// Bucket isEncryptionEnabled flag
     #[builder(setter(skip = false), default = "false")]
@@ -152,20 +157,24 @@ pub struct Bucket {
     #[builder(setter(skip = false), default = "-2")]
     #[serde(rename(serialize = "audited_delete_expiration"))]
     pub audit_delete_expiration: i64,
+    /// Enable advanced metadata search
+    #[serde(alias = "enableAdvancedMetadataSearch")]
     pub enable_advanced_metadata_search: bool,
-    #[serde(deserialize_with = "deserialize_default_from_null")]
+    #[serde(alias="advancedMetadataSearchTargetName", deserialize_with = "deserialize_default_from_null")]
     pub advanced_metadata_search_target_name: String,
-    #[serde(deserialize_with = "deserialize_default_from_null")]
+    #[serde(alias="advancedMetadataSearchTargetStream", deserialize_with = "deserialize_default_from_null")]
     pub advanced_metadata_search_target_stream: String,
     /// Optional. If true the bucket is in the process of being deleted. The bucket will be read only and no changes will be allowed on the bucket until the operation completes.
     pub is_empty_bucket_in_progress: bool,
-    pub meta_data: SearchMetaData,
+    #[serde(deserialize_with = "deserialize_default_from_null")]
+    pub versioning_status: String,
+    pub search_metadata: SearchMetaData,
     /// Local object metadata reads bucket flag.
     pub local_object_metadata_reads: bool,
     /// API type
-    pub apitype: String,
+    pub api_type: String,
     /// Bucket owner
-    pub bucket_owner: String,
+    pub owner: String,
     /// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search.
     #[builder(setter(skip = false), default)]
     #[serde(rename = "TagSet", deserialize_with = "deserialize_default_from_null")]
@@ -183,10 +192,11 @@ struct CreateBucketResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "PascalCase")]
 struct ListBucketsResponse {
     // Does not align with API description
-    pub object_bucket_list: Vec<Bucket>,
+    #[serde(alias = "object_bucket")]
+    pub object_bucket: Vec<Bucket>,
     pub filter: String,
     pub next_marker: Option<String>,
     pub max_buckets: Option<u32>,
@@ -337,7 +347,7 @@ impl Bucket {
     }
 
     pub(crate) fn list(
-        client: &mut ObjectstoreClient,
+        client: &mut ManagementClient,
         namespace: &str,
         name_prefix: &str,
     ) -> Result<Vec<Bucket>> {
@@ -351,13 +361,12 @@ impl Bucket {
             client.endpoint, namespace, prefix,
         );
         let resp = client
-            .management_client
             .http_client
             .get(request_url)
             .header(ACCEPT, "application/json")
             .header(
-                AUTHORIZATION,
-                client.management_client.access_token.as_ref().unwrap(),
+                AUTH_HEADER_KEY,
+                client.access_token.as_ref().unwrap(),
             )
             .send()?;
         let text = get_content_text(resp)?;
@@ -368,20 +377,19 @@ impl Bucket {
             )
         })?;
         let mut buckets: Vec<Bucket> = vec![];
-        buckets.extend(resp.object_bucket_list);
+        buckets.extend(resp.object_bucket);
         while let Some(marker) = resp.next_marker {
             let request_url = format!(
                 "{}object/bucket.json?namespace={}{}&marker={}",
                 client.endpoint, namespace, prefix, marker,
             );
             let response = client
-                .management_client
                 .http_client
                 .get(request_url)
                 .header(ACCEPT, "application/json")
                 .header(
                     AUTHORIZATION,
-                    client.management_client.access_token.as_ref().unwrap(),
+                    client.access_token.as_ref().unwrap(),
                 )
                 .send()?;
             let text = get_content_text(response)?;
@@ -391,7 +399,7 @@ impl Bucket {
                     text
                 )
             })?;
-            buckets.extend(resp.object_bucket_list);
+            buckets.extend(resp.object_bucket);
         }
         Ok(buckets)
     }

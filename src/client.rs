@@ -17,14 +17,15 @@ use crate::iam::{
     LoginProfile, Policy, Role, RolePolicyAttachment, User, UserGroupMembership,
     UserPolicyAttachment,
 };
-use crate::response::get_content_text;
 use crate::tenant::Tenant;
-use anyhow::{anyhow, Context as _, Result};
+use anyhow::{anyhow, bail, Result};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+pub const AUTH_HEADER_KEY: &str = "X-SDS-AUTH-TOKEN";
 
 /// ManagementClient manages ObjectScale resources with the ObjectScale management REST APIs.
 ///
@@ -54,8 +55,6 @@ pub struct ManagementClient {
 
     pub(crate) access_token: Option<String>,
     expires_in: Option<u64>,
-    refresh_token: Option<String>,
-    refresh_expires_in: Option<u64>,
 }
 
 /// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
@@ -106,9 +105,6 @@ struct AuthLoginResponse {
 struct RefreshTokenResponse {
     pub access_token: String,
     pub expires_in: u64,
-    pub refresh_token: String,
-    pub refresh_expires_in: u64,
-    pub token_type: String,
 }
 
 impl ManagementClient {
@@ -130,8 +126,6 @@ impl ManagementClient {
 
             access_token: None,
             expires_in: None,
-            refresh_token: None,
-            refresh_expires_in: None,
         })
     }
 
@@ -143,58 +137,30 @@ impl ManagementClient {
     }
 
     fn obtain_auth_token(&mut self) -> Result<()> {
-        let params = BasicAuth {
-            username: self.username.clone(),
-            password: self.password.clone(),
-        };
-        let request_url = format!("{}mgmt/auth/login", self.endpoint);
+        let request_url = format!("{}login", self.endpoint);
         let resp = self
             .http_client
-            .post(request_url)
+            .get(request_url)
             .header(ACCEPT, "application/json")
             .header(CONTENT_TYPE, "application/json")
-            .json(&params)
+            .basic_auth(&self.username, Some(&self.password))
             .send()?;
 
-        let text = get_content_text(resp)?;
-        let resp: AuthLoginResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise AuthLoginResponse. Body was: \"{}\"",
-                text
-            )
+        let status = resp.status();
+        if status.is_client_error() || status.is_server_error() {
+            bail!("Login failed: {}", resp.text()?);
+        }
+        
+        let token = resp.headers().get("X-SDS-AUTH-TOKEN").ok_or_else(|| {
+            anyhow!("X-SDS-AUTH-TOKEN header not found")
         })?;
+        self.access_token = Some(token.to_str()?.to_string());
         let obtain_time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        self.access_token = Some(resp.access_token);
-        self.refresh_token = Some(resp.refresh_token);
-        self.expires_in = Some(resp.expires_in + obtain_time);
-        self.refresh_expires_in = Some(resp.refresh_expires_in + obtain_time);
-        Ok(())
-    }
-
-    fn refresh_auth_token(&mut self) -> Result<()> {
-        let request_url = format!(
-            "{}mgmt/auth/token?grant_type=refresh_token&refresh_token={}",
-            self.endpoint,
-            self.refresh_token.clone().unwrap()
-        );
-        let resp = self
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(CONTENT_TYPE, "application/json")
-            .send()?;
-
-        let text = get_content_text(resp)?;
-        let resp: RefreshTokenResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise RefreshTokenResponse. Body was: \"{}\"",
-                text
-            )
+        let age = resp.headers().get("X-SDS-AUTH-MAX-AGE").ok_or_else(|| {
+            anyhow!("X-SDS-AUTH-MAX-AGE header not found")
         })?;
-        self.access_token = Some(resp.access_token);
-        self.refresh_token = Some(resp.refresh_token);
-        self.expires_in = Some(resp.expires_in);
-        self.refresh_expires_in = Some(resp.refresh_expires_in);
+        let age = age.to_str()?.parse::<u64>()?;
+        self.expires_in = Some(age + obtain_time);
         Ok(())
     }
 
@@ -204,8 +170,6 @@ impl ManagementClient {
         } else {
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             if self.expires_in.unwrap() > now {
-            } else if self.refresh_expires_in.unwrap() > now {
-                self.refresh_auth_token()?;
             } else {
                 self.obtain_auth_token()?;
             }
@@ -754,6 +718,16 @@ impl ManagementClient {
         self.auth()?;
         UserGroupMembership::list_by_group(self, group_name, namespace)
     }
+
+    /// Gets the list of buckets for the specified namespace.
+    ///
+    /// namespace: Namespace for which buckets should be listed. Cannot be empty.
+    /// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
+    ///
+    pub fn list_buckets(&mut self, namespace: &str, name_prefix: &str) -> Result<Vec<Bucket>> {
+        self.auth()?;
+        Bucket::list(self, namespace, name_prefix)
+    }
 }
 
 impl ObjectstoreClient {
@@ -803,16 +777,6 @@ impl ObjectstoreClient {
         let namespace = bucket.namespace.clone();
         Bucket::update(self, bucket)?;
         Bucket::get(self, &name, &namespace)
-    }
-
-    /// Gets the list of buckets for the specified namespace.
-    ///
-    /// namespace: Namespace for which buckets should be listed. Cannot be empty.
-    /// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
-    ///
-    pub fn list_buckets(&mut self, namespace: &str, name_prefix: &str) -> Result<Vec<Bucket>> {
-        self.management_client.auth()?;
-        Bucket::list(self, namespace, name_prefix)
     }
 
     /// Creates the tenant which will associate an IAM Account within an objectstore.

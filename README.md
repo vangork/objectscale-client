@@ -11,9 +11,8 @@ Some examples for each languages:
 ### rust
 
 ```
-cd examples
-cargo run --bin create_account
-cargo run --bin delete_account
+cargo run --example list_users
+cargo run --example list_buckets
 ```
 
 ### golang

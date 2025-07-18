@@ -602,7 +602,7 @@ impl User {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header("X-SDS-AUTH-TOKEN", client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;

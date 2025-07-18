@@ -21,7 +21,6 @@ exclude = [
 [workspace]
 members = [
     "c",
-    "examples",
     "python",
     "auto-bindgen"
 ]
