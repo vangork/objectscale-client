@@ -1,23 +1,18 @@
 use objectscale_client::client::ManagementClient;
 
 fn main() {
-    let endpoint = "https://10.225.108.189:443";
+    let endpoint = "https://10.225.108.217:4443";
     let username = "root";
-    let password = "Password123@";
+    let password = "Password123!";
     let insecure = true;
 
-    let name = "test";
-    let namespace = "osai0a9250592a131336";
+    let name = "luis_bucket";
+    let namespace = "ns1";
 
-    let objectstore_endpoint = "https://10.225.108.187:4443";
-
-    let management_client =
+    let mut client =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
-    let mut objectstore_client = management_client
-        .new_objectstore_client(&objectstore_endpoint)
-        .expect("objectstore client");
 
-    objectstore_client
+    client
         .delete_bucket(name, namespace, false)
         .expect("delete bucket");
     println!("Deleted bucket: {:?}", name);

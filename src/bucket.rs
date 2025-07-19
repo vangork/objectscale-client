@@ -67,7 +67,7 @@ pub struct SearchMetaData {
 
 /// Lables for bucket.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all(serialize = "PascalCase", deserialize = "camelCase"))]
+#[serde(rename_all(serialize = "PascalCase", deserialize = "PascalCase"))]
 pub struct BucketTag {
     /// The key of a tag.
     pub key: String,
@@ -208,18 +208,14 @@ struct ListBucketsResponse {
 }
 
 impl Bucket {
-    pub(crate) fn create(client: &mut ObjectstoreClient, bucket: Bucket) -> Result<String> {
+    pub(crate) fn create(client: &mut ManagementClient, bucket: Bucket) -> Result<String> {
         let request_url = format!("{}object/bucket.json", client.endpoint);
         let body = quick_xml::se::to_string(&bucket)?;
         let resp = client
-            .management_client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(
-                AUTHORIZATION,
-                client.management_client.access_token.as_ref().unwrap(),
-            )
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header(CONTENT_TYPE, "application/xml")
             .body(body)
             .send()?;
@@ -234,7 +230,7 @@ impl Bucket {
     }
 
     pub(crate) fn tag(
-        client: &mut ObjectstoreClient,
+        client: &mut ManagementClient,
         bucket_name: &str,
         namespace: &str,
         tags: Vec<BucketTag>,
@@ -253,14 +249,10 @@ impl Bucket {
         );
         let request_url = format!("{}object/bucket/{}/tags", client.endpoint, bucket_name);
         let resp = client
-            .management_client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(
-                AUTHORIZATION,
-                client.management_client.access_token.as_ref().unwrap(),
-            )
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header(CONTENT_TYPE, "application/xml")
             .body(body)
             .send()?;
@@ -271,7 +263,7 @@ impl Bucket {
     }
 
     pub(crate) fn get(
-        client: &mut ObjectstoreClient,
+        client: &mut ManagementClient,
         name: &str,
         namespace: &str,
     ) -> Result<Bucket> {
@@ -280,16 +272,12 @@ impl Bucket {
             client.endpoint, name, namespace,
         );
         let resp = client
-            .management_client
             .http_client
             .get(request_url)
             .header(ACCEPT, "application/json")
-            .header(
-                AUTHORIZATION,
-                client.management_client.access_token.as_ref().unwrap(),
-            )
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to get bucket")?;
         let resp: Bucket = serde_json::from_str(&text)
             .with_context(|| format!("Unable to deserialise GetBucket. Body was: \"{}\"", text))?;
         Ok(resp)
@@ -320,7 +308,7 @@ impl Bucket {
     }
 
     pub(crate) fn delete(
-        client: &mut ObjectstoreClient,
+        client: &mut ManagementClient,
         name: &str,
         namespace: &str,
         empty_bucket: bool,
@@ -330,14 +318,10 @@ impl Bucket {
             client.endpoint, name, namespace, empty_bucket,
         );
         let resp = client
-            .management_client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(
-                AUTHORIZATION,
-                client.management_client.access_token.as_ref().unwrap(),
-            )
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         if !resp.status().is_success() {
             bail!("Request failed: {}", resp.text()?);

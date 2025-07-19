@@ -758,15 +758,13 @@ impl ManagementClient {
         self.auth()?;
         Bucket::list(self, namespace, name_prefix)
     }
-}
 
-impl ObjectstoreClient {
     /// Create an bucket.
     ///
     /// bucket: Bucket to create.
     ///
     pub fn create_bucket(&mut self, bucket: Bucket) -> Result<Bucket> {
-        self.management_client.auth()?;
+        self.auth()?;
         let namespace = bucket.namespace.clone();
         let tags = bucket.tags.clone();
         let name = Bucket::create(self, bucket)?;
@@ -782,7 +780,7 @@ impl ObjectstoreClient {
     /// namespace: Namespace associated. Cannot be empty.
     ///
     pub fn get_bucket(&mut self, name: &str, namespace: &str) -> Result<Bucket> {
-        self.management_client.auth()?;
+        self.auth()?;
         Bucket::get(self, name, namespace)
     }
 
@@ -793,10 +791,12 @@ impl ObjectstoreClient {
     /// emptyBucket: If true, the contents of the bucket will be emptied as part of the delete, otherwise it will fail if the bucket is not empty.
     ///
     pub fn delete_bucket(&mut self, name: &str, namespace: &str, empty_bucket: bool) -> Result<()> {
-        self.management_client.auth()?;
+        self.auth()?;
         Bucket::delete(self, name, namespace, empty_bucket)
     }
+}
 
+impl ObjectstoreClient {
     /// Update an bucket.
     ///
     /// bucket: Bucket to update.
@@ -806,7 +806,7 @@ impl ObjectstoreClient {
         let name = bucket.name.clone();
         let namespace = bucket.namespace.clone();
         Bucket::update(self, bucket)?;
-        Bucket::get(self, &name, &namespace)
+        Bucket::get(&mut self.management_client, &name, &namespace)
     }
 
     /// Creates the tenant which will associate an IAM Account within an objectstore.

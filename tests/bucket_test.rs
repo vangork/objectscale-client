@@ -40,11 +40,11 @@ fn test_bucket() {
         }])
         .build()
         .expect("build bucket");
-    let _ = objectstore_client
+    let _ = management_client
         .create_bucket(bucket)
         .expect("create bucket");
 
-    let mut bucket = objectstore_client
+    let mut bucket = management_client
         .get_bucket(&bucket_name, &account.account_id)
         .expect("get bucket");
     assert_eq!(bucket.name, bucket_name);
@@ -67,7 +67,7 @@ fn test_bucket() {
         .expect("list buckets");
     assert_ne!(buckets.len(), 0);
 
-    objectstore_client
+    management_client
         .delete_bucket(&bucket_name, &account.account_id, false)
         .expect("delete bucket");
 
