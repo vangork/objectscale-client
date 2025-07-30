@@ -1,9 +1,10 @@
 use objectscale_client::iam;
 use pyo3::prelude::*;
+use serde::Serialize;
 use std::convert::From;
 
 // IAM User access key
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct AccessKey {
     // The Id of this access key
@@ -56,12 +57,12 @@ impl AccessKey {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // An ObjectScale Account is a logical construct that corresponds to a customer business unit, tenant, project, and so on.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Account {
     // The Id of the account
@@ -132,12 +133,12 @@ impl Account {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // IAM Account access key
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct AccountAccessKey {
     // The Id of this access key
@@ -185,12 +186,12 @@ impl AccountAccessKey {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct EntitiesForPolicy {
     //
@@ -232,12 +233,12 @@ impl EntitiesForPolicy {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // A Group is a collection of Users. You can use groups to specify permissions for a collection of users.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Group {
     // Arn that identifies the Group.
@@ -290,12 +291,12 @@ impl Group {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct GroupPolicyAttachment {
     //
@@ -341,12 +342,12 @@ impl GroupPolicyAttachment {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct LoginProfile {
     //
@@ -397,12 +398,12 @@ impl LoginProfile {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct PermissionsBoundary {
     // The ARN of the policy set as permissions boundary.
@@ -439,12 +440,12 @@ impl PermissionsBoundary {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // IAM policies are documents in JSON format that define permissions for an operation regardless of the method that you use to perform the operation.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Policy {
     // The resource name of the policy.
@@ -527,12 +528,12 @@ impl Policy {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // A role is similar to a user, in that it is an identity with permission policies that determine what the identity can and cannot do.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Role {
     // Arn that identifies the role.
@@ -610,12 +611,12 @@ impl Role {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct RolePolicyAttachment {
     //
@@ -661,12 +662,12 @@ impl RolePolicyAttachment {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // Lables for IAM account, role and user.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Tag {
     // tag key
@@ -703,12 +704,12 @@ impl Tag {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // In ObjectScale, an IAM User is a person or application in the account.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct User {
     // Arn that identifies the user.
@@ -771,12 +772,12 @@ impl User {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct UserGroupMembership {
     //
@@ -818,12 +819,12 @@ impl UserGroupMembership {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct UserPolicyAttachment {
     //
@@ -869,6 +870,6 @@ impl UserPolicyAttachment {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }

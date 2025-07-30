@@ -1,9 +1,10 @@
 use objectscale_client::tenant;
 use pyo3::prelude::*;
+use serde::Serialize;
 use std::convert::From;
 
 // A tenant is a logical construct resulting from the binding of an account to an object store.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Tenant {
     // Name assigned to this resource in ECS. The resource name is set by a user and can be changed at any time. It is not a unique identifier.
@@ -103,6 +104,6 @@ impl Tenant {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }

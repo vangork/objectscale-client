@@ -881,18 +881,22 @@ impl Bindgen {
                 )
                 .unwrap();
 
+                let mut field_name = field.name.clone();
+                if field_name.starts_with("r#") {
+                    field_name = field_name.split_off(2);
+                }
                 let tag = if let Some(serde_info) = item.serde_info.as_ref() {
                     if serde_info.serialize_case == serde_info.deserialize_case {
                         if let Some(serde_info) = field.serde_info.as_ref() {
                             if serde_info.rename_deserialize != serde_info.rename_serialize {
                                 println!(
                                     "{}/{}::{} has invalid serde rename",
-                                    name.0, name.1, field.name
+                                    name.0, name.1, field_name
                                 );
                             }
                             format!(
                                 r#"`attr:"{}" json:"{}"`"#,
-                                field.name,
+                                field_name,
                                 serde_info.rename_deserialize.as_ref().unwrap()
                             )
                         } else {
@@ -900,14 +904,14 @@ impl Bindgen {
                                 if case.to_owned() != Case::Pascal {
                                     format!(
                                         r#"`attr:"{}" json:"{}"`"#,
-                                        field.name,
-                                        field.name.to_case(case.to_owned())
+                                        field_name,
+                                        field_name.to_case(case.to_owned())
                                     )
                                 } else {
-                                    format!(r#"`attr:"{}"`"#, field.name)
+                                    format!(r#"`attr:"{}"`"#, field_name)
                                 }
                             } else {
-                                format!(r#"`attr:"{}"`"#, field.name)
+                                format!(r#"`attr:"{}"`"#, field_name)
                             }
                         }
                     } else {
@@ -916,21 +920,21 @@ impl Bindgen {
                                 if let Some(name) = field_serde_info.rename_serialize.as_ref() {
                                     name
                                 } else if let Some(case) = serde_info.serialize_case.as_ref() {
-                                    &field.name.to_case(case.to_owned())
+                                    &field_name.to_case(case.to_owned())
                                 } else {
-                                    &field.name
+                                    &field_name
                                 };
                             let deserialize_name =
                                 if let Some(name) = field_serde_info.rename_deserialize.as_ref() {
                                     name
                                 } else if let Some(case) = serde_info.deserialize_case.as_ref() {
-                                    &field.name.to_case(case.to_owned())
+                                    &field_name.to_case(case.to_owned())
                                 } else {
-                                    &field.name
+                                    &field_name
                                 };
                             format!(
                                 r#"`attr:"{}" yaml:"{}" json:"{}"`"#,
-                                field.name, serialize_name, deserialize_name
+                                field_name, serialize_name, deserialize_name
                             )
                         } else {
                             let serialize_case =
@@ -948,19 +952,19 @@ impl Bindgen {
                                 };
                             format!(
                                 r#"`attr:"{}" yaml:"{}" json:"{}"`"#,
-                                field.name,
-                                field.name.to_case(serialize_case),
-                                field.name.to_case(deserialize_case)
+                                field_name,
+                                field_name.to_case(serialize_case),
+                                field_name.to_case(deserialize_case)
                             )
                         }
                     }
                 } else {
-                    format!(r#"`attr:"{}"`"#, field.name)
+                    format!(r#"`attr:"{}"`"#, field_name)
                 };
                 writeln!(
                     &mut writer,
                     "    {} {} {}",
-                    field.name.to_case(Case::Pascal),
+                    field_name.to_case(Case::Pascal),
                     field.ty.to_obj_string(),
                     tag,
                 )
@@ -1342,6 +1346,7 @@ impl Bindgen {
                     r#"
                     use objectscale_client::{};
                     use pyo3::prelude::*;
+                    use serde::Serialize;
                     use std::convert::From;
                     "#,
                     name.0,
@@ -1359,7 +1364,7 @@ impl Bindgen {
 
             let struct_header = formatdoc!(
                 r#"
-                #[derive(Clone, Debug, Default)]
+                #[derive(Clone, Debug, Default, Serialize)]
                 #[pyclass(get_all)]
                 pub(crate) struct {} {{"#,
                 name.1,
@@ -1528,7 +1533,7 @@ impl Bindgen {
                     }}
 
                     fn __str__(&self) -> String {{
-                        format!("{{:?}}", self)
+                        format!("{{}}", serde_json::to_string(self).unwrap())
                     }}
                 }}
                 "#,
