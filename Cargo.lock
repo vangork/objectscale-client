@@ -876,6 +876,8 @@ version = "0.2.1"
 dependencies = [
  "objectscale-client",
  "pyo3",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

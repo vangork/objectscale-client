@@ -1,9 +1,10 @@
 use objectscale_client::bucket;
 use pyo3::prelude::*;
+use serde::Serialize;
 use std::convert::From;
 
 // Buckets are object containers that are used to control access to objects. ObjectScale supports bucket-to-bucket replication of the objects within a bucket.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Bucket {
     // Name assigned to this resource in ECS. The resource name is set by a user and can be changed at any time. It is not a unique identifier.
@@ -213,12 +214,12 @@ impl Bucket {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 // Lables for bucket.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct BucketTag {
     // The key of a tag.
@@ -255,12 +256,12 @@ impl BucketTag {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct Link {
     //
@@ -297,12 +298,12 @@ impl Link {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct MetaData {
     // The meta key type
@@ -344,12 +345,12 @@ impl MetaData {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct MinMaxGovernor {
     //
@@ -401,12 +402,12 @@ impl MinMaxGovernor {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }
 
 //
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct SearchMetaData {
     // Getter for the enabled flag.
@@ -461,6 +462,6 @@ impl SearchMetaData {
     }
 
     fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{}", serde_json::to_string(self).unwrap())
     }
 }

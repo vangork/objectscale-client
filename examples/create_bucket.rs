@@ -28,6 +28,7 @@ fn main() {
     let bucket = BucketBuilder::default()
         .name(name)
         .namespace(namespace)
+        //.owner("object_admin1".to_string())
         .tags(vec![BucketTag {
             key: "key1".to_string(),
             value: "value1".to_string(),
