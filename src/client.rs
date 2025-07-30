@@ -784,6 +784,18 @@ impl ManagementClient {
         Bucket::get(self, name, namespace)
     }
 
+    /// Update an bucket.
+    ///
+    /// bucket: Bucket to update.
+    ///
+    pub fn update_bucket(&mut self, bucket: Bucket) -> Result<Bucket> {
+        self.auth()?;
+        let name = bucket.name.clone();
+        let namespace = bucket.namespace.clone();
+        Bucket::update(self, bucket)?;
+        Bucket::get(self, &name, &namespace)
+    }
+
     /// Deletes the specified bucket.
     ///
     /// name: Bucket name to be deleted. Cannot be empty.
@@ -797,18 +809,6 @@ impl ManagementClient {
 }
 
 impl ObjectstoreClient {
-    /// Update an bucket.
-    ///
-    /// bucket: Bucket to update.
-    ///
-    pub fn update_bucket(&mut self, bucket: Bucket) -> Result<Bucket> {
-        self.management_client.auth()?;
-        let name = bucket.name.clone();
-        let namespace = bucket.namespace.clone();
-        Bucket::update(self, bucket)?;
-        Bucket::get(&mut self.management_client, &name, &namespace)
-    }
-
     /// Creates the tenant which will associate an IAM Account within an objectstore.
     ///
     /// tenant: Tenant to create

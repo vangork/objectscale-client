@@ -41,10 +41,10 @@ func TestBucket(t *testing.T) {
 		AuditDeleteExpiration: expiration,
 		Tags:                  []objectscale.BucketTag{{Key: "key1", Value: "value1"}, {Key: "key2", Value: "value2"}},
 	}
-	_, err = objectstoreClient.CreateBucket(bucket)
+	_, err = manamgentclient.CreateBucket(bucket)
 	assert.Nil(t, err)
 
-	bucket, err = objectstoreClient.GetBucket(bucketName, account.AccountId)
+	bucket, err = manamgentclient.GetBucket(bucketName, account.AccountId)
 	assert.Nil(t, err)
 	assert.Equal(t, bucketName, bucket.Name)
 	assert.Equal(t, account.AccountId, bucket.Namespace)
@@ -53,18 +53,18 @@ func TestBucket(t *testing.T) {
 
 	newExpiration := int64(0)
 	bucket.AuditDeleteExpiration = newExpiration
-	bucket, err = objectstoreClient.UpdateBucket(bucket)
+	bucket, err = manamgentclient.UpdateBucket(bucket)
 	assert.Nil(t, err)
 	assert.Equal(t, newExpiration, bucket.AuditDeleteExpiration)
 	assert.Equal(t, bucketName, bucket.Name)
 	assert.Equal(t, account.AccountId, bucket.Namespace)
 	assert.Equal(t, 2, len(bucket.Tags))
 
-	buckets, err := objectstoreClient.ListBuckets(account.AccountId, "")
+	buckets, err := manamgentclient.ListBuckets(account.AccountId, "")
 	assert.Nil(t, err)
 	assert.Less(t, 0, len(buckets))
 
-	err = objectstoreClient.DeleteBucket(bucketName, account.AccountId, false)
+	err = manamgentclient.DeleteBucket(bucketName, account.AccountId, false)
 	assert.Nil(t, err)
 
 	err = objectstoreClient.DeleteTenant(account.AccountId)

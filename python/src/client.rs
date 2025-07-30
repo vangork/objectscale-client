@@ -797,23 +797,27 @@ impl ManagementClient {
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
-}
 
-// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
-#[pyclass]
-pub(crate) struct ObjectstoreClient {
-    objectstore_client: client::ObjectstoreClient,
-}
+    /// Gets the list of buckets for the specified namespace.
+    ///
+    /// namespace: Namespace for which buckets should be listed. Cannot be empty.
+    /// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
+    ///
+    pub fn list_buckets(&mut self, namespace: &str, name_prefix: &str) -> PyResult<Vec<Bucket>> {
+        let result = self.management_client.list_buckets(namespace, name_prefix);
+        match result {
+            Ok(buckets) => Ok(buckets.into_iter().map(Bucket::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
 
-#[pymethods]
-impl ObjectstoreClient {
     /// Create an bucket.
     ///
     /// bucket: Bucket to create.
     ///
     pub fn create_bucket(&mut self, bucket: &Bucket) -> PyResult<Bucket> {
         let bucket = bucket::Bucket::from(bucket.clone());
-        let result = self.objectstore_client.create_bucket(bucket);
+        let result = self.management_client.create_bucket(bucket);
         match result {
             Ok(bucket) => Ok(Bucket::from(bucket)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
@@ -826,7 +830,20 @@ impl ObjectstoreClient {
     /// namespace: Namespace associated. Cannot be empty.
     ///
     pub fn get_bucket(&mut self, name: &str, namespace: &str) -> PyResult<Bucket> {
-        let result = self.objectstore_client.get_bucket(name, namespace);
+        let result = self.management_client.get_bucket(name, namespace);
+        match result {
+            Ok(bucket) => Ok(Bucket::from(bucket)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Update an bucket.
+    ///
+    /// bucket: Bucket to update.
+    ///
+    pub fn update_bucket(&mut self, bucket: &Bucket) -> PyResult<Bucket> {
+        let bucket = bucket::Bucket::from(bucket.clone());
+        let result = self.management_client.update_bucket(bucket);
         match result {
             Ok(bucket) => Ok(Bucket::from(bucket)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
@@ -846,40 +863,23 @@ impl ObjectstoreClient {
         empty_bucket: bool,
     ) -> PyResult<()> {
         let result = self
-            .objectstore_client
+            .management_client
             .delete_bucket(name, namespace, empty_bucket);
         match result {
             Ok(_) => Ok(()),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
+}
 
-    /// Update an bucket.
-    ///
-    /// bucket: Bucket to update.
-    ///
-    pub fn update_bucket(&mut self, bucket: &Bucket) -> PyResult<Bucket> {
-        let bucket = bucket::Bucket::from(bucket.clone());
-        let result = self.objectstore_client.update_bucket(bucket);
-        match result {
-            Ok(bucket) => Ok(Bucket::from(bucket)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
+// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
+#[pyclass]
+pub(crate) struct ObjectstoreClient {
+    objectstore_client: client::ObjectstoreClient,
+}
 
-    /// Gets the list of buckets for the specified namespace.
-    ///
-    /// namespace: Namespace for which buckets should be listed. Cannot be empty.
-    /// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
-    ///
-    pub fn list_buckets(&mut self, namespace: &str, name_prefix: &str) -> PyResult<Vec<Bucket>> {
-        let result = self.objectstore_client.list_buckets(namespace, name_prefix);
-        match result {
-            Ok(buckets) => Ok(buckets.into_iter().map(Bucket::from).collect()),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
+#[pymethods]
+impl ObjectstoreClient {
     /// Creates the tenant which will associate an IAM Account within an objectstore.
     ///
     /// tenant: Tenant to create

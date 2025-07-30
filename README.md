@@ -34,8 +34,11 @@ python -m venv .env
 source .env/bin/activate
 pip install maturin
 maturin develop
-python examples/create_account.py
-python examples/delete_account.py
+python examples/list_buckets.py
+python examples/create_bucket.py
+python examples/get_bucket.py
+python examples/update_bucket.py
+python examples/delete_bucket.py
 ```
 
 ## Development

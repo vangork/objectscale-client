@@ -1061,15 +1061,32 @@ func (managementClient *ManagementClient) ListUserGroupMembershipsByGroup(groupN
 	return userGroupMembershipsFn, nil
 }
 
-// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
-type ObjectstoreClient struct {
-	objectstoreClient *C.ObjectstoreClient
+// Gets the list of buckets for the specified namespace.
+//
+// namespace: Namespace for which buckets should be listed. Cannot be empty.
+// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
+func (managementClient *ManagementClient) ListBuckets(namespace string, namePrefix string) ([]Bucket, error) {
+	msg := C.RCString{}
+	cNamespace := intoRCString(namespace)
+	cNamePrefix := intoRCString(namePrefix)
+
+	cBucketsFn, errFn := C.management_client_list_buckets(managementClient.managementClient, cNamespace, cNamePrefix, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	bucketsJsonFn := fromRCString(cBucketsFn)
+	var bucketsFn []Bucket
+	errUnmarshal := json.Unmarshal([]byte(bucketsJsonFn), &bucketsFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return bucketsFn, nil
 }
 
 // Create an bucket.
 //
 // bucket: Bucket to create.
-func (objectstoreClient *ObjectstoreClient) CreateBucket(bucket *Bucket) (*Bucket, error) {
+func (managementClient *ManagementClient) CreateBucket(bucket *Bucket) (*Bucket, error) {
 	msg := C.RCString{}
 	bucketJson, err := json.Marshal(bucket)
 	if err != nil {
@@ -1077,13 +1094,13 @@ func (objectstoreClient *ObjectstoreClient) CreateBucket(bucket *Bucket) (*Bucke
 	}
 	cBucket := intoRCString(string(bucketJson))
 
-	cBucketFn, errFn := C.objectstore_client_create_bucket(objectstoreClient.objectstoreClient, cBucket, &msg)
+	cBucketFn, errFn := C.management_client_create_bucket(managementClient.managementClient, cBucket, &msg)
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	bucketYamlFn := fromRCString(cBucketFn)
+	bucketJsonFn := fromRCString(cBucketFn)
 	var bucketFn Bucket
-	errUnmarshal := yaml.Unmarshal([]byte(bucketYamlFn), &bucketFn)
+	errUnmarshal := json.Unmarshal([]byte(bucketJsonFn), &bucketFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1094,18 +1111,42 @@ func (objectstoreClient *ObjectstoreClient) CreateBucket(bucket *Bucket) (*Bucke
 //
 // name: Bucket name for which information will be retrieved. Cannot be empty.
 // namespace: Namespace associated. Cannot be empty.
-func (objectstoreClient *ObjectstoreClient) GetBucket(name string, namespace string) (*Bucket, error) {
+func (managementClient *ManagementClient) GetBucket(name string, namespace string) (*Bucket, error) {
 	msg := C.RCString{}
 	cName := intoRCString(name)
 	cNamespace := intoRCString(namespace)
 
-	cBucketFn, errFn := C.objectstore_client_get_bucket(objectstoreClient.objectstoreClient, cName, cNamespace, &msg)
+	cBucketFn, errFn := C.management_client_get_bucket(managementClient.managementClient, cName, cNamespace, &msg)
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	bucketYamlFn := fromRCString(cBucketFn)
+	bucketJsonFn := fromRCString(cBucketFn)
 	var bucketFn Bucket
-	errUnmarshal := yaml.Unmarshal([]byte(bucketYamlFn), &bucketFn)
+	errUnmarshal := json.Unmarshal([]byte(bucketJsonFn), &bucketFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &bucketFn, nil
+}
+
+// Update an bucket.
+//
+// bucket: Bucket to update.
+func (managementClient *ManagementClient) UpdateBucket(bucket *Bucket) (*Bucket, error) {
+	msg := C.RCString{}
+	bucketJson, err := json.Marshal(bucket)
+	if err != nil {
+		return nil, err
+	}
+	cBucket := intoRCString(string(bucketJson))
+
+	cBucketFn, errFn := C.management_client_update_bucket(managementClient.managementClient, cBucket, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	bucketJsonFn := fromRCString(cBucketFn)
+	var bucketFn Bucket
+	errUnmarshal := json.Unmarshal([]byte(bucketJsonFn), &bucketFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1117,13 +1158,13 @@ func (objectstoreClient *ObjectstoreClient) GetBucket(name string, namespace str
 // name: Bucket name to be deleted. Cannot be empty.
 // namespace: Namespace associated. Cannot be empty.
 // emptyBucket: If true, the contents of the bucket will be emptied as part of the delete, otherwise it will fail if the bucket is not empty.
-func (objectstoreClient *ObjectstoreClient) DeleteBucket(name string, namespace string, emptyBucket bool) error {
+func (managementClient *ManagementClient) DeleteBucket(name string, namespace string, emptyBucket bool) error {
 	msg := C.RCString{}
 	cName := intoRCString(name)
 	cNamespace := intoRCString(namespace)
 	cEmptyBucket := cbool(emptyBucket)
 
-	_, errFn := C.objectstore_client_delete_bucket(objectstoreClient.objectstoreClient, cName, cNamespace, cEmptyBucket, &msg)
+	_, errFn := C.management_client_delete_bucket(managementClient.managementClient, cName, cNamespace, cEmptyBucket, &msg)
 	if errFn != nil {
 		return errorWithMessage(errFn, msg)
 	}
@@ -1131,50 +1172,9 @@ func (objectstoreClient *ObjectstoreClient) DeleteBucket(name string, namespace 
 
 }
 
-// Update an bucket.
-//
-// bucket: Bucket to update.
-func (objectstoreClient *ObjectstoreClient) UpdateBucket(bucket *Bucket) (*Bucket, error) {
-	msg := C.RCString{}
-	bucketJson, err := json.Marshal(bucket)
-	if err != nil {
-		return nil, err
-	}
-	cBucket := intoRCString(string(bucketJson))
-
-	cBucketFn, errFn := C.objectstore_client_update_bucket(objectstoreClient.objectstoreClient, cBucket, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	bucketYamlFn := fromRCString(cBucketFn)
-	var bucketFn Bucket
-	errUnmarshal := yaml.Unmarshal([]byte(bucketYamlFn), &bucketFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &bucketFn, nil
-}
-
-// Gets the list of buckets for the specified namespace.
-//
-// namespace: Namespace for which buckets should be listed. Cannot be empty.
-// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
-func (objectstoreClient *ObjectstoreClient) ListBuckets(namespace string, namePrefix string) ([]Bucket, error) {
-	msg := C.RCString{}
-	cNamespace := intoRCString(namespace)
-	cNamePrefix := intoRCString(namePrefix)
-
-	cBucketsFn, errFn := C.objectstore_client_list_buckets(objectstoreClient.objectstoreClient, cNamespace, cNamePrefix, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	bucketsYamlFn := fromRCString(cBucketsFn)
-	var bucketsFn []Bucket
-	errUnmarshal := yaml.Unmarshal([]byte(bucketsYamlFn), &bucketsFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return bucketsFn, nil
+// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
+type ObjectstoreClient struct {
+	objectstoreClient *C.ObjectstoreClient
 }
 
 // Creates the tenant which will associate an IAM Account within an objectstore.

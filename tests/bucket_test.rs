@@ -54,7 +54,7 @@ fn test_bucket() {
 
     let new_expiration = 0;
     bucket.audit_delete_expiration = new_expiration;
-    let bucket = objectstore_client
+    let bucket = management_client
         .update_bucket(bucket)
         .expect("update bucket");
     assert_eq!(bucket.audit_delete_expiration, new_expiration);

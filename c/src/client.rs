@@ -1910,9 +1910,44 @@ pub unsafe extern "C" fn management_client_list_user_group_memberships_by_group(
     }
 }
 
-/// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
-pub struct ObjectstoreClient {
-    objectstore_client: client::ObjectstoreClient,
+/// Gets the list of buckets for the specified namespace.
+///
+/// namespace: Namespace for which buckets should be listed. Cannot be empty.
+/// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_list_buckets(
+    management_client: *mut ManagementClient,
+    namespace: RCString,
+    name_prefix: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let namespace = namespace.to_string();
+        let name_prefix = name_prefix.to_string();
+
+        management_client
+            .management_client
+            .list_buckets(&namespace, &name_prefix)
+    })) {
+        Ok(result) => {
+            let result =
+                result.and_then(|buckets| serde_json::to_string(&buckets).map_err(|e| anyhow!(e)));
+            clear_error();
+            match result {
+                Ok(buckets) => RCString::from_str(buckets.as_str()),
+                Err(e) => {
+                    set_error(e.to_string().as_str(), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during list buckets", err);
+            RCString::null()
+        }
+    }
 }
 
 /// Create an bucket.
@@ -1920,22 +1955,22 @@ pub struct ObjectstoreClient {
 /// bucket: Bucket to create.
 ///
 #[no_mangle]
-pub unsafe extern "C" fn objectstore_client_create_bucket(
-    objectstore_client: *mut ObjectstoreClient,
+pub unsafe extern "C" fn management_client_create_bucket(
+    management_client: *mut ManagementClient,
     bucket: RCString,
     err: Option<&mut RCString>,
 ) -> RCString {
-    let objectstore_client = &mut *objectstore_client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let bucket = bucket.to_string();
         let bucket: objectscale_client::bucket::Bucket =
             serde_json::from_str(&bucket).expect("deserialize bucket");
 
-        objectstore_client.objectstore_client.create_bucket(bucket)
+        management_client.management_client.create_bucket(bucket)
     })) {
         Ok(result) => {
             let result =
-                result.and_then(|bucket| serde_yaml::to_string(&bucket).map_err(|e| anyhow!(e)));
+                result.and_then(|bucket| serde_json::to_string(&bucket).map_err(|e| anyhow!(e)));
             clear_error();
             match result {
                 Ok(bucket) => RCString::from_str(bucket.as_str()),
@@ -1958,24 +1993,24 @@ pub unsafe extern "C" fn objectstore_client_create_bucket(
 /// namespace: Namespace associated. Cannot be empty.
 ///
 #[no_mangle]
-pub unsafe extern "C" fn objectstore_client_get_bucket(
-    objectstore_client: *mut ObjectstoreClient,
+pub unsafe extern "C" fn management_client_get_bucket(
+    management_client: *mut ManagementClient,
     name: RCString,
     namespace: RCString,
     err: Option<&mut RCString>,
 ) -> RCString {
-    let objectstore_client = &mut *objectstore_client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let name = name.to_string();
         let namespace = namespace.to_string();
 
-        objectstore_client
-            .objectstore_client
+        management_client
+            .management_client
             .get_bucket(&name, &namespace)
     })) {
         Ok(result) => {
             let result =
-                result.and_then(|bucket| serde_yaml::to_string(&bucket).map_err(|e| anyhow!(e)));
+                result.and_then(|bucket| serde_json::to_string(&bucket).map_err(|e| anyhow!(e)));
             clear_error();
             match result {
                 Ok(bucket) => RCString::from_str(bucket.as_str()),
@@ -1992,6 +2027,43 @@ pub unsafe extern "C" fn objectstore_client_get_bucket(
     }
 }
 
+/// Update an bucket.
+///
+/// bucket: Bucket to update.
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_update_bucket(
+    management_client: *mut ManagementClient,
+    bucket: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let bucket = bucket.to_string();
+        let bucket: objectscale_client::bucket::Bucket =
+            serde_json::from_str(&bucket).expect("deserialize bucket");
+
+        management_client.management_client.update_bucket(bucket)
+    })) {
+        Ok(result) => {
+            let result =
+                result.and_then(|bucket| serde_json::to_string(&bucket).map_err(|e| anyhow!(e)));
+            clear_error();
+            match result {
+                Ok(bucket) => RCString::from_str(bucket.as_str()),
+                Err(e) => {
+                    set_error(e.to_string().as_str(), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during update bucket", err);
+            RCString::null()
+        }
+    }
+}
+
 /// Deletes the specified bucket.
 ///
 /// name: Bucket name to be deleted. Cannot be empty.
@@ -1999,20 +2071,20 @@ pub unsafe extern "C" fn objectstore_client_get_bucket(
 /// emptyBucket: If true, the contents of the bucket will be emptied as part of the delete, otherwise it will fail if the bucket is not empty.
 ///
 #[no_mangle]
-pub unsafe extern "C" fn objectstore_client_delete_bucket(
-    objectstore_client: *mut ObjectstoreClient,
+pub unsafe extern "C" fn management_client_delete_bucket(
+    management_client: *mut ManagementClient,
     name: RCString,
     namespace: RCString,
     empty_bucket: bool,
     err: Option<&mut RCString>,
 ) {
-    let objectstore_client = &mut *objectstore_client;
+    let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let name = name.to_string();
         let namespace = namespace.to_string();
 
-        objectstore_client
-            .objectstore_client
+        management_client
+            .management_client
             .delete_bucket(&name, &namespace, empty_bucket)
     })) {
         Ok(result) => {
@@ -2030,81 +2102,9 @@ pub unsafe extern "C" fn objectstore_client_delete_bucket(
     }
 }
 
-/// Update an bucket.
-///
-/// bucket: Bucket to update.
-///
-#[no_mangle]
-pub unsafe extern "C" fn objectstore_client_update_bucket(
-    objectstore_client: *mut ObjectstoreClient,
-    bucket: RCString,
-    err: Option<&mut RCString>,
-) -> RCString {
-    let objectstore_client = &mut *objectstore_client;
-    match catch_unwind(AssertUnwindSafe(move || {
-        let bucket = bucket.to_string();
-        let bucket: objectscale_client::bucket::Bucket =
-            serde_json::from_str(&bucket).expect("deserialize bucket");
-
-        objectstore_client.objectstore_client.update_bucket(bucket)
-    })) {
-        Ok(result) => {
-            let result =
-                result.and_then(|bucket| serde_yaml::to_string(&bucket).map_err(|e| anyhow!(e)));
-            clear_error();
-            match result {
-                Ok(bucket) => RCString::from_str(bucket.as_str()),
-                Err(e) => {
-                    set_error(e.to_string().as_str(), err);
-                    RCString::null()
-                }
-            }
-        }
-        Err(_) => {
-            set_error("caught panic during update bucket", err);
-            RCString::null()
-        }
-    }
-}
-
-/// Gets the list of buckets for the specified namespace.
-///
-/// namespace: Namespace for which buckets should be listed. Cannot be empty.
-/// name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
-///
-#[no_mangle]
-pub unsafe extern "C" fn objectstore_client_list_buckets(
-    objectstore_client: *mut ObjectstoreClient,
-    namespace: RCString,
-    name_prefix: RCString,
-    err: Option<&mut RCString>,
-) -> RCString {
-    let objectstore_client = &mut *objectstore_client;
-    match catch_unwind(AssertUnwindSafe(move || {
-        let namespace = namespace.to_string();
-        let name_prefix = name_prefix.to_string();
-
-        objectstore_client
-            .objectstore_client
-            .list_buckets(&namespace, &name_prefix)
-    })) {
-        Ok(result) => {
-            let result =
-                result.and_then(|buckets| serde_yaml::to_string(&buckets).map_err(|e| anyhow!(e)));
-            clear_error();
-            match result {
-                Ok(buckets) => RCString::from_str(buckets.as_str()),
-                Err(e) => {
-                    set_error(e.to_string().as_str(), err);
-                    RCString::null()
-                }
-            }
-        }
-        Err(_) => {
-            set_error("caught panic during list buckets", err);
-            RCString::null()
-        }
-    }
+/// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
+pub struct ObjectstoreClient {
+    objectstore_client: client::ObjectstoreClient,
 }
 
 /// Creates the tenant which will associate an IAM Account within an objectstore.

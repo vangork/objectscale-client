@@ -17,11 +17,11 @@ pub(crate) struct Bucket {
     #[pyo3(set)]
     namespace: String,
     //
-    replication: String,
+    vpool: String,
     // "Locked" status of a bucket
     locked: bool,
     // Bucket "file system access enabled" status
-    fs_acess_enabled: bool,
+    fs_access_enabled: bool,
     // Bucket soft quota
     soft_quota: String,
     // Bucket creation time
@@ -29,7 +29,9 @@ pub(crate) struct Bucket {
     // Bucket isStaleAllowed flag
     is_stale_allowed: bool,
     // If true Object Lock and ADO can be enabled together. See the Admin Guide for more information.
-    object_lock_with_ado_allowed: bool,
+    is_object_lock_with_ado_allowed: bool,
+    //
+    is_object_lock_enabled: bool,
     // Bucket isStaleAllowed flag
     is_tso_read_only: bool,
     // Default object lock retention mode
@@ -41,14 +43,14 @@ pub(crate) struct Bucket {
     // Default bucket retention
     default_retention: i64,
     // Block size in GB
-    block_size_in_g_b: i64,
+    block_size: i64,
     // auto-commit interval
     auto_commit_period: i64,
     // Notification size in GB
-    notification_size_in_g_b: i64,
-    //
+    notification_size: i64,
+    // Block size in count
     block_size_in_count: i64,
-    //
+    // Notification size in count
     notification_size_in_count: i64,
     // Bucket isEncryptionEnabled flag
     #[pyo3(set)]
@@ -74,7 +76,7 @@ pub(crate) struct Bucket {
     // Bucket audit delete expiration in seconds
     #[pyo3(set)]
     audit_delete_expiration: i64,
-    //
+    // Enable advanced metadata search
     enable_advanced_metadata_search: bool,
     //
     advanced_metadata_search_target_name: String,
@@ -83,13 +85,17 @@ pub(crate) struct Bucket {
     // Optional. If true the bucket is in the process of being deleted. The bucket will be read only and no changes will be allowed on the bucket until the operation completes.
     is_empty_bucket_in_progress: bool,
     //
-    meta_data: SearchMetaData,
+    versioning_status: String,
+    //
+    #[pyo3(set)]
+    search_metadata: SearchMetaData,
     // Local object metadata reads bucket flag.
     local_object_metadata_reads: bool,
     // API type
-    apitype: String,
+    api_type: String,
     // Bucket owner
-    bucket_owner: String,
+    #[pyo3(set)]
+    owner: String,
     // Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search.
     #[pyo3(set)]
     tags: Vec<BucketTag>,
@@ -102,21 +108,22 @@ impl From<bucket::Bucket> for Bucket {
             id: bucket.id,
             link: Link::from(bucket.link),
             namespace: bucket.namespace,
-            replication: bucket.replication,
+            vpool: bucket.vpool,
             locked: bucket.locked,
-            fs_acess_enabled: bucket.fs_acess_enabled,
+            fs_access_enabled: bucket.fs_access_enabled,
             soft_quota: bucket.soft_quota,
             created: bucket.created,
             is_stale_allowed: bucket.is_stale_allowed,
-            object_lock_with_ado_allowed: bucket.object_lock_with_ado_allowed,
+            is_object_lock_with_ado_allowed: bucket.is_object_lock_with_ado_allowed,
+            is_object_lock_enabled: bucket.is_object_lock_enabled,
             is_tso_read_only: bucket.is_tso_read_only,
             default_object_lock_retention_mode: bucket.default_object_lock_retention_mode,
             default_object_lock_retention_years: bucket.default_object_lock_retention_years,
             default_object_lock_retention_days: bucket.default_object_lock_retention_days,
             default_retention: bucket.default_retention,
-            block_size_in_g_b: bucket.block_size_in_g_b,
+            block_size: bucket.block_size,
             auto_commit_period: bucket.auto_commit_period,
-            notification_size_in_g_b: bucket.notification_size_in_g_b,
+            notification_size: bucket.notification_size,
             block_size_in_count: bucket.block_size_in_count,
             notification_size_in_count: bucket.notification_size_in_count,
             is_encryption_enabled: bucket.is_encryption_enabled,
@@ -134,10 +141,11 @@ impl From<bucket::Bucket> for Bucket {
             advanced_metadata_search_target_name: bucket.advanced_metadata_search_target_name,
             advanced_metadata_search_target_stream: bucket.advanced_metadata_search_target_stream,
             is_empty_bucket_in_progress: bucket.is_empty_bucket_in_progress,
-            meta_data: SearchMetaData::from(bucket.meta_data),
+            versioning_status: bucket.versioning_status,
+            search_metadata: SearchMetaData::from(bucket.search_metadata),
             local_object_metadata_reads: bucket.local_object_metadata_reads,
-            apitype: bucket.apitype,
-            bucket_owner: bucket.bucket_owner,
+            api_type: bucket.api_type,
+            owner: bucket.owner,
             tags: bucket.tags.into_iter().map(BucketTag::from).collect(),
         }
     }
@@ -150,21 +158,22 @@ impl From<Bucket> for bucket::Bucket {
             id: bucket.id,
             link: bucket::Link::from(bucket.link),
             namespace: bucket.namespace,
-            replication: bucket.replication,
+            vpool: bucket.vpool,
             locked: bucket.locked,
-            fs_acess_enabled: bucket.fs_acess_enabled,
+            fs_access_enabled: bucket.fs_access_enabled,
             soft_quota: bucket.soft_quota,
             created: bucket.created,
             is_stale_allowed: bucket.is_stale_allowed,
-            object_lock_with_ado_allowed: bucket.object_lock_with_ado_allowed,
+            is_object_lock_with_ado_allowed: bucket.is_object_lock_with_ado_allowed,
+            is_object_lock_enabled: bucket.is_object_lock_enabled,
             is_tso_read_only: bucket.is_tso_read_only,
             default_object_lock_retention_mode: bucket.default_object_lock_retention_mode,
             default_object_lock_retention_years: bucket.default_object_lock_retention_years,
             default_object_lock_retention_days: bucket.default_object_lock_retention_days,
             default_retention: bucket.default_retention,
-            block_size_in_g_b: bucket.block_size_in_g_b,
+            block_size: bucket.block_size,
             auto_commit_period: bucket.auto_commit_period,
-            notification_size_in_g_b: bucket.notification_size_in_g_b,
+            notification_size: bucket.notification_size,
             block_size_in_count: bucket.block_size_in_count,
             notification_size_in_count: bucket.notification_size_in_count,
             is_encryption_enabled: bucket.is_encryption_enabled,
@@ -182,10 +191,11 @@ impl From<Bucket> for bucket::Bucket {
             advanced_metadata_search_target_name: bucket.advanced_metadata_search_target_name,
             advanced_metadata_search_target_stream: bucket.advanced_metadata_search_target_stream,
             is_empty_bucket_in_progress: bucket.is_empty_bucket_in_progress,
-            meta_data: bucket::SearchMetaData::from(bucket.meta_data),
+            versioning_status: bucket.versioning_status,
+            search_metadata: bucket::SearchMetaData::from(bucket.search_metadata),
             local_object_metadata_reads: bucket.local_object_metadata_reads,
-            apitype: bucket.apitype,
-            bucket_owner: bucket.bucket_owner,
+            api_type: bucket.api_type,
+            owner: bucket.owner,
             tags: bucket
                 .tags
                 .into_iter()
@@ -297,21 +307,21 @@ impl Link {
 pub(crate) struct MetaData {
     // The meta key type
     #[pyo3(set)]
-    key_data_type: String,
+    datatype: String,
     // The meta key name
     #[pyo3(set)]
-    key_value: String,
+    name: String,
     // The meta key data type
     #[pyo3(set)]
-    metadata_type: String,
+    r#type: String,
 }
 
 impl From<bucket::MetaData> for MetaData {
     fn from(meta_data: bucket::MetaData) -> Self {
         Self {
-            key_data_type: meta_data.key_data_type,
-            key_value: meta_data.key_value,
-            metadata_type: meta_data.metadata_type,
+            datatype: meta_data.datatype,
+            name: meta_data.name,
+            r#type: meta_data.r#type,
         }
     }
 }
@@ -319,9 +329,9 @@ impl From<bucket::MetaData> for MetaData {
 impl From<MetaData> for bucket::MetaData {
     fn from(meta_data: MetaData) -> Self {
         Self {
-            key_data_type: meta_data.key_data_type,
-            key_value: meta_data.key_value,
-            metadata_type: meta_data.metadata_type,
+            datatype: meta_data.datatype,
+            name: meta_data.name,
+            r#type: meta_data.r#type,
         }
     }
 }
@@ -404,26 +414,26 @@ pub(crate) struct SearchMetaData {
     is_enabled: bool,
     //
     #[pyo3(set)]
-    meta_data: Vec<MetaData>,
+    metadata: Vec<MetaData>,
     // Getter for maxKeys.
     #[pyo3(set)]
     max_keys: i32,
     // Getter for the mdTokens flag.
     #[pyo3(set)]
-    md_tokens: bool,
+    metadata_tokens: bool,
 }
 
 impl From<bucket::SearchMetaData> for SearchMetaData {
     fn from(search_meta_data: bucket::SearchMetaData) -> Self {
         Self {
             is_enabled: search_meta_data.is_enabled,
-            meta_data: search_meta_data
-                .meta_data
+            metadata: search_meta_data
+                .metadata
                 .into_iter()
                 .map(MetaData::from)
                 .collect(),
             max_keys: search_meta_data.max_keys,
-            md_tokens: search_meta_data.md_tokens,
+            metadata_tokens: search_meta_data.metadata_tokens,
         }
     }
 }
@@ -432,13 +442,13 @@ impl From<SearchMetaData> for bucket::SearchMetaData {
     fn from(search_meta_data: SearchMetaData) -> Self {
         Self {
             is_enabled: search_meta_data.is_enabled,
-            meta_data: search_meta_data
-                .meta_data
+            metadata: search_meta_data
+                .metadata
                 .into_iter()
                 .map(bucket::MetaData::from)
                 .collect(),
             max_keys: search_meta_data.max_keys,
-            md_tokens: search_meta_data.md_tokens,
+            metadata_tokens: search_meta_data.metadata_tokens,
         }
     }
 }

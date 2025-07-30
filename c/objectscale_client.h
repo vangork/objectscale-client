@@ -564,14 +564,26 @@ struct RCString management_client_list_user_group_memberships_by_group(struct Ma
                                                                        struct RCString *err);
 
 /**
+ * Gets the list of buckets for the specified namespace.
+ *
+ * namespace: Namespace for which buckets should be listed. Cannot be empty.
+ * name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
+ *
+ */
+struct RCString management_client_list_buckets(struct ManagementClient *management_client,
+                                               struct RCString namespace_,
+                                               struct RCString name_prefix,
+                                               struct RCString *err);
+
+/**
  * Create an bucket.
  *
  * bucket: Bucket to create.
  *
  */
-struct RCString objectstore_client_create_bucket(struct ObjectstoreClient *objectstore_client,
-                                                 struct RCString bucket,
-                                                 struct RCString *err);
+struct RCString management_client_create_bucket(struct ManagementClient *management_client,
+                                                struct RCString bucket,
+                                                struct RCString *err);
 
 /**
  * Gets bucket information for the specified bucket.
@@ -580,10 +592,20 @@ struct RCString objectstore_client_create_bucket(struct ObjectstoreClient *objec
  * namespace: Namespace associated. Cannot be empty.
  *
  */
-struct RCString objectstore_client_get_bucket(struct ObjectstoreClient *objectstore_client,
-                                              struct RCString name,
-                                              struct RCString namespace_,
-                                              struct RCString *err);
+struct RCString management_client_get_bucket(struct ManagementClient *management_client,
+                                             struct RCString name,
+                                             struct RCString namespace_,
+                                             struct RCString *err);
+
+/**
+ * Update an bucket.
+ *
+ * bucket: Bucket to update.
+ *
+ */
+struct RCString management_client_update_bucket(struct ManagementClient *management_client,
+                                                struct RCString bucket,
+                                                struct RCString *err);
 
 /**
  * Deletes the specified bucket.
@@ -593,33 +615,11 @@ struct RCString objectstore_client_get_bucket(struct ObjectstoreClient *objectst
  * emptyBucket: If true, the contents of the bucket will be emptied as part of the delete, otherwise it will fail if the bucket is not empty.
  *
  */
-void objectstore_client_delete_bucket(struct ObjectstoreClient *objectstore_client,
-                                      struct RCString name,
-                                      struct RCString namespace_,
-                                      bool empty_bucket,
-                                      struct RCString *err);
-
-/**
- * Update an bucket.
- *
- * bucket: Bucket to update.
- *
- */
-struct RCString objectstore_client_update_bucket(struct ObjectstoreClient *objectstore_client,
-                                                 struct RCString bucket,
-                                                 struct RCString *err);
-
-/**
- * Gets the list of buckets for the specified namespace.
- *
- * namespace: Namespace for which buckets should be listed. Cannot be empty.
- * name_prefix: Case sensitive prefix of the Bucket name with a wild card(*). Can be empty or any_prefix_string*.
- *
- */
-struct RCString objectstore_client_list_buckets(struct ObjectstoreClient *objectstore_client,
-                                                struct RCString namespace_,
-                                                struct RCString name_prefix,
-                                                struct RCString *err);
+void management_client_delete_bucket(struct ManagementClient *management_client,
+                                     struct RCString name,
+                                     struct RCString namespace_,
+                                     bool empty_bucket,
+                                     struct RCString *err);
 
 /**
  * Creates the tenant which will associate an IAM Account within an objectstore.

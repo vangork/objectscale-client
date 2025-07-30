@@ -10,7 +10,6 @@
 
 //! Define the bucket details.
 //!
-use crate::client::ObjectstoreClient;
 use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
 use anyhow::{bail, Context as _, Result};
@@ -44,11 +43,11 @@ pub struct MinMaxGovernor {
 #[serde(rename_all(serialize = "snake_case", deserialize = "camelCase"))]
 pub struct MetaData {
     /// The meta key type
-    pub key_data_type: String,
+    pub datatype: String,
     /// The meta key name
-    pub key_value: String,
+    pub name: String,
     /// The meta key data type
-    pub metadata_type: String,
+    pub r#type: String,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
@@ -104,6 +103,7 @@ pub struct Bucket {
     pub is_stale_allowed: bool,
     /// If true Object Lock and ADO can be enabled together. See the Admin Guide for more information.
     pub is_object_lock_with_ado_allowed: bool,
+    pub is_object_lock_enabled: bool,
     /// Bucket isStaleAllowed flag
     pub is_tso_read_only: bool,
     /// Default object lock retention mode
@@ -153,7 +153,6 @@ pub struct Bucket {
     pub min_max_governor: MinMaxGovernor,
     /// Bucket audit delete expiration in seconds
     #[builder(setter(skip = false), default = "-2")]
-    #[serde(rename(serialize = "audited_delete_expiration"))]
     pub audit_delete_expiration: i64,
     /// Enable advanced metadata search
     #[serde(alias = "enableAdvancedMetadataSearch")]
@@ -172,12 +171,14 @@ pub struct Bucket {
     pub is_empty_bucket_in_progress: bool,
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub versioning_status: String,
+    #[builder(setter(skip = false), default)]
     pub search_metadata: SearchMetaData,
     /// Local object metadata reads bucket flag.
     pub local_object_metadata_reads: bool,
     /// API type
     pub api_type: String,
     /// Bucket owner
+    #[builder(setter(skip = false), default)]
     pub owner: String,
     /// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search.
     #[builder(setter(skip = false), default)]
@@ -283,22 +284,24 @@ impl Bucket {
         Ok(resp)
     }
 
-    pub(crate) fn update(client: &mut ObjectstoreClient, bucket: Bucket) -> Result<()> {
-        // Set Bucket Audit Delete Expiration
-        let request_url = format!(
-            "{}object/bucket/{}/auditDeleteExpiration?expiration={}&namespace={}",
-            client.endpoint, bucket.name, bucket.audit_delete_expiration, bucket.namespace,
+    pub(crate) fn update(client: &mut ManagementClient, bucket: Bucket) -> Result<()> {
+        // // Set Bucket Audit Delete Expiration
+        // let request_url = format!(
+        //     "{}object/bucket/{}/auditDeleteExpiration?expiration={}&namespace={}",
+        //     client.endpoint, bucket.name, bucket.audit_delete_expiration, bucket.namespace,
+        // );
+        // Update Bucket Owner
+        let request_url = format!("{}object/bucket/{}/owner", client.endpoint, bucket.name,);
+        let body = format!(
+            r#"<object_bucket_update_owner><new_owner>{}</new_owner><namespace>{}</namespace><reset_previous_owners>true</reset_previous_owners></object_bucket_update_owner>"#,
+            bucket.owner, bucket.namespace
         );
-        let body = quick_xml::se::to_string(&bucket)?;
         let resp = client
-            .management_client
             .http_client
-            .put(request_url)
+            .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(
-                AUTHORIZATION,
-                client.management_client.access_token.as_ref().unwrap(),
-            )
+            .header(CONTENT_TYPE, "application/xml")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .body(body)
             .send()?;
         if !resp.status().is_success() {
