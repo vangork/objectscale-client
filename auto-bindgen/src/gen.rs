@@ -1860,7 +1860,7 @@ impl Bindgen {
         for (key, value) in objects.iter() {
             if value.len() > 0 {
                 module.push_str(&format!(
-                    "    let module = PyModule::new_bound(py, \"{}\")?;\n",
+                    "    let module = PyModule::new(py, \"{}\")?;\n",
                     key.to_case(Case::Snake),
                 ));
                 for v in value {

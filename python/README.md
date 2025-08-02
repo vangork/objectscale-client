@@ -2,11 +2,15 @@
 
 This project provides a way to interact with [ObjectScale](https://www.dell.com/en-hk/dt/storage/objectscale.htm) using Python client.
 
-## Install
+## Build & Install
+Build the wheels package
+```shell
+maturin build -b pyo3 -r
+```
 
 The client library can be installed using pip.
 ```shell
-pip install objectscale-client
+pip install .
 ```
 Users can also choose to builds the crate and installs it as a python module directly using the commands specified at [README.md](https://github.com/vangork/objectscale-client?tab=readme-ov-file#python) .
 

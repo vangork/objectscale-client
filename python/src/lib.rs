@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 
 #[pymodule]
 fn objectscale_client(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    let module = PyModule::new_bound(py, "bucket")?;
+    let module = PyModule::new(py, "bucket")?;
     module.add_class::<Bucket>()?;
     module.add_class::<BucketTag>()?;
     module.add_class::<Link>()?;
@@ -25,12 +25,12 @@ fn objectscale_client(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<SearchMetaData>()?;
     m.add_submodule(&module)?;
 
-    let module = PyModule::new_bound(py, "client")?;
+    let module = PyModule::new(py, "client")?;
     module.add_class::<ManagementClient>()?;
     module.add_class::<ObjectstoreClient>()?;
     m.add_submodule(&module)?;
 
-    let module = PyModule::new_bound(py, "iam")?;
+    let module = PyModule::new(py, "iam")?;
     module.add_class::<AccessKey>()?;
     module.add_class::<Account>()?;
     module.add_class::<AccountAccessKey>()?;
@@ -48,7 +48,7 @@ fn objectscale_client(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<UserPolicyAttachment>()?;
     m.add_submodule(&module)?;
 
-    let module = PyModule::new_bound(py, "tenant")?;
+    let module = PyModule::new(py, "tenant")?;
     module.add_class::<Tenant>()?;
     m.add_submodule(&module)?;
 
