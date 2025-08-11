@@ -65,13 +65,21 @@ pub struct SearchMetaData {
 }
 
 /// Lables for bucket.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all(serialize = "PascalCase", deserialize = "PascalCase"))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct BucketTag {
     /// The key of a tag.
     pub key: String,
     /// The value of a tag.
     pub value: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+struct TagRequest {
+    pub tag_set: Vec<BucketTag>,
+    #[serde(rename = "namespace")]
+    pub namespace: String,
 }
 
 /// Buckets are object containers that are used to control access to objects. ObjectScale supports bucket-to-bucket replication of the objects within a bucket.
@@ -230,31 +238,24 @@ impl Bucket {
         Ok(resp.name)
     }
 
-    pub(crate) fn tag(
+    pub(crate) fn add_tag(
         client: &mut ManagementClient,
         bucket_name: &str,
         namespace: &str,
         tags: Vec<BucketTag>,
     ) -> Result<()> {
-        // TODO:
-        // quick_xml dose not serialize object vector with object name
-        // serialize to string directly once https://github.com/tafia/quick-xml/pull/784 is resolved
-        let tags = tags
-            .iter()
-            .map(|tag| quick_xml::se::to_string_with_root("Tag", tag).unwrap())
-            .collect::<Vec<String>>()
-            .join("");
-        let body = format!(
-            r#"<add_bucket_tags><TagSet>{}</TagSet><namespace>{}</namespace></add_bucket_tags>"#,
-            tags, namespace
-        );
+        let tag_request = TagRequest {
+            tag_set: tags,
+            namespace: namespace.to_string(),
+        };
+        let body = serde_json::to_string(&tag_request)?;
         let request_url = format!("{}object/bucket/{}/tags", client.endpoint, bucket_name);
         let resp = client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
-            .header(CONTENT_TYPE, "application/xml")
+            .header(CONTENT_TYPE, "application/json")
             .body(body)
             .send()?;
         if !resp.status().is_success() {

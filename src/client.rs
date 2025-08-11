@@ -769,7 +769,7 @@ impl ManagementClient {
         let tags = bucket.tags.clone();
         let name = Bucket::create(self, bucket)?;
         if !tags.is_empty() {
-            Bucket::tag(self, &name, &namespace, tags)?;
+            Bucket::add_tag(self, &name, &namespace, tags)?;
         }
         Bucket::get(self, &name, &namespace)
     }
