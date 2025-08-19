@@ -18,7 +18,7 @@ use crate::iam::{
     UserPolicyAttachment,
 };
 use crate::response::get_content_text;
-use crate::tenant::Tenant;
+use crate::tenant::{Namespace, Tenant};
 use anyhow::{anyhow, bail, Context as _, Result};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
@@ -805,6 +805,52 @@ impl ManagementClient {
     pub fn delete_bucket(&mut self, name: &str, namespace: &str, empty_bucket: bool) -> Result<()> {
         self.auth()?;
         Bucket::delete(self, name, namespace, empty_bucket)
+    }
+
+    /// Creates a namespace with the given details.
+    ///
+    /// namespace: Namespace to create
+    ///
+    pub fn create_namespace(&mut self, namespace: Namespace) -> Result<Namespace> {
+        self.auth()?;
+        let new_namespace = Namespace::create(self, &namespace)?;
+        Namespace::update(self, namespace, Some(new_namespace))
+    }
+
+    /// Gets the details for the given namespace.
+    ///
+    /// id: Namespace identifier for which details needs to be retrieved.
+    ///
+    pub fn get_namespace(&mut self, id: &str) -> Result<Namespace> {
+        self.auth()?;
+        Namespace::get(self, id)
+    }
+
+    /// Update a namespace with the given details.
+    ///
+    /// namespace: Namespace to be updated
+    ///
+    pub fn update_namespace(&mut self, namespace: Namespace) -> Result<Namespace> {
+        self.auth()?;
+        Namespace::update(self, namespace, None)
+    }
+
+    /// Deactivates and deletes the given namespace and all associated user mappings.
+    ///
+    /// id: An active namespace identifier which needs to be deactivated/deleted
+    ///
+    pub fn delete_namespace(&mut self, id: &str) -> Result<()> {
+        self.auth()?;
+        Namespace::delete(self, id)
+    }
+
+    /// Gets the list of all configured namespaces.
+    ///
+    /// name_prefix: Case sensitive prefix of the Namespace name with a wild card(*) Ex : any_prefix_string*.
+    ///
+    pub fn list_namespaces(&mut self, name_prefix: &str) -> Result<Vec<Namespace>> {
+        self.auth()?;
+        Namespace::list(self, name_prefix)
     }
 }
 

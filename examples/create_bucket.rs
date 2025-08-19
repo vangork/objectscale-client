@@ -35,7 +35,7 @@ fn main() {
         }])
         .search_metadata(search_metadata)
         .build()
-        .expect("bucket");
+        .expect("new bucket");
     let bucket = client.create_bucket(bucket).expect("create bucket");
 
     println!("Created bucket: {:?}", bucket);
