@@ -48,4 +48,5 @@ pub mod bucket;
 pub mod client;
 pub mod iam;
 mod response;
-pub mod tenant;
+pub mod tenancy;
+pub mod user;

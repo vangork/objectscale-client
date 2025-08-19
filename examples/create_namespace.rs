@@ -1,5 +1,5 @@
 use objectscale_client::client::ManagementClient;
-use objectscale_client::tenant::{NamespaceBuilder, RetionClass, RetionClasses};
+use objectscale_client::tenancy::{NamespaceBuilder, RetionClass, RetionClasses};
 
 fn main() {
     let endpoint = "https://10.225.108.217:4443";

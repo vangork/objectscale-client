@@ -228,7 +228,7 @@ impl Bucket {
             .header(CONTENT_TYPE, "application/xml")
             .body(body)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to create bucket")?;
         let resp: CreateBucketResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise CreateBucketResponse. Body was: \"{}\"",
@@ -358,7 +358,7 @@ impl Bucket {
             .header(ACCEPT, "application/json")
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list bucket")?;
         let mut resp: ListBucketsResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise ListBuckestResponse. Body was: \"{}\"",
@@ -378,7 +378,7 @@ impl Bucket {
                 .header(ACCEPT, "application/json")
                 .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list bucket")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListBucketsResponse. Body was: \"{}\"",

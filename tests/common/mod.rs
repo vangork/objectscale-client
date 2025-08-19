@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use objectscale_client::client::{ManagementClient, ObjectstoreClient};
+use objectscale_client::client::ManagementClient;
 use reqwest::Url;
 use std::net::TcpStream;
 use std::time::Duration;
@@ -17,12 +17,4 @@ pub fn create_management_client() -> ManagementClient {
     TcpStream::connect_timeout(&addrs[0], Duration::from_secs(3)).expect("connect");
 
     ManagementClient::new(endpoint, username, password, insecure).expect("management client")
-}
-
-pub fn create_objectstore_client() -> ObjectstoreClient {
-    let management_client = create_management_client();
-    let objectstore_endpoint = "https://10.225.108.187:4443";
-    management_client
-        .new_objectstore_client(objectstore_endpoint)
-        .expect("objectstore client")
 }

@@ -18,7 +18,8 @@ use crate::iam::{
     UserPolicyAttachment,
 };
 use crate::response::get_content_text;
-use crate::tenant::{Namespace, Tenant};
+use crate::tenancy::Namespace;
+use crate::user::ManagementUser;
 use anyhow::{anyhow, bail, Context as _, Result};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
@@ -58,36 +59,6 @@ pub struct ManagementClient {
     expires_in: Option<u64>,
 }
 
-/// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
-///
-/// # Examples
-/// ```no_run
-/// use objectscale_client::client::ManagementClient;
-/// use objectscale_client::iam::AccountBuilder;
-/// use objectscale_client::tenant::TenantBuilder;
-///
-/// fn main() {
-///     let endpoint = "https://192.168.1.1:443";
-///     let username = "admin";
-///     let password = "pass";
-///     let insecure = false;
-///     let objectstore_endpoint = "https://192.168.1.2:4443";
-///     let account_alias = "test";
-///     let mut management_client = ManagementClient::new(endpoint, username, password, insecure).expect("management client");
-///     let mut objectstore_client = management_client.new_objectstore_client(objectstore_endpoint).expect("objectstore client");
-///     let account = AccountBuilder::default().alias(account_alias).build().expect("build account");
-///     let account = management_client.create_account(account).expect("create account");
-///     let tenant_alias = "test";
-///     let tenant = TenantBuilder::default().alias(tenant_alias).id(&account.account_id).build().expect("build tenant");
-///     let tenant = objectstore_client.create_tenant(tenant).expect("create tenant");
-///     println!("Created tenant: {:?}", tenant);
-/// }
-/// ```
-pub struct ObjectstoreClient {
-    pub(crate) endpoint: Url,
-    pub(crate) management_client: ManagementClient,
-}
-
 #[derive(Debug, Serialize)]
 struct BasicAuth {
     pub username: String,
@@ -124,13 +95,6 @@ impl ManagementClient {
 
             access_token: None,
             expires_in: None,
-        })
-    }
-
-    pub fn new_objectstore_client(&self, endpoint: &str) -> Result<ObjectstoreClient> {
-        Ok(ObjectstoreClient {
-            endpoint: Url::parse(endpoint)?,
-            management_client: self.clone(),
         })
     }
 
@@ -182,7 +146,7 @@ impl ManagementClient {
             .header(ACCEPT, "application/json")
             .basic_auth(&self.username, Some(&self.password))
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to log out")?;
         let _: AuthResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise logout AuthResponse. Body was: \"{}\"",
@@ -852,53 +816,47 @@ impl ManagementClient {
         self.auth()?;
         Namespace::list(self, name_prefix)
     }
-}
 
-impl ObjectstoreClient {
-    /// Creates the tenant which will associate an IAM Account within an objectstore.
+    /// Creates local users for the VDC.
     ///
-    /// tenant: Tenant to create
+    /// user: ManagementUser to create
     ///
-    pub fn create_tenant(&mut self, tenant: Tenant) -> Result<Tenant> {
-        self.management_client.auth()?;
-        Tenant::create(self, tenant)
+    pub fn create_management_user(&mut self, user: ManagementUser) -> Result<ManagementUser> {
+        self.auth()?;
+        ManagementUser::create(self, &user)
     }
 
-    /// Get the tenant.
+    /// Gets details for the specified local management user.
     ///
-    /// name: The associated account id. Cannot be empty.
+    /// id: User identifier for which local user information needs to be retrieved
     ///
-    pub fn get_tenant(&mut self, name: &str) -> Result<Tenant> {
-        self.management_client.auth()?;
-        Tenant::get(self, name)
+    pub fn get_management_user(&mut self, id: &str) -> Result<ManagementUser> {
+        self.auth()?;
+        ManagementUser::get(self, id)
     }
 
-    /// Updates Tenant details like default_bucket_size and alias.
+    /// Updates user details for the specified local management user.
     ///
-    /// tenant: Tenant to update
+    /// user: ManagementUser to be updated
     ///
-    pub fn update_tenant(&mut self, tenant: Tenant) -> Result<Tenant> {
-        self.management_client.auth()?;
-        let tenant_id = tenant.id.clone();
-        Tenant::update(self, tenant)?;
-        Tenant::get(self, &tenant_id)
+    pub fn update_management_user(&mut self, user: ManagementUser) -> Result<ManagementUser> {
+        self.auth()?;
+        ManagementUser::update(self, user)
     }
 
-    /// Delete the tenant from an object store. Tenant must not own any buckets.
+    /// Deletes local management user information for the specified user identifier.
     ///
-    /// name: The associated account id. Cannot be empty.
+    /// id: User identifier for which local user information needs to be deleted.
     ///
-    pub fn delete_tenant(&mut self, name: &str) -> Result<()> {
-        self.management_client.auth()?;
-        Tenant::delete(self, name)
+    pub fn delete_management_user(&mut self, id: &str) -> Result<()> {
+        self.auth()?;
+        ManagementUser::delete(self, id)
     }
 
-    /// Get the list of tenants.
+    /// Gets all configured local management users.
     ///
-    /// name_prefix: Case sensitive prefix of the tenant name with a wild card(*). Can be empty or any_prefix_string*.
-    ///
-    pub fn list_tenants(&mut self, name_prefix: &str) -> Result<Vec<Tenant>> {
-        self.management_client.auth()?;
-        Tenant::list(self, name_prefix)
+    pub fn list_management_users(&mut self) -> Result<Vec<ManagementUser>> {
+        self.auth()?;
+        ManagementUser::list(self)
     }
 }
