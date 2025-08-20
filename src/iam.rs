@@ -572,7 +572,7 @@ pub struct AccessKey {
     /// The secret key
     #[serde(default)]
     pub secret_access_key: String,
-    /// The status of the access key {Active | Inactive}
+    /// The status of the access key {Active | Inactive}. Updatable
     pub status: String,
     /// The name of the user that the access key is associated with.
     #[builder(setter(into))]
@@ -593,18 +593,6 @@ struct CreateAccessKeyResult {
 struct CreateAccessKeyResponse {
     pub response_metadata: ResponseMetadata,
     pub create_access_key_result: CreateAccessKeyResult,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct UpdateAccessKeyResponse {
-    pub response_metadata: ResponseMetadata,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct DeleteAccessKeyResponse {
-    pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
@@ -639,7 +627,7 @@ impl AccessKey {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to create user access key")?;
         let resp: CreateAccessKeyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise CreateAccessKeyResponse. Body was: \"{}\"",
@@ -664,8 +652,8 @@ impl AccessKey {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let _: UpdateAccessKeyResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to update user access key")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise UpdateAccessKeyResponse. Body was: \"{}\"",
                 text
@@ -691,8 +679,8 @@ impl AccessKey {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let _: DeleteAccessKeyResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to delete user access key")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DeleteAccessKeyResponse. Body was: \"{}\"",
                 text
@@ -717,7 +705,7 @@ impl AccessKey {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list user access keys")?;
         let mut resp: ListAccessKeysResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise ListAccessKeysResponse. Body was: \"{}\"",
@@ -726,14 +714,12 @@ impl AccessKey {
         })?;
         let mut access_keys: Vec<AccessKey> = vec![];
         access_keys.extend(resp.list_access_keys_result.access_key_metadata);
-        while resp.list_access_keys_result.is_truncated {
+        while let Some(marker) = resp.list_access_keys_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListAccessKeys&UserName={}&Marker={}",
                 client.endpoint,
                 user_name,
-                resp.list_access_keys_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                marker,
             );
             let response = client
                 .http_client
@@ -742,7 +728,7 @@ impl AccessKey {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list user access keys")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListAccessKeysResponse. Body was: \"{}\"",
