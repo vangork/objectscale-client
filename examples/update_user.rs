@@ -14,9 +14,7 @@ fn main() {
     let namespace = "ns1";
     let arn = "urn:ecs:iam:::policy/IAMFullAccess";
 
-    let mut user = client
-        .get_user(name, namespace)
-        .expect("get user");
+    let mut user = client.get_user(name, namespace).expect("get user");
     user.permissions_boundary.permissions_boundary_arn = arn.to_string();
     user.tags = vec![IamTag {
         key: "key2".to_string(),

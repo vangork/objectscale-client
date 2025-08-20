@@ -13,8 +13,8 @@
 
 use crate::bucket::Bucket;
 use crate::iam::{
-    AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment, User, UserGroupMembership,
-    UserPolicyAttachment,
+    AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment,
+    User, UserGroupMembership, UserPolicyAttachment,
 };
 use crate::response::get_content_text;
 use crate::tenancy::Namespace;

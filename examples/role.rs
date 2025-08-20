@@ -1,5 +1,5 @@
 use objectscale_client::client::ManagementClient;
-use objectscale_client::iam::{PermissionsBoundary, RoleBuilder, IamTag};
+use objectscale_client::iam::{IamTag, PermissionsBoundary, RoleBuilder};
 
 fn main() {
     let endpoint = "https://10.225.108.189:443";

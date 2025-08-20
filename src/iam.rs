@@ -13,7 +13,7 @@
 
 use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
-use anyhow::{anyhow, Context as _, Result};
+use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use reqwest::header::ACCEPT;
 use serde::{Deserialize, Serialize};
@@ -150,15 +150,8 @@ impl User {
         Ok(())
     }
 
-    pub(crate) fn get(
-        client: &mut ManagementClient,
-        name: &str,
-        namespace: &str,
-    ) -> Result<Self> {
-        let request_url = format!(
-            "{}iam?Action=GetUser&UserName={}",
-            client.endpoint, name,
-        );
+    pub(crate) fn get(client: &mut ManagementClient, name: &str, namespace: &str) -> Result<Self> {
+        let request_url = format!("{}iam?Action=GetUser&UserName={}", client.endpoint, name,);
         let resp = client
             .http_client
             .post(request_url)
@@ -195,7 +188,8 @@ impl User {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to update iam user permissions boundary")?;
+        let text = get_content_text(resp)
+            .with_context(|| "Failed to update iam user permissions boundary")?;
         let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise PutUserPermissionsBoundaryResponse. Body was: \"{}\"",
@@ -221,7 +215,8 @@ impl User {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to delete iam user permissions boundary")?;
+        let text = get_content_text(resp)
+            .with_context(|| "Failed to delete iam user permissions boundary")?;
         let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DeleteUserPermissionsBoundaryResponse. Body was: \"{}\"",
@@ -286,12 +281,7 @@ impl User {
             client.endpoint, user_name,
         );
         for (index, tag) in tags.iter().enumerate() {
-            request_url = format!(
-                "{}&TagKeys.member.{}={}",
-                request_url,
-                index + 1,
-                tag.key,
-            );
+            request_url = format!("{}&TagKeys.member.{}={}", request_url, index + 1, tag.key,);
         }
 
         let resp = client
@@ -314,11 +304,21 @@ impl User {
     pub(crate) fn update(client: &mut ManagementClient, user: &Self) -> Result<Self> {
         let current_user = Self::get(client, &user.user_name, &user.namespace)?;
 
-        if user.permissions_boundary.permissions_boundary_arn != current_user.permissions_boundary.permissions_boundary_arn {
-            if !current_user.permissions_boundary.permissions_boundary_arn.is_empty() {
+        if user.permissions_boundary.permissions_boundary_arn
+            != current_user.permissions_boundary.permissions_boundary_arn
+        {
+            if !current_user
+                .permissions_boundary
+                .permissions_boundary_arn
+                .is_empty()
+            {
                 Self::delete_permission_boundary(client, &user.user_name, &user.namespace)?;
-            } 
-            if !user.permissions_boundary.permissions_boundary_arn.is_empty() {
+            }
+            if !user
+                .permissions_boundary
+                .permissions_boundary_arn
+                .is_empty()
+            {
                 Self::update_permission_boundary(
                     client,
                     &user.user_name,
@@ -384,18 +384,12 @@ impl User {
         })?;
         let mut users: Vec<Self> = vec![];
         for user in resp.list_users_result.users {
-            let user = Self::get(client, &user.user_name, &namespace)
+            let user = Self::get(client, &user.user_name, namespace)
                 .with_context(|| "Failed to list object users")?;
             users.push(user);
         }
-        while resp.list_users_result.is_truncated {
-            let request_url = format!(
-                "{}iam?Action=ListUsers&Marker={}",
-                client.endpoint,
-                resp.list_users_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
-            );
+        while let Some(marker) = resp.list_users_result.marker {
+            let request_url = format!("{}iam?Action=ListUsers&Marker={}", client.endpoint, marker,);
             let response = client
                 .http_client
                 .post(request_url)
@@ -411,7 +405,7 @@ impl User {
                 )
             })?;
             for user in resp.list_users_result.users {
-            let user = Self::get(client, &user.user_name, &namespace)
+                let user = Self::get(client, &user.user_name, namespace)
                     .with_context(|| "Failed to list object users")?;
                 users.push(user);
             }
@@ -467,7 +461,8 @@ impl UserPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &user_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to create user policy attachment")?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to create user policy attachment")?;
         let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise AttachUserPolicyResponse. Body was: \"{}\"",
@@ -493,7 +488,8 @@ impl UserPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", user_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to delete user policy attachment")?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to delete user policy attachment")?;
         let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DetachUserPolicyResponse. Body was: \"{}\"",
@@ -519,7 +515,8 @@ impl UserPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to list user policy attachments")?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to list user policy attachments")?;
         let mut resp: ListAttachedUserPoliciesResponse =
             serde_json::from_str(&text).with_context(|| {
                 format!(
@@ -532,9 +529,7 @@ impl UserPolicyAttachment {
         while let Some(marker) = resp.list_attached_user_policies_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListAttachedUserPolicies&UserName={}&Marker={}",
-                client.endpoint,
-                user_name,
-                marker,
+                client.endpoint, user_name, marker,
             );
             let response = client
                 .http_client
@@ -543,7 +538,8 @@ impl UserPolicyAttachment {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response).with_context(|| "Failed to list user policy attachments")?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list user policy attachments")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListAttachedUserPoliciesResponse. Body was: \"{}\"",
@@ -717,9 +713,7 @@ impl AccessKey {
         while let Some(marker) = resp.list_access_keys_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListAccessKeys&UserName={}&Marker={}",
-                client.endpoint,
-                user_name,
-                marker,
+                client.endpoint, user_name, marker,
             );
             let response = client
                 .http_client
@@ -728,7 +722,8 @@ impl AccessKey {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response).with_context(|| "Failed to list user access keys")?;
+            let text =
+                get_content_text(response).with_context(|| "Failed to list user access keys")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListAccessKeysResponse. Body was: \"{}\"",
@@ -842,7 +837,7 @@ impl Policy {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to create policy")?;
         let resp: CreatePolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise CreatePolicyResponse. Body was: \"{}\"",
@@ -870,7 +865,7 @@ impl Policy {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to get policy")?;
         let resp: GetPolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise GetPolicyResponse. Body was: \"{}\"",
@@ -898,7 +893,7 @@ impl Policy {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to delete policy")?;
         let _: DeletePolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DeletePolicyResponse. Body was: \"{}\"",
@@ -917,7 +912,7 @@ impl Policy {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list policies")?;
         let mut resp: ListPoliciesResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise ListPoliciesResponse. Body was: \"{}\"",
@@ -926,13 +921,10 @@ impl Policy {
         })?;
         let mut policies: Vec<Policy> = vec![];
         policies.extend(resp.list_policies_result.policies);
-        while resp.list_policies_result.is_truncated {
+        while let Some(marker) = resp.list_policies_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListPolicies&Marker={}",
-                client.endpoint,
-                resp.list_policies_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                client.endpoint, marker,
             );
             let response = client
                 .http_client
@@ -941,7 +933,7 @@ impl Policy {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list policies")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListPoliciesResponse. Body was: \"{}\"",
@@ -965,8 +957,6 @@ pub struct Group {
     /// Arn that identifies the Group.
     pub arn: String,
     /// ISO 8601 format DateTime when group was created.
-    // serde(default) is for ListGroupsForUserResponse which doesn't contain create_date
-    #[serde(default)]
     pub create_date: String,
     /// The path to the IAM Group.
     pub path: String,
@@ -1043,7 +1033,7 @@ impl Group {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to create group")?;
         let resp: CreateGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise CreateGroupResponse. Body was: \"{}\"",
@@ -1071,7 +1061,7 @@ impl Group {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to get group")?;
         let resp: GetGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise GetGroupResponse. Body was: \"{}\"",
@@ -1099,7 +1089,7 @@ impl Group {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to delete group")?;
         let _: DeleteGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DeleteGroupResponse. Body was: \"{}\"",
@@ -1118,7 +1108,7 @@ impl Group {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list groups")?;
         let mut resp: ListGroupsResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise ListGroupsResponse. Body was: \"{}\"",
@@ -1127,14 +1117,9 @@ impl Group {
         })?;
         let mut groups: Vec<Group> = vec![];
         groups.extend(resp.list_groups_result.groups);
-        while resp.list_groups_result.is_truncated {
-            let request_url = format!(
-                "{}iam?Action=ListGroups&Marker={}",
-                client.endpoint,
-                resp.list_groups_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
-            );
+        while let Some(marker) = resp.list_groups_result.marker {
+            let request_url =
+                format!("{}iam?Action=ListGroups&Marker={}", client.endpoint, marker,);
             let response = client
                 .http_client
                 .post(request_url)
@@ -1142,7 +1127,7 @@ impl Group {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list groups")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListGroupsResponse. Body was: \"{}\"",
@@ -1217,7 +1202,8 @@ impl GroupPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &group_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to create group policy attachment")?;
         let _: AttachGroupPolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise AttachGroupPolicyResponse. Body was: \"{}\"",
@@ -1243,7 +1229,8 @@ impl GroupPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", group_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to delete group policy attachment")?;
         let _: DetachGroupPolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DetachGroupPolicyResponse. Body was: \"{}\"",
@@ -1269,7 +1256,8 @@ impl GroupPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to list group policy attachments")?;
         let mut resp: ListAttachedGroupPoliciesResponse = serde_json::from_str(&text)
             .with_context(|| {
                 format!(
@@ -1279,14 +1267,10 @@ impl GroupPolicyAttachment {
             })?;
         let mut attachments: Vec<GroupPolicyAttachment> = vec![];
         attachments.extend(resp.list_attached_group_policies_result.attached_policies);
-        while resp.list_attached_group_policies_result.is_truncated {
+        while let Some(marker) = resp.list_attached_group_policies_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListAttachedGroupPolicies&GroupName={}&Marker={}",
-                client.endpoint,
-                group_name,
-                resp.list_attached_group_policies_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                client.endpoint, group_name, marker,
             );
             let response = client
                 .http_client
@@ -1295,7 +1279,8 @@ impl GroupPolicyAttachment {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list group policy attachments")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListAttachedGroupPolicies. Body was: \"{}\"",
@@ -1445,7 +1430,7 @@ impl Role {
             req = req.query(&[(&format!("Tags.member.{}.Value", index + 1), &tag.value)]);
         }
         let resp = req.send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to create role")?;
         let resp: CreateRoleResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise CreateRoleResponse. Body was: \"{}\"",
@@ -1473,7 +1458,7 @@ impl Role {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to get role")?;
         let resp: GetRoleResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise GetRoleResponse. Body was: \"{}\"",
@@ -1506,7 +1491,7 @@ impl Role {
         }
 
         let resp = req.send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to update role")?;
         let resp: UpdateRoleResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise UpdateRoleResponse. Body was: \"{}\"",
@@ -1534,7 +1519,7 @@ impl Role {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to delete role")?;
         let _: DeleteRoleResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DeleteRoleResponse. Body was: \"{}\"",
@@ -1553,7 +1538,7 @@ impl Role {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list roles")?;
         let mut resp: ListRolesResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise ListRolesResponse. Body was: \"{}\"",
@@ -1562,14 +1547,8 @@ impl Role {
         })?;
         let mut roles: Vec<Role> = vec![];
         roles.extend(resp.list_roles_result.roles);
-        while resp.list_roles_result.is_truncated {
-            let request_url = format!(
-                "{}iam?Action=ListRoles&Marker={}",
-                client.endpoint,
-                resp.list_roles_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
-            );
+        while let Some(marker) = resp.list_roles_result.marker {
+            let request_url = format!("{}iam?Action=ListRoles&Marker={}", client.endpoint, marker,);
             let response = client
                 .http_client
                 .post(request_url)
@@ -1577,7 +1556,7 @@ impl Role {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list roles")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListRolesResponse. Body was: \"{}\"",
@@ -1652,7 +1631,8 @@ impl RolePolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &role_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to create role policy attachment")?;
         let _: AttachRolePolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise AttachRolePolicyResponse. Body was: \"{}\"",
@@ -1678,7 +1658,8 @@ impl RolePolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", role_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to delete role policy attachment")?;
         let _: DetachRolePolicyResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DetachRolePolicyResponse. Body was: \"{}\"",
@@ -1704,7 +1685,8 @@ impl RolePolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to list role policy attachments")?;
         let mut resp: ListAttachedRolePoliciesResponse =
             serde_json::from_str(&text).with_context(|| {
                 format!(
@@ -1714,14 +1696,10 @@ impl RolePolicyAttachment {
             })?;
         let mut attachments: Vec<RolePolicyAttachment> = vec![];
         attachments.extend(resp.list_attached_role_policies_result.attached_policies);
-        while resp.list_attached_role_policies_result.is_truncated {
+        while let Some(marker) = resp.list_attached_role_policies_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListAttachedRolePolicies&RoleName={}&Marker={}",
-                client.endpoint,
-                role_name,
-                resp.list_attached_role_policies_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                client.endpoint, role_name, marker,
             );
             let response = client
                 .http_client
@@ -1730,7 +1708,8 @@ impl RolePolicyAttachment {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list role policy attachments")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListAttachedRolePolicies. Body was: \"{}\"",
@@ -1818,7 +1797,7 @@ impl EntitiesForPolicy {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to get entities for policy")?;
         let mut resp: ListEntitiesForPolicyResponse =
             serde_json::from_str(&text).with_context(|| {
                 format!(
@@ -1852,15 +1831,10 @@ impl EntitiesForPolicy {
                 .map(|u| u.role_name)
                 .collect::<Vec<String>>(),
         );
-        while resp.list_entities_for_policy_result.is_truncated {
+        while let Some(marker) = resp.list_entities_for_policy_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListEntitiesForPolicy&PolicyArn={}&PolicyUsageFilter={}&Marker={}",
-                client.endpoint,
-                policy_arn,
-                entity_filter,
-                resp.list_entities_for_policy_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                client.endpoint, policy_arn, entity_filter, marker,
             );
             let response = client
                 .http_client
@@ -1958,7 +1932,8 @@ impl UserGroupMembership {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &user_group_membership.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to create user group membership")?;
         let _: AddUserToGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise AttachUserPolicyResponse. Body was: \"{}\"",
@@ -1984,7 +1959,8 @@ impl UserGroupMembership {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", user_group_membership.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to delete user group membership")?;
         let _: RemoveUserFromGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise RemoveUserFromGroupResponse. Body was: \"{}\"",
@@ -2010,7 +1986,8 @@ impl UserGroupMembership {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp)
+            .with_context(|| "Failed to list user group membership by user")?;
         let mut resp: ListGroupsForUserResponse =
             serde_json::from_str(&text).with_context(|| {
                 format!(
@@ -2030,14 +2007,10 @@ impl UserGroupMembership {
                 })
                 .collect::<Vec<UserGroupMembership>>(),
         );
-        while resp.list_groups_for_user_result.is_truncated {
+        while let Some(marker) = resp.list_groups_for_user_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListGroupsForUser&UserName={}&Marker={}",
-                client.endpoint,
-                user_name,
-                resp.list_groups_for_user_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                client.endpoint, user_name, marker,
             );
             let response = client
                 .http_client
@@ -2046,7 +2019,8 @@ impl UserGroupMembership {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list user group membership by user")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListGroupsForUserResponse. Body was: \"{}\"",
@@ -2084,7 +2058,8 @@ impl UserGroupMembership {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp)
+            .with_context(|| "Failed to list user group membership by group")?;
         let mut resp: GetGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise GetGroupResponse. Body was: \"{}\"",
@@ -2104,14 +2079,10 @@ impl UserGroupMembership {
                 .collect::<Vec<UserGroupMembership>>(),
         );
 
-        while resp.get_group_result.is_truncated {
+        while let Some(marker) = resp.get_group_result.marker {
             let request_url = format!(
                 "{}iam?Action=GetGroup&GroupName={}&Marker={}",
-                client.endpoint,
-                group_name,
-                resp.get_group_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                client.endpoint, group_name, marker,
             );
             let response = client
                 .http_client
@@ -2120,7 +2091,8 @@ impl UserGroupMembership {
                 .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list user group membership by group")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise GetGroupResponse. Body was: \"{}\"",
