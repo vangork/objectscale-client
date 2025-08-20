@@ -19,7 +19,7 @@ use crate::iam::{
 };
 use crate::response::get_content_text;
 use crate::tenancy::Namespace;
-use crate::user::ManagementUser;
+use crate::user::{ManagementUser, ObjectUser};
 use anyhow::{anyhow, bail, Context as _, Result};
 use reqwest::blocking::{Client, ClientBuilder};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
@@ -858,5 +858,52 @@ impl ManagementClient {
     pub fn list_management_users(&mut self) -> Result<Vec<ManagementUser>> {
         self.auth()?;
         ManagementUser::list(self)
+    }
+
+    /// Creates a user for a specified namespace.
+    ///
+    /// user: ObjectUser to create
+    ///
+    pub fn create_object_user(&mut self, user: ObjectUser) -> Result<ObjectUser> {
+        self.auth()?;
+        ObjectUser::create(self, &user)?;
+        ObjectUser::update(self, &user)?;
+        ObjectUser::get(self, &user.name, &user.namespace)
+    }
+
+    /// Gets user details for the specified user belong to the specified namespace.
+    ///
+    /// name: Valid user identifier
+    /// namespace: The namespace to which user belong
+    ///
+    pub fn get_object_user(&mut self, name: &str, namespace: &str) -> Result<ObjectUser> {
+        self.auth()?;
+        ObjectUser::get(self, name, namespace)
+    }
+
+    /// Updates user details for the specified object user.
+    ///
+    /// user: ObjectUser to be updated
+    ///
+    pub fn update_object_user(&mut self, user: ObjectUser) -> Result<ObjectUser> {
+        self.auth()?;
+        ObjectUser::update(self, &user)
+    }
+
+    /// Deletes the specified user and its secret keys.
+    ///
+    /// name: User to be deleted.
+    /// namespace: Namespace identifier to associate with the user
+    ///
+    pub fn delete_object_user(&mut self, name: &str, namespace: &str) -> Result<()> {
+        self.auth()?;
+        ObjectUser::delete(self, name, namespace)
+    }
+
+    /// Gets identifiers for all configured users.
+    ///
+    pub fn list_object_users(&mut self) -> Result<Vec<ObjectUser>> {
+        self.auth()?;
+        ObjectUser::list(self)
     }
 }

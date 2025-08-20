@@ -420,7 +420,7 @@ impl Namespace {
                 req = req.query(&[("name", name_prefix)]);
             }
             let response = req.send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list namespaces")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListNamespacesResponse. Body was: \"{}\"",
