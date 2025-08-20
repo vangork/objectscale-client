@@ -8,8 +8,6 @@ fn main() {
 
     let mut client =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
-    let users = client
-        .list_object_users()
-        .expect("list object users");
+    let users = client.list_object_users().expect("list object users");
     println!("List object users: {:?}", users);
 }

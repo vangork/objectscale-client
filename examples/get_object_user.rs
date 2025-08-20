@@ -11,6 +11,8 @@ fn main() {
 
     let mut client =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
-    let user = client.get_object_user(name, namespace).expect("get object user");
+    let user = client
+        .get_object_user(name, namespace)
+        .expect("get object user");
     println!("Get object user: {:?}", user);
 }

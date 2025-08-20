@@ -13,7 +13,9 @@ fn main() {
     let name = "luis_user";
     let namespace = "ns1";
 
-    let mut user = client.get_object_user(name, namespace).expect("get object user");
+    let mut user = client
+        .get_object_user(name, namespace)
+        .expect("get object user");
     user.locked = true;
     user.tag = vec![UserTag {
         name: "name2".to_string(),

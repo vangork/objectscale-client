@@ -268,7 +268,10 @@ impl ObjectUser {
     }
 
     pub(crate) fn get(client: &mut ManagementClient, name: &str, namespace: &str) -> Result<Self> {
-        let request_url = format!("{}object/users/{}/info?namespace={}", client.endpoint, name, namespace);
+        let request_url = format!(
+            "{}object/users/{}/info?namespace={}",
+            client.endpoint, name, namespace
+        );
         let resp = client
             .http_client
             .get(request_url)
@@ -276,12 +279,8 @@ impl ObjectUser {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to get object user")?;
-        let resp: Self = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise ObjectUser. Body was: \"{}\"",
-                text
-            )
-        })?;
+        let resp: Self = serde_json::from_str(&text)
+            .with_context(|| format!("Unable to deserialise ObjectUser. Body was: \"{}\"", text))?;
         Ok(resp)
     }
 
@@ -291,11 +290,12 @@ impl ObjectUser {
         namespace: &str,
         tags: Vec<UserTag>,
     ) -> Result<()> {
-        let tag_request = TagRequest {
-            tags,
-        };
+        let tag_request = TagRequest { tags };
         let body = serde_json::to_string(&tag_request)?;
-        let request_url = format!("{}object/users/{}/tags?namespace={}", client.endpoint, name, namespace);
+        let request_url = format!(
+            "{}object/users/{}/tags?namespace={}",
+            client.endpoint, name, namespace
+        );
         let resp = client
             .http_client
             .post(request_url)
@@ -316,11 +316,12 @@ impl ObjectUser {
         namespace: &str,
         tags: Vec<UserTag>,
     ) -> Result<()> {
-        let tag_request = TagRequest {
-            tags,
-        };
+        let tag_request = TagRequest { tags };
         let body = serde_json::to_string(&tag_request)?;
-        let request_url = format!("{}object/users/{}/tags?namespace={}", client.endpoint, name, namespace);
+        let request_url = format!(
+            "{}object/users/{}/tags?namespace={}",
+            client.endpoint, name, namespace
+        );
         let resp = client
             .http_client
             .delete(request_url)
@@ -381,10 +382,7 @@ impl ObjectUser {
 
     pub(crate) fn delete(client: &mut ManagementClient, name: &str, namespace: &str) -> Result<()> {
         let request_url = format!("{}object/users/deactivate", client.endpoint);
-        let body = format!(
-            r#"{{"user":"{}","namespace":"{}"}}"#,
-            name, namespace
-        );
+        let body = format!(r#"{{"user":"{}","namespace":"{}"}}"#, name, namespace);
         let resp = client
             .http_client
             .post(request_url)
@@ -419,7 +417,8 @@ impl ObjectUser {
         })?;
         let mut users: Vec<Self> = vec![];
         for blob_user in resp.users {
-            let user = Self::get(client, &blob_user.userid, &blob_user.namespace).with_context(|| "Failed to list object users")?;
+            let user = Self::get(client, &blob_user.userid, &blob_user.namespace)
+                .with_context(|| "Failed to list object users")?;
             users.push(user);
         }
         while let Some(marker) = resp.next_marker {
@@ -438,7 +437,8 @@ impl ObjectUser {
                 )
             })?;
             for blob_user in resp.users {
-                let user = Self::get(client, &blob_user.userid, &blob_user.namespace).with_context(|| "Failed to list object users")?;
+                let user = Self::get(client, &blob_user.userid, &blob_user.namespace)
+                    .with_context(|| "Failed to list object users")?;
                 users.push(user);
             }
         }
