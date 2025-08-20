@@ -1,16 +1,16 @@
 use objectscale_client::client::ManagementClient;
 
 fn main() {
-    let endpoint = "https://10.225.108.189:443";
+    let endpoint = "https://10.225.108.217:4443";
     let username = "root";
-    let password = "Password123@";
+    let password = "Password123!";
     let insecure = true;
 
-    let user_name = "test";
-    let namespace = "osai0a9250592a131336";
+    let name = "luis_user";
+    let namespace = "ns1";
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
-    let user = client.get_user(user_name, namespace).expect("get user");
+    let user = client.get_user(name, namespace).expect("get user");
     println!("Get user: {:?}", user);
 }

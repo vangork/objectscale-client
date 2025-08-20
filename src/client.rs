@@ -13,7 +13,7 @@
 
 use crate::bucket::Bucket;
 use crate::iam::{
-    AccessKey, Account, AccountAccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment,
+    AccessKey, AccountAccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment,
     LoginProfile, Policy, Role, RolePolicyAttachment, User, UserGroupMembership,
     UserPolicyAttachment,
 };
@@ -138,6 +138,9 @@ impl ManagementClient {
     }
 
     fn log_out(&mut self) -> Result<()> {
+        if self.access_token.is_none() {
+            return Ok(());
+        }
         let request_url = format!("{}logout", self.endpoint);
         let resp = self
             .http_client
@@ -171,80 +174,33 @@ impl ManagementClient {
         Ok(())
     }
 
-    /// Create an IAM account.
-    ///
-    /// account: Iam Account to create
-    ///
-    pub fn create_account(&mut self, account: Account) -> Result<Account> {
-        self.auth()?;
-        if account.tags.is_empty() {
-            Account::create_account(self, account)
-        } else {
-            let tags = account.tags.clone();
-            let account = Account::create_account(self, account)?;
-            Account::tag_account(self, account.account_id.as_str(), tags)?;
-            Account::get_account(self, account.account_id.as_str())
-        }
-    }
-
-    /// Get an IAM account.
-    ///
-    /// account_id: Id of the account
-    ///
-    pub fn get_account(&mut self, account_id: &str) -> Result<Account> {
-        self.auth()?;
-        Account::get_account(self, account_id)
-    }
-
-    /// Update an IAM account.
-    ///
-    /// account: Iam Account to update
-    ///
-    pub fn update_account(&mut self, account: Account) -> Result<Account> {
-        self.auth()?;
-        Account::update_account(self, account)
-    }
-
-    /// Delete an IAM account.
-    ///
-    /// account_id: Id of the account
-    ///
-    pub fn delete_account(&mut self, account_id: &str) -> Result<()> {
-        self.auth()?;
-        let account = Account::get_account(self, account_id)?;
-        if !account.account_disabled {
-            Account::disable_account(self, account_id)?;
-        }
-        Account::delete_account(self, account_id)
-    }
-
-    /// List all IAM accounts.
-    ///
-    pub fn list_accounts(&mut self) -> Result<Vec<Account>> {
-        self.auth()?;
-        Account::list_accounts(self)
-    }
-
     /// Creates a new IAM User.
     ///
     /// user: IAM User to create
     ///
     pub fn create_user(&mut self, user: User) -> Result<User> {
         self.auth()?;
-        let user = User::create(self, user)?;
-        // create user request would accept tags, but the response does not contain them
-        // TODO: report a bug
-        User::get(self, user.user_name.as_str(), user.namespace.as_str())
+        User::create(self, &user)?;
+        User::get(self, &user.user_name, &user.namespace)
     }
 
-    /// Returns the information about the specified IAM User.
+    /// Retrieve IAM user.
     ///
-    /// user_name: The name of the user to retrieve. Cannot be empty.
-    /// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
+    /// name: The name of the user to retrieve.
+    /// namespace: ECS namespace IAM entity belongs to
     ///
-    pub fn get_user(&mut self, user_name: &str, namespace: &str) -> Result<User> {
+    pub fn get_user(&mut self, name: &str, namespace: &str) -> Result<User> {
         self.auth()?;
-        User::get(self, user_name, namespace)
+        User::get(self, name, namespace)
+    }
+
+    /// Updates an IAM user.
+    ///
+    /// user: IAM User to be updated
+    ///
+    pub fn update_user(&mut self, user: User) -> Result<User> {
+        self.auth()?;
+        User::update(self, &user)
     }
 
     /// Delete specified IAM User.
@@ -260,10 +216,6 @@ impl ManagementClient {
     /// Lists the IAM users.
     ///
     /// namespace: Namespace of users(id of the account the user belongs to). Cannot be empty.
-    ///
-    /// TODO:
-    /// list_user won't show tags, or permissions boundary if any
-    /// fix it or report bug
     ///
     pub fn list_users(&mut self, namespace: &str) -> Result<Vec<User>> {
         self.auth()?;

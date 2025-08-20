@@ -1,75 +1,9 @@
 mod common;
-use objectscale_client::iam::{AccountBuilder, PermissionsBoundary, RoleBuilder, Tag};
-
-#[test]
-fn test_account() {
-    let mut management_client = common::create_management_client();
-
-    let name = "testaccount";
-    let description = "testaccount description";
-    let encryption = true;
-
-    let account = AccountBuilder::default()
-        .alias(name)
-        .encryption_enabled(encryption)
-        .description(description)
-        .tags(vec![Tag {
-            key: "key1".to_string(),
-            value: "value1".to_string(),
-        }])
-        .build()
-        .expect("build account");
-    let account = management_client
-        .create_account(account)
-        .expect("create account");
-
-    let mut account = management_client
-        .get_account(&account.account_id)
-        .expect("get account");
-    assert_eq!(account.alias, name);
-    assert_eq!(account.description, description);
-    assert_eq!(account.encryption_enabled, encryption);
-    assert_eq!(account.tags.len(), 1);
-
-    let new_name = "newtestaccount";
-    let new_description = "newtestaccount description";
-    account.alias = new_name.to_string();
-    account.description = new_description.to_string();
-    let account = management_client
-        .update_account(account)
-        .expect("update account");
-    assert_eq!(account.alias, new_name);
-    assert_eq!(account.description, new_description);
-    assert_eq!(account.encryption_enabled, encryption);
-    assert_eq!(account.tags.len(), 1);
-
-    let accounts = management_client.list_accounts().expect("list accounts");
-    assert_ne!(accounts.len(), 0);
-
-    management_client
-        .delete_account(&account.account_id)
-        .expect("delete account");
-
-    let account = AccountBuilder::default()
-        .alias("!test-123")
-        .build()
-        .expect("build account");
-    let result = management_client.create_account(account);
-    assert!(result.is_err());
-}
+use objectscale_client::iam::{IamTag, PermissionsBoundary, RoleBuilder, UserBuilder};
 
 #[test]
 fn test_role() {
     let mut management_client = common::create_management_client();
-
-    let account_name = "testrole";
-    let account = AccountBuilder::default()
-        .alias(account_name)
-        .build()
-        .expect("build account");
-    let account = management_client
-        .create_account(account)
-        .expect("create account");
 
     let role_name = "testrole";
     let description = "testrole description";
@@ -86,7 +20,7 @@ fn test_role() {
             permissions_boundary_arn: arn.to_string(),
             permissions_boundary_type: "".to_string(),
         })
-        .tags(vec![Tag {
+        .tags(vec![IamTag {
             key: "key1".to_string(),
             value: "value1".to_string(),
         }])
@@ -130,8 +64,4 @@ fn test_role() {
         .list_roles(&account.account_id)
         .expect("list roles");
     assert_eq!(roles.len(), 0);
-
-    management_client
-        .delete_account(&account.account_id)
-        .expect("delete account");
 }

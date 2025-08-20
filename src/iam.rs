@@ -17,13 +17,7 @@ use anyhow::{anyhow, Context as _, Result};
 use derive_builder::Builder;
 use reqwest::header::{ACCEPT, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
-use serde_aux::field_attributes::{deserialize_bool_from_anything, deserialize_default_from_null};
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct CreateAccountResult {
-    pub account: Account,
-}
+use serde_aux::field_attributes::deserialize_default_from_null;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -31,336 +25,14 @@ struct ResponseMetadata {
     pub request_id: String,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct CreateAccountResponse {
-    pub response_metadata: ResponseMetadata,
-    pub create_account_result: CreateAccountResult,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct TagAccountResponse {
-    pub response_metadata: ResponseMetadata,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct GetAccountResult {
-    pub account: Account,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct GetAccountResponse {
-    pub response_metadata: ResponseMetadata,
-    pub get_account_result: GetAccountResult,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct UpdateAccountResult {
-    pub account: Account,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct UpdateAccountResponse {
-    pub response_metadata: ResponseMetadata,
-    pub update_account_result: UpdateAccountResult,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct DeleteAccountResponse {
-    pub response_metadata: ResponseMetadata,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct DisableAccountResponse {
-    pub response_metadata: ResponseMetadata,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct ListAccountsResult {
-    pub account_metadata: Vec<Account>,
-    pub is_truncated: bool,
-    pub marker: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct ListAccountsResponse {
-    // Does not align with API description
-    pub response_metadata: ResponseMetadata,
-    pub list_accounts_result: ListAccountsResult,
-}
-
 /// Lables for IAM account, role and user.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct Tag {
+pub struct IamTag {
     /// tag key
     pub key: String,
     /// tag value
     pub value: String,
-}
-
-/// An ObjectScale Account is a logical construct that corresponds to a customer business unit, tenant, project, and so on.
-///
-/// You can build an Account with AccountBuilder and pass to [`create_account`](`ManagementClient::create_account`) method.
-///  [`get_account`](`ManagementClient::get_account`) would fetch the existing Account from ObjectScale server.
-///
-/// # Examples
-/// ```no_run
-/// use objectscale_client::iam::{AccountBuilder, Tag};
-/// let account = AccountBuilder::default()
-///     .alias("test")
-///     .encryption_enabled(true)
-///     .description("test")
-///     .tags(vec![Tag {
-///         key: "key1".to_string(),
-///         value: "value1".to_string(),
-///     }])
-///     .build()
-///     .expect("account");
-/// ```
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
-#[builder(setter(skip))]
-pub struct Account {
-    /// The Id of the account
-    pub account_id: String,
-    /// The name/id of the object scale that the account is associated with
-    pub objscale: String,
-    /// The date and time, in the format of YYYY-MM-DDTHH:mm:ssZ, when the account created
-    pub create_date: String,
-    /// Indicate if encryption is enabled for the account
-    #[builder(setter(skip = false), default = "false")]
-    #[serde(deserialize_with = "deserialize_bool_from_anything")]
-    pub encryption_enabled: bool,
-    /// account disabled
-    #[serde(deserialize_with = "deserialize_bool_from_anything")]
-    pub account_disabled: bool,
-    #[builder(setter(into))]
-    /// An Alias for an account
-    pub alias: String,
-    #[builder(setter(into), default)]
-    /// The description for an account
-    // It does not have description field if to create account on GUI
-    #[serde(default)]
-    pub description: String,
-    /// protection enabled
-    #[serde(deserialize_with = "deserialize_bool_from_anything")]
-    pub protection_enabled: bool,
-    /// Tso id
-    // list account API won't return tso_id
-    #[serde(default)]
-    pub tso_id: String,
-    /// Labels
-    // If tags are not set, it won't have the field of "Tags" in create/get account reponse
-    #[builder(setter(skip = false), default)]
-    #[serde(default, deserialize_with = "deserialize_default_from_null")]
-    pub tags: Vec<Tag>,
-}
-
-impl Account {
-    pub(crate) fn create_account(
-        client: &mut ManagementClient,
-        account: Account,
-    ) -> Result<Account> {
-        // EncryptionEnabled dose not align with api description
-        // IsComplianceEnabled dose not work
-        let request_url = format!(
-            "{}iam?Action=CreateAccount&Alias={}&EncryptionEnabled={}&Description={}",
-            client.endpoint, account.alias, account.encryption_enabled, account.description,
-        );
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let resp: CreateAccountResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise CreateAccountResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(resp.create_account_result.account)
-    }
-
-    pub(crate) fn tag_account(
-        client: &mut ManagementClient,
-        account_id: &str,
-        tags: Vec<Tag>,
-    ) -> Result<()> {
-        if tags.is_empty() {
-            return Ok(());
-        }
-        let mut request_url = format!(
-            "{}iam?Action=TagAccount&AccountId={}",
-            client.endpoint, account_id,
-        );
-        for (index, tag) in tags.iter().enumerate() {
-            request_url = format!(
-                "{}&Tags.member.{}.Key={}&Tags.member.{}.Value={}",
-                request_url,
-                index + 1,
-                tag.key,
-                index + 1,
-                tag.value
-            );
-        }
-
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let _: TagAccountResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise TagAccountResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(())
-    }
-
-    pub(crate) fn get_account(client: &mut ManagementClient, account_id: &str) -> Result<Account> {
-        let request_url = format!(
-            "{}iam?Action=GetAccount&AccountId={}",
-            client.endpoint, account_id,
-        );
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let resp: GetAccountResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise GetAccountResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(resp.get_account_result.account)
-    }
-
-    pub(crate) fn update_account(
-        client: &mut ManagementClient,
-        account: Account,
-    ) -> Result<Account> {
-        let request_url = format!(
-            "{}iam?Action=UpdateAccount&AccountId={}&Alias={}&Description={}",
-            client.endpoint, account.account_id, account.alias, account.description,
-        );
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let resp: UpdateAccountResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise UpdateAccountResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(resp.update_account_result.account)
-    }
-
-    pub(crate) fn disable_account(client: &mut ManagementClient, account_id: &str) -> Result<()> {
-        let request_url = format!(
-            "{}iam?Action=DisableAccount&AccountId={}",
-            client.endpoint, account_id
-        );
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let _: DisableAccountResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise DisableAccountResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(())
-    }
-
-    pub(crate) fn delete_account(client: &mut ManagementClient, account_id: &str) -> Result<()> {
-        let request_url = format!(
-            "{}iam?Action=DeleteAccount&AccountId={}",
-            client.endpoint, account_id
-        );
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let _: DeleteAccountResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise DeleteAccountResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(())
-    }
-
-    pub(crate) fn list_accounts(client: &mut ManagementClient) -> Result<Vec<Account>> {
-        let request_url = format!("{}iam?Action=ListAccounts", client.endpoint);
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .send()?;
-        let text = get_content_text(resp)?;
-        let mut resp: ListAccountsResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise ListAccountsResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        let mut accounts: Vec<Account> = vec![];
-        accounts.extend(resp.list_accounts_result.account_metadata);
-        while resp.list_accounts_result.is_truncated {
-            let request_url = format!(
-                "{}iam?Action=ListAccounts?Marker={}",
-                client.endpoint,
-                resp.list_accounts_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
-            );
-            let response = client
-                .http_client
-                .post(request_url)
-                .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-                .send()?;
-            let text = get_content_text(response)?;
-            resp = serde_json::from_str(&text).with_context(|| {
-                format!(
-                    "Unable to deserialise ListAccountsResponse. Body was: \"{}\"",
-                    text
-                )
-            })?;
-            accounts.extend(resp.list_accounts_result.account_metadata);
-        }
-        Ok(accounts)
-    }
 }
 
 /// In ObjectScale, an IAM User is a person or application in the account.
@@ -373,8 +45,6 @@ pub struct User {
     /// Arn that identifies the user.
     pub arn: String,
     /// ISO 8601 format DateTime when user was created.
-    // serde(default) is for GetGroupResponse which doesn't contain create_date
-    #[serde(default)]
     pub create_date: String,
     /// The path to the IAM User.
     pub path: String,
@@ -388,10 +58,9 @@ pub struct User {
     /// Simple name identifying the User.
     #[builder(setter(into))]
     pub user_name: String,
-    /// The list of Tags associated with the User.
+    /// List of Tags associated with the User.
     #[builder(setter(skip = false), default)]
-    #[serde(default, deserialize_with = "deserialize_default_from_null")]
-    pub tags: Vec<Tag>,
+    pub tags: Vec<IamTag>,
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -404,25 +73,6 @@ pub struct PermissionsBoundary {
     pub permissions_boundary_arn: String,
     /// The permissions boundary usage type that indicates what type of IAM resource is used as the permissions boundary for an entity. This data type can only have a value of Policy.
     pub permissions_boundary_type: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct CreateUserResult {
-    pub user: User,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct CreateUserResponse {
-    pub response_metadata: ResponseMetadata,
-    pub create_user_result: CreateUserResult,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct TagUserResponse {
-    pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
@@ -440,14 +90,21 @@ struct GetUserResponse {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct DeleteUserResponse {
+struct IamResponse {
     pub response_metadata: ResponseMetadata,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+struct ListUser {
+    pub user_name: String,
+    pub user_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 struct ListUsersResult {
-    pub users: Vec<User>,
+    pub users: Vec<ListUser>,
     pub is_truncated: bool,
     pub marker: Option<String>,
 }
@@ -460,18 +117,17 @@ struct ListUsersResponse {
 }
 
 impl User {
-    pub(crate) fn create(client: &mut ManagementClient, user: User) -> Result<User> {
+    pub(crate) fn create(client: &mut ManagementClient, user: &Self) -> Result<()> {
         let request_url = format!(
             "{}iam?Action=CreateUser&UserName={}",
             client.endpoint, user.user_name,
         );
-        let namespace = user.namespace;
         let mut req = client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
-            .header("x-emc-namespace", &namespace);
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", &user.namespace);
 
         if !user
             .permissions_boundary
@@ -480,7 +136,7 @@ impl User {
         {
             req = req.query(&[(
                 "PermissionsBoundary",
-                user.permissions_boundary.permissions_boundary_arn,
+                &user.permissions_boundary.permissions_boundary_arn,
             )]);
         }
         for (index, tag) in user.tags.iter().enumerate() {
@@ -489,23 +145,96 @@ impl User {
         }
 
         let resp = req.send()?;
-        let text = get_content_text(resp)?;
-        let resp: CreateUserResponse = serde_json::from_str(&text).with_context(|| {
+        get_content_text(resp).with_context(|| "Failed to create iam user")?;
+        Ok(())
+    }
+
+    pub(crate) fn get(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+    ) -> Result<Self> {
+        let request_url = format!(
+            "{}iam?Action=GetUser&UserName={}",
+            client.endpoint, name,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get iam user")?;
+        let resp: GetUserResponse = serde_json::from_str(&text).with_context(|| {
             format!(
-                "Unable to deserialise CreateUserResponse. Body was: \"{}\"",
+                "Unable to deserialise GetUserResponse. Body was: \"{}\"",
                 text
             )
         })?;
-        let mut user = resp.create_user_result.user;
-        user.namespace = namespace;
+        let mut user = resp.get_user_result.user;
+        user.namespace = namespace.to_string();
         Ok(user)
     }
 
-    pub(crate) fn tag_user(
+    pub(crate) fn update_permission_boundary(
         client: &mut ManagementClient,
         user_name: &str,
         namespace: &str,
-        tags: Vec<Tag>,
+        permissions_boundary_arn: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=PutUserPermissionsBoundary&UserName={}&PermissionsBoundary={}",
+            client.endpoint, user_name, permissions_boundary_arn
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to update iam user permissions boundary")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise PutUserPermissionsBoundaryResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(())
+    }
+
+    pub(crate) fn delete_permission_boundary(
+        client: &mut ManagementClient,
+        user_name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=DeleteUserPermissionsBoundary&UserName={}",
+            client.endpoint, user_name,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to delete iam user permissions boundary")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise DeleteUserPermissionsBoundaryResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(())
+    }
+
+    pub(crate) fn add_tag(
+        client: &mut ManagementClient,
+        user_name: &str,
+        namespace: &str,
+        tags: Vec<IamTag>,
     ) -> Result<()> {
         if tags.is_empty() {
             return Ok(());
@@ -529,11 +258,11 @@ impl User {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let _: TagUserResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to tag user")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise TagUserResponse. Body was: \"{}\"",
                 text
@@ -542,32 +271,72 @@ impl User {
         Ok(())
     }
 
-    pub(crate) fn get(
+    pub(crate) fn delete_tag(
         client: &mut ManagementClient,
         user_name: &str,
         namespace: &str,
-    ) -> Result<User> {
-        let request_url = format!(
-            "{}iam?Action=GetUser&UserName={}",
+        tags: Vec<IamTag>,
+    ) -> Result<()> {
+        if tags.is_empty() {
+            return Ok(());
+        }
+        let mut request_url = format!(
+            "{}iam?Action=UntagUser&UserName={}",
             client.endpoint, user_name,
         );
+        for (index, tag) in tags.iter().enumerate() {
+            request_url = format!(
+                "{}&TagKeys.member.{}={}",
+                request_url,
+                index + 1,
+                tag.key,
+            );
+        }
+
         let resp = client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let resp: GetUserResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to untag user")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
-                "Unable to deserialise GetUserResponse. Body was: \"{}\"",
+                "Unable to deserialise UntagUserResponse. Body was: \"{}\"",
                 text
             )
         })?;
-        let mut user = resp.get_user_result.user;
-        user.namespace = namespace.to_string();
-        Ok(user)
+        Ok(())
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, user: &Self) -> Result<Self> {
+        let current_user = Self::get(client, &user.user_name, &user.namespace)?;
+
+        if user.permissions_boundary.permissions_boundary_arn != current_user.permissions_boundary.permissions_boundary_arn {
+            if !current_user.permissions_boundary.permissions_boundary_arn.is_empty() {
+                Self::delete_permission_boundary(client, &user.user_name, &user.namespace)?;
+            } 
+            if !user.permissions_boundary.permissions_boundary_arn.is_empty() {
+                Self::update_permission_boundary(
+                    client,
+                    &user.user_name,
+                    &user.namespace,
+                    &user.permissions_boundary.permissions_boundary_arn,
+                )?;
+            }
+        }
+
+        if user.tags != current_user.tags {
+            if !current_user.tags.is_empty() {
+                Self::delete_tag(client, &user.user_name, &user.namespace, current_user.tags)?;
+            }
+            if !user.tags.is_empty() {
+                Self::add_tag(client, &user.user_name, &user.namespace, user.tags.clone())?;
+            }
+        }
+
+        Self::get(client, &user.user_name, &user.namespace)
     }
 
     pub(crate) fn delete(
@@ -583,11 +352,11 @@ impl User {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let _: DeleteUserResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to delete iam user")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DeleteUserResponse. Body was: \"{}\"",
                 text
@@ -596,7 +365,7 @@ impl User {
         Ok(())
     }
 
-    pub(crate) fn list(client: &mut ManagementClient, namespace: &str) -> Result<Vec<User>> {
+    pub(crate) fn list(client: &mut ManagementClient, namespace: &str) -> Result<Vec<Self>> {
         let request_url = format!("{}iam?Action=ListUsers", client.endpoint);
         let resp = client
             .http_client
@@ -612,8 +381,12 @@ impl User {
                 text
             )
         })?;
-        let mut users: Vec<User> = vec![];
-        users.extend(resp.list_users_result.users);
+        let mut users: Vec<Self> = vec![];
+        for user in resp.list_users_result.users {
+            let user = Self::get(client, &user.user_name, &namespace)
+                .with_context(|| "Failed to list object users")?;
+            users.push(user);
+        }
         while resp.list_users_result.is_truncated {
             let request_url = format!(
                 "{}iam?Action=ListUsers&Marker={}",
@@ -636,11 +409,12 @@ impl User {
                     text
                 )
             })?;
-            users.extend(resp.list_users_result.users);
+            for user in resp.list_users_result.users {
+            let user = Self::get(client, &user.user_name, &namespace)
+                    .with_context(|| "Failed to list object users")?;
+                users.push(user);
+            }
         }
-        users
-            .iter_mut()
-            .for_each(|user| user.namespace = namespace.to_string());
         Ok(users)
     }
 }
@@ -1896,7 +1670,7 @@ pub struct Role {
     /// The list of Tags associated with the role.
     #[builder(setter(skip = false), default)]
     #[serde(default, deserialize_with = "deserialize_default_from_null")]
-    pub tags: Vec<Tag>,
+    pub tags: Vec<IamTag>,
     /// Permissions boundary
     // list role API won't return permissions_boundary if not set
     #[builder(setter(skip = false), default)]

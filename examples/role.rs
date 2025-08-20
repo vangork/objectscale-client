@@ -1,5 +1,5 @@
 use objectscale_client::client::ManagementClient;
-use objectscale_client::iam::{PermissionsBoundary, RoleBuilder, Tag};
+use objectscale_client::iam::{PermissionsBoundary, RoleBuilder, IamTag};
 
 fn main() {
     let endpoint = "https://10.225.108.189:443";
@@ -21,7 +21,7 @@ fn main() {
             permissions_boundary_arn: arn.to_string(),
             permissions_boundary_type: "".to_string(),
         })
-        .tags(vec![Tag {
+        .tags(vec![IamTag {
             key: "key1".to_string(),
             value: "value1".to_string(),
         }])
