@@ -15,15 +15,12 @@ use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
 use anyhow::{anyhow, Context as _, Result};
 use derive_builder::Builder;
-use reqwest::header::{ACCEPT, AUTHORIZATION};
+use reqwest::header::ACCEPT;
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::deserialize_default_from_null;
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct ResponseMetadata {
-    pub request_id: String,
-}
+// TODO:
+// - Support for `inline_policy` for user, group and role
 
 /// Lables for IAM account, role and user.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -35,9 +32,16 @@ pub struct IamTag {
     pub value: String,
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct PermissionsBoundary {
+    /// The ARN of the policy set as permissions boundary.
+    pub permissions_boundary_arn: String,
+    /// The permissions boundary usage type that indicates what type of IAM resource is used as the permissions boundary for an entity. This data type can only have a value of Policy.
+    pub permissions_boundary_type: String,
+}
+
 /// In ObjectScale, an IAM User is a person or application in the account.
-// TODO:
-// - Support for `inline_policy` for user, group and role
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
@@ -66,13 +70,10 @@ pub struct User {
     pub namespace: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct PermissionsBoundary {
-    /// The ARN of the policy set as permissions boundary.
-    pub permissions_boundary_arn: String,
-    /// The permissions boundary usage type that indicates what type of IAM resource is used as the permissions boundary for an entity. This data type can only have a value of Policy.
-    pub permissions_boundary_type: String,
+struct ResponseMetadata {
+    pub request_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -374,7 +375,7 @@ impl User {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list iam user")?;
         let mut resp: ListUsersResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise ListUsersResponse. Body was: \"{}\"",
@@ -399,10 +400,10 @@ impl User {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list iam user")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListUsersResponse. Body was: \"{}\"",
@@ -436,18 +437,6 @@ pub struct UserPolicyAttachment {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct AttachUserPolicyResponse {
-    pub response_metadata: ResponseMetadata,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct DetachUserPolicyResponse {
-    pub response_metadata: ResponseMetadata,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 struct ListAttachedUserPoliciesResult {
     pub attached_policies: Vec<UserPolicyAttachment>,
     pub is_truncated: bool,
@@ -475,11 +464,11 @@ impl UserPolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &user_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let _: AttachUserPolicyResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to create user policy attachment")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise AttachUserPolicyResponse. Body was: \"{}\"",
                 text
@@ -501,11 +490,11 @@ impl UserPolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", user_policy_attachment.namespace)
             .send()?;
-        let text = get_content_text(resp)?;
-        let _: DetachUserPolicyResponse = serde_json::from_str(&text).with_context(|| {
+        let text = get_content_text(resp).with_context(|| "Failed to delete user policy attachment")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise DetachUserPolicyResponse. Body was: \"{}\"",
                 text
@@ -527,10 +516,10 @@ impl UserPolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp)?;
+        let text = get_content_text(resp).with_context(|| "Failed to list user policy attachments")?;
         let mut resp: ListAttachedUserPoliciesResponse =
             serde_json::from_str(&text).with_context(|| {
                 format!(
@@ -540,23 +529,21 @@ impl UserPolicyAttachment {
             })?;
         let mut attachments: Vec<UserPolicyAttachment> = vec![];
         attachments.extend(resp.list_attached_user_policies_result.attached_policies);
-        while resp.list_attached_user_policies_result.is_truncated {
+        while let Some(marker) = resp.list_attached_user_policies_result.marker {
             let request_url = format!(
                 "{}iam?Action=ListAttachedUserPolicies&UserName={}&Marker={}",
                 client.endpoint,
                 user_name,
-                resp.list_attached_user_policies_result
-                    .marker
-                    .ok_or_else(|| anyhow!("No marker found"))?,
+                marker,
             );
             let response = client
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
-            let text = get_content_text(response)?;
+            let text = get_content_text(response).with_context(|| "Failed to list user policy attachments")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
                     "Unable to deserialise ListAttachedUserPoliciesResponse. Body was: \"{}\"",
@@ -641,7 +628,7 @@ impl LoginProfile {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -670,7 +657,7 @@ impl LoginProfile {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -699,7 +686,7 @@ impl LoginProfile {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -789,7 +776,7 @@ impl AccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -814,7 +801,7 @@ impl AccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -841,7 +828,7 @@ impl AccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -867,7 +854,7 @@ impl AccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -892,7 +879,7 @@ impl AccessKey {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -982,7 +969,7 @@ impl AccountAccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp)?;
         let resp: CreateAccountAccessKeyResponse =
@@ -1010,7 +997,7 @@ impl AccountAccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp)?;
         let _: UpdateAccountAccessKeyResponse = serde_json::from_str(&text).with_context(|| {
@@ -1035,7 +1022,7 @@ impl AccountAccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp)?;
         let _: DeleteAccountAccessKeyResponse = serde_json::from_str(&text).with_context(|| {
@@ -1059,7 +1046,7 @@ impl AccountAccessKey {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp)?;
         let resp: ListAccountAccessKeysResponse =
@@ -1169,7 +1156,7 @@ impl Policy {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1197,7 +1184,7 @@ impl Policy {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1225,7 +1212,7 @@ impl Policy {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1244,7 +1231,7 @@ impl Policy {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1268,7 +1255,7 @@ impl Policy {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -1370,7 +1357,7 @@ impl Group {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1398,7 +1385,7 @@ impl Group {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1426,7 +1413,7 @@ impl Group {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1445,7 +1432,7 @@ impl Group {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1469,7 +1456,7 @@ impl Group {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -1544,7 +1531,7 @@ impl GroupPolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &group_policy_attachment.namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1570,7 +1557,7 @@ impl GroupPolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", group_policy_attachment.namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1596,7 +1583,7 @@ impl GroupPolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1622,7 +1609,7 @@ impl GroupPolicyAttachment {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -1751,7 +1738,7 @@ impl Role {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace);
 
         if !role.description.is_empty() {
@@ -1800,7 +1787,7 @@ impl Role {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1825,7 +1812,7 @@ impl Role {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &namespace);
 
         if !role.description.is_empty() {
@@ -1861,7 +1848,7 @@ impl Role {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1880,7 +1867,7 @@ impl Role {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -1904,7 +1891,7 @@ impl Role {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -1979,7 +1966,7 @@ impl RolePolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &role_policy_attachment.namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2005,7 +1992,7 @@ impl RolePolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", role_policy_attachment.namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2031,7 +2018,7 @@ impl RolePolicyAttachment {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2057,7 +2044,7 @@ impl RolePolicyAttachment {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -2145,7 +2132,7 @@ impl EntitiesForPolicy {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2196,7 +2183,7 @@ impl EntitiesForPolicy {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -2285,7 +2272,7 @@ impl UserGroupMembership {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &user_group_membership.namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2311,7 +2298,7 @@ impl UserGroupMembership {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", user_group_membership.namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2337,7 +2324,7 @@ impl UserGroupMembership {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2373,7 +2360,7 @@ impl UserGroupMembership {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;
@@ -2411,7 +2398,7 @@ impl UserGroupMembership {
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
-            .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
         let text = get_content_text(resp)?;
@@ -2447,7 +2434,7 @@ impl UserGroupMembership {
                 .http_client
                 .post(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .header("x-emc-namespace", namespace)
                 .send()?;
             let text = get_content_text(response)?;

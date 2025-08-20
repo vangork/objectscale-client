@@ -2,18 +2,19 @@ use objectscale_client::client::ManagementClient;
 use objectscale_client::iam::UserPolicyAttachmentBuilder;
 
 fn main() {
-    let endpoint = "https://10.225.108.189:443";
+    let endpoint = "https://10.225.108.217:4443";
     let username = "root";
-    let password = "Password123@";
+    let password = "Password123!";
     let insecure = true;
 
-    let user_name = "luis";
-    let arn = "urn:osc:iam:::policy/CRRFullAccess";
-    //let arn = "urn:osc:iam:::policy/CRRSameAccountFullAccess";
-    let namespace = "osai0a9250592a131336";
+    let user_name = "luis_user";
+    let namespace = "ns1";
+    let arn = "urn:ecs:iam:::policy/ECSS3FullAccess";
+    //let arn = "urn:ecs:iam:::policy/ECSDenyAll";
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
+
     let user_policy_attachment = UserPolicyAttachmentBuilder::default()
         .user_name(user_name)
         .policy_arn(arn)

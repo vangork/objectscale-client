@@ -14,7 +14,7 @@ use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
 use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
-use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_bool_from_anything, deserialize_default_from_null};
 
@@ -376,7 +376,7 @@ impl Bucket {
                 .http_client
                 .get(request_url)
                 .header(ACCEPT, "application/json")
-                .header(AUTHORIZATION, client.access_token.as_ref().unwrap())
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
                 .send()?;
             let text = get_content_text(response).with_context(|| "Failed to list bucket")?;
             resp = serde_json::from_str(&text).with_context(|| {
