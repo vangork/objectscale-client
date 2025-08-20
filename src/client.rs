@@ -13,8 +13,7 @@
 
 use crate::bucket::Bucket;
 use crate::iam::{
-    AccessKey, AccountAccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment,
-    LoginProfile, Policy, Role, RolePolicyAttachment, User, UserGroupMembership,
+    AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment, User, UserGroupMembership,
     UserPolicyAttachment,
 };
 use crate::response::get_content_text;
@@ -262,35 +261,6 @@ impl ManagementClient {
         UserPolicyAttachment::list(self, user_name, namespace)
     }
 
-    /// Creates a password for the specified IAM user.
-    ///
-    /// login_profile: LoginProfile to create
-    ///
-    pub fn create_login_profile(&mut self, login_profile: LoginProfile) -> Result<LoginProfile> {
-        self.auth()?;
-        LoginProfile::create(self, login_profile)
-    }
-
-    /// Retrieves the password for the specified IAM user
-    ///
-    /// user_name: Name of the user to delete password. Cannot be empty.
-    /// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-    ///
-    pub fn get_login_profile(&mut self, user_name: &str, namespace: &str) -> Result<LoginProfile> {
-        self.auth()?;
-        LoginProfile::get(self, user_name, namespace)
-    }
-
-    /// Deletes the password for the specified IAM user
-    ///
-    /// user_name: Name of the user to delete password. Cannot be empty.
-    /// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-    ///
-    pub fn delete_login_profile(&mut self, user_name: &str, namespace: &str) -> Result<()> {
-        self.auth()?;
-        LoginProfile::delete(self, user_name, namespace)
-    }
-
     /// Creates AccessKey for user.
     ///
     /// access_key: AccessKey to create
@@ -340,60 +310,6 @@ impl ManagementClient {
     pub fn list_access_keys(&mut self, user_name: &str, namespace: &str) -> Result<Vec<AccessKey>> {
         self.auth()?;
         AccessKey::list(self, user_name, namespace)
-    }
-
-    /// Creates account AccessKey.
-    ///
-    /// account_access_key: Account Access Key to create
-    ///
-    pub fn create_account_access_key(
-        &mut self,
-        account_access_key: AccountAccessKey,
-    ) -> Result<AccountAccessKey> {
-        self.auth()?;
-        AccountAccessKey::create(self, account_access_key)
-    }
-
-    /// Updates account AccessKey.
-    ///
-    /// account_access_key: Account Access Key to update
-    ///
-    pub fn update_account_access_key(
-        &mut self,
-        account_access_key: AccountAccessKey,
-    ) -> Result<AccountAccessKey> {
-        self.auth()?;
-        AccountAccessKey::update(self, account_access_key.clone())?;
-        let account_access_keys = self.list_account_access_keys(&account_access_key.account_id)?;
-        let account_access_key = account_access_keys
-            .iter()
-            .find(|key| key.access_key_id == account_access_key.access_key_id);
-        account_access_key
-            .map(|key| key.to_owned())
-            .ok_or(anyhow!("AccountAccessKey not found"))
-    }
-
-    /// Deletes the access key pair associated with the specified IAM account.
-    ///
-    /// access_key_id: The ID of the access key. Cannot be empty.
-    /// account_id: The id of the account. Cannot be empty.
-    ///
-    pub fn delete_account_access_key(
-        &mut self,
-        access_key_id: &str,
-        account_id: &str,
-    ) -> Result<()> {
-        self.auth()?;
-        AccountAccessKey::delete(self, access_key_id, account_id)
-    }
-
-    /// Returns information about the access key IDs associated with the specified IAM account.
-    ///
-    /// account_id: The id of the account. Cannot be empty.
-    ///
-    pub fn list_account_access_keys(&mut self, account_id: &str) -> Result<Vec<AccountAccessKey>> {
-        self.auth()?;
-        AccountAccessKey::list(self, account_id)
     }
 
     /// Create a new Managed Policy.
