@@ -1,14 +1,14 @@
 use objectscale_client::client::ManagementClient;
 
 fn main() {
-    let endpoint = "https://10.225.108.189:443";
+    let endpoint = "https://10.225.108.217:4443";
     let username = "root";
-    let password = "Password123@";
+    let password = "Password123!";
     let insecure = true;
 
-    let policy_arn = "urn:osc:iam:::policy/CRRFullAccess";
-    //let arn = "urn:osc:iam:::policy/CRRSameAccountFullAccess";
-    let namespace = "osai0a9250592a131336";
+    let namespace = "ns1";
+    let policy_arn = "urn:ecs:iam:::policy/ECSS3ReadOnlyAccess";
+    //let arn = "urn:ecs:iam:::policy/ECSDenyAll";
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");

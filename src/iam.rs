@@ -984,9 +984,17 @@ struct CreateGroupResponse {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+struct SimpleUser {
+    pub user_name: String,
+    pub arn: String,
+    pub user_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 struct GetGroupResult {
     pub group: Group,
-    pub users: Vec<User>,
+    pub users: Vec<SimpleUser>,
     pub is_truncated: bool,
     pub marker: Option<String>,
 }
@@ -2112,8 +2120,16 @@ struct RemoveUserFromGroupResponse {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+struct SimpleGroup {
+    pub group_name: String,
+    pub arn: String,
+    pub group_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 struct ListGroupsForUserResult {
-    pub groups: Vec<Group>,
+    pub groups: Vec<SimpleGroup>,
     pub is_truncated: bool,
     pub marker: Option<String>,
 }
@@ -2272,7 +2288,7 @@ impl UserGroupMembership {
             .with_context(|| "Failed to list user group membership by group")?;
         let mut resp: GetGroupResponse = serde_json::from_str(&text).with_context(|| {
             format!(
-                "Unable to deserialise GetGroupResponse. Body was: \"{}\"",
+                "Unable to deserialise list by group GetGroupResponse. Body was: \"{}\"",
                 text
             )
         })?;
@@ -2305,7 +2321,7 @@ impl UserGroupMembership {
                 .with_context(|| "Failed to list user group membership by group")?;
             resp = serde_json::from_str(&text).with_context(|| {
                 format!(
-                    "Unable to deserialise GetGroupResponse. Body was: \"{}\"",
+                    "Unable to deserialise list by group GetGroupResponse. Body was: \"{}\"",
                     text
                 )
             })?;
