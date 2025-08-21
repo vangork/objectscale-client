@@ -1,12 +1,22 @@
 mod common;
 use objectscale_client::iam::{IamTag, PermissionsBoundary, RoleBuilder, UserBuilder};
+use objectscale_client::tenancy::NamespaceBuilder;
 
 #[test]
 fn test_role() {
-    let mut management_client = common::create_management_client();
+    let mut client = common::create_management_client();
 
-    let role_name = "testrole";
-    let description = "testrole description";
+    let namespace_name = "test_role";
+    let namespace = NamespaceBuilder::default()
+        .name(namespace_name)
+        .build()
+        .expect("build namespace");
+    let namespace = client
+        .create_namespace(namespace)
+        .expect("create namespace");
+
+    let role_name = "test_role";
+    let description = "test role description";
     let duration = 9600;
     let arn = "urn:osc:iam:::policy/CRRFullAccess";
     let assume_doc = r#"{"Version":"2024-07-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:osc:iam::osai0a9250592a131336:user/luis"]},"Action":"sts:AssumeRole"}]}"#;
@@ -24,18 +34,18 @@ fn test_role() {
             key: "key1".to_string(),
             value: "value1".to_string(),
         }])
-        .namespace(&account.account_id)
+        .namespace(namespace_name)
         .build()
         .expect("role");
-    let _ = management_client.create_role(role).expect("create role");
+    let _ = client.create_role(role).expect("create role");
 
-    let mut role = management_client
-        .get_role(role_name, &account.account_id)
+    let mut role = client
+        .get_role(role_name, namespace_name)
         .expect("get role");
     assert_eq!(role.role_name, role_name);
     assert_eq!(role.description, description);
     assert_eq!(role.max_session_duration, duration);
-    assert_eq!(role.namespace, account.account_id);
+    assert_eq!(role.namespace, namespace_name);
     assert_eq!(role.permissions_boundary.permissions_boundary_arn, arn);
     assert_eq!(role.tags.len(), 1);
 
@@ -43,25 +53,25 @@ fn test_role() {
     let new_description = "newtestrole description";
     role.max_session_duration = new_duration;
     role.description = new_description.to_string();
-    let role = management_client.update_role(role).expect("update role");
+    let role = client.update_role(role).expect("update role");
     assert_eq!(role.role_name, role_name);
     assert_eq!(role.max_session_duration, new_duration);
     assert_eq!(role.description, new_description);
-    assert_eq!(role.namespace, account.account_id);
+    assert_eq!(role.namespace, namespace_name);
     assert_eq!(role.permissions_boundary.permissions_boundary_arn, arn);
     assert_eq!(role.tags.len(), 1);
 
-    let roles = management_client
-        .list_roles(&account.account_id)
-        .expect("list roles");
+    let roles = client.list_roles(namespace_name).expect("list roles");
     assert_eq!(roles.len(), 1);
 
-    management_client
-        .delete_role(role_name, &account.account_id)
+    client
+        .delete_role(role_name, namespace_name)
         .expect("delete role");
 
-    let roles = management_client
-        .list_roles(&account.account_id)
-        .expect("list roles");
+    let roles = client.list_roles(namespace_name).expect("list roles");
     assert_eq!(roles.len(), 0);
+
+    client
+        .delete_namespace(&namespace.id)
+        .expect("delete namespace");
 }

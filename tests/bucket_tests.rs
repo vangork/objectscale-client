@@ -6,7 +6,7 @@ use objectscale_client::tenancy::NamespaceBuilder;
 fn test_bucket() {
     let mut management_client = common::create_management_client();
 
-    let namespace_name = "testbucket";
+    let namespace_name = "test_bucket";
     let namespace = NamespaceBuilder::default()
         .name(namespace_name)
         .build()

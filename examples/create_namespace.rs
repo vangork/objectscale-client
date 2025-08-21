@@ -1,5 +1,7 @@
 use objectscale_client::client::ManagementClient;
-use objectscale_client::tenancy::{NamespaceBuilder, RetionClass, RetionClasses};
+use objectscale_client::tenancy::{
+    Attribute, NamespaceBuilder, RetionClass, RetionClasses, UserMapping,
+};
 
 fn main() {
     let endpoint = "https://10.225.108.217:4443";
@@ -25,6 +27,14 @@ fn main() {
                 period: 1,
             }],
         })
+        .user_mapping(vec![UserMapping {
+            attributes: vec![Attribute {
+                key: "aa".to_string(),
+                value: vec!["aa".to_string()],
+            }],
+            domain: "aa".to_string(),
+            groups: vec!["aa".to_string()],
+        }])
         .build()
         .expect("new namespace");
     let namespace = client

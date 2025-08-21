@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::deserialize_default_from_null;
 
 /// Management users can be assigned to VDC-wide management roles and are not associated with a namespace
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[builder(setter(skip))]
 #[serde(rename(serialize = "mgmt_user_info_create"))]
 pub struct ManagementUser {
@@ -201,7 +201,7 @@ pub struct UserTag {
 }
 
 /// Object users can be assigned to management and object user roles for the namespace.
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[builder(setter(skip))]
 #[serde(rename(serialize = "user_create_param"))]
 pub struct ObjectUser {

@@ -28,6 +28,24 @@ pub struct RetionClasses {
     pub retention_class: Vec<RetionClass>,
 }
 
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct Attribute {
+    /// Lookup string for this key-value pair
+    pub key: String,
+    /// Lookup result for this key-value pair
+    pub value: Vec<String>,
+}
+
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct UserMapping {
+    /// A single-valued attribute indicating the user's IDP domain
+    pub domain: String,
+    /// Attributes
+    pub attributes: Vec<Attribute>,
+    /// Groups
+    pub groups: Vec<String>,
+}
+
 /// ECS supports access by multiple tenants, where each tenant is defined by a namespace.
 #[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
 #[builder(setter(skip))]
@@ -64,7 +82,9 @@ pub struct Namespace {
     pub disallowed_vpools_list: Vec<String>,
     /// Comma separated list of namespace admins
     pub namespace_admins: String,
-    pub user_mapping: Vec<String>,
+    /// User Mapping
+    #[builder(setter(skip = false), default)]
+    pub user_mapping: Vec<UserMapping>,
     /// encryption status of the namesapce
     #[builder(setter(skip = false), default = "false")]
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
@@ -76,6 +96,7 @@ pub struct Namespace {
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub external_group_admins: String,
     /// Namespace isStaleAllowed flag
+    #[builder(setter(skip = false), default = "false")]
     pub is_stale_allowed: bool,
     /// Defines the default behavior for allowing Object Lock with ADO on new buckets created in the namespace. Optional.
     #[builder(setter(skip = false), default = "false")]
@@ -108,6 +129,7 @@ pub struct Namespace {
     /// root user name
     pub root_user_name: String,
     /// root user password
+    #[builder(setter(into, skip = false), default)]
     pub root_user_password: String,
 }
 
@@ -129,6 +151,51 @@ struct UpdateNamespaceQuota {
     pub block_size_in_count: i64,
     #[serde(skip_serializing_if = "below_zero")]
     pub notification_size_in_count: i64,
+}
+
+#[derive(Builder, Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[serde(rename(serialize = "namespace_update"))]
+struct UpdateNamespace {
+    /// Default replication group identifier when creating buckets
+    pub default_data_services_vpool: String,
+    // /// List of replication group identifier which will be added in the allowed List for allowing namespace access
+    // pub vpools_added_to_allowed_vpools_list: Vec<String>,
+    // /// List of replication group identifier which will be added in the disAllowed list for prohibiting namespace access
+    // pub vpools_added_to_disallowed_vpools_list: Vec<String>,
+    // /// List of replication group identifier which will be removed from allowed list
+    // pub vpools_removed_from_allowed_vpools_list: Vec<String>,
+    // /// List of replication group identifier which will be removed from disAllowed list for removing their prohibition namespace acces
+    // pub vpools_removed_from_disallowed_vpools_list: Vec<String>,
+    /// Comma separated list of namespace admins
+    pub namespace_admins: String,
+    /// User Mapping
+    pub user_mapping: Vec<UserMapping>,
+    /// Default bucket quota size.
+    pub default_bucket_block_size: i64,
+    /// List of groups from AD Server
+    pub external_group_admins: String,
+    /// Namespace isStaleAllowed flag
+    pub is_stale_allowed: bool,
+    /// Defines the default behavior for allowing Object Lock with ADO on new buckets created in the namespace. Optional.
+    pub is_object_lock_with_ado_allowed: bool,
+    // /// Current password for namespace 'virtual root' user
+    // pub current_root_user_password: String,
+    // /// New password for namespace 'virtual root' user
+    // pub new_root_user_password: String,
+}
+
+impl From<Namespace> for UpdateNamespace {
+    fn from(namespace: Namespace) -> Self {
+        Self {
+            default_data_services_vpool: namespace.default_data_services_vpool,
+            namespace_admins: namespace.namespace_admins,
+            user_mapping: namespace.user_mapping,
+            default_bucket_block_size: namespace.default_bucket_block_size,
+            external_group_admins: namespace.external_group_admins,
+            is_stale_allowed: namespace.is_stale_allowed,
+            is_object_lock_with_ado_allowed: namespace.is_object_lock_with_ado_allowed,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -235,16 +302,22 @@ impl Namespace {
         Ok(())
     }
 
-    // TODO: update namespace
     pub(crate) fn update_namespace(
         client: &mut ManagementClient,
-        namespace: Namespace,
+        namespace: &Namespace,
+        current_namespace: &Namespace,
     ) -> Result<()> {
+        // TODO: support to change vpool && root_user_password
+        let update_namespace = UpdateNamespace::from(namespace.to_owned());
+        let current_update_namespace = UpdateNamespace::from(current_namespace.to_owned());
+        if update_namespace == current_update_namespace {
+            return Ok(());
+        };
         let request_url = format!(
             "{}object/namespaces/namespace/{}",
-            client.endpoint, namespace.id
+            client.endpoint, current_namespace.id,
         );
-        let body = quick_xml::se::to_string(&namespace)?;
+        let body = serde_json::to_string(&update_namespace)?;
         let resp = client
             .http_client
             .put(request_url)
@@ -320,6 +393,8 @@ impl Namespace {
         } else {
             Self::get(client, &namespace.id)?
         };
+
+        Self::update_namespace(client, &namespace, &current_namespace)?;
 
         if namespace.block_size != current_namespace.block_size
             || namespace.notification_size != current_namespace.notification_size

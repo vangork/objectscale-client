@@ -2,10 +2,10 @@ mod common;
 use objectscale_client::tenancy::NamespaceBuilder;
 
 #[test]
-fn test_tenancy() {
+fn test_namespace() {
     let mut management_client = common::create_management_client();
 
-    let namespace_name = "testtenancy";
+    let namespace_name = "test_namespace";
     let namespace_block_size: i64 = 5;
 
     let namespace = NamespaceBuilder::default()
