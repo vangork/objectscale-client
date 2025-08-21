@@ -17,7 +17,6 @@ use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use reqwest::header::ACCEPT;
 use serde::{Deserialize, Serialize};
-use serde_aux::field_attributes::deserialize_default_from_null;
 
 // TODO:
 // - Support for `inline_policy` for user, group and role
@@ -257,7 +256,7 @@ impl User {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to tag user")?;
+        let text = get_content_text(resp).with_context(|| "Failed to tag iam user")?;
         let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise TagUserResponse. Body was: \"{}\"",
@@ -291,7 +290,7 @@ impl User {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", namespace)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to untag user")?;
+        let text = get_content_text(resp).with_context(|| "Failed to untag iam user")?;
         let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
                 "Unable to deserialise UntagUserResponse. Body was: \"{}\"",
@@ -1314,8 +1313,10 @@ pub struct Role {
     #[builder(setter(into), default)]
     pub description: String,
     /// The maximum session duration (in seconds) that you want to set for the specified role.
-    #[builder(setter(skip = false), default)]
-    pub max_session_duration: i32,
+    /// If you do not specify a value for this setting, the default maximum of one hour is applied.
+    /// This setting can have a value from 1 hour to 12 hours
+    #[builder(setter(skip = false), default = 3600)]
+    pub max_session_duration: u64,
     /// The path to the IAM role.
     pub path: String,
     /// Unique Id associated with the role.
@@ -1325,11 +1326,10 @@ pub struct Role {
     pub role_name: String,
     /// The list of Tags associated with the role.
     #[builder(setter(skip = false), default)]
-    #[serde(default, deserialize_with = "deserialize_default_from_null")]
     pub tags: Vec<IamTag>,
     /// Permissions boundary
-    // list role API won't return permissions_boundary if not set
     #[builder(setter(skip = false), default)]
+    // get/list role API won't have permissions_boundary if not set
     #[serde(default)]
     pub permissions_boundary: PermissionsBoundary,
     #[builder(setter(into))]
@@ -1413,7 +1413,7 @@ impl Role {
         if !role.description.is_empty() {
             req = req.query(&[("Description", role.description)]);
         }
-        if role.max_session_duration > 0 {
+        if (3600..=3600 * 12).contains(&role.max_session_duration) {
             req = req.query(&[("MaxSessionDuration", role.max_session_duration)]);
         }
         if !role
@@ -1471,37 +1471,246 @@ impl Role {
         Ok(role)
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, role: Role) -> Result<Role> {
-        let request_url = format!(
-            "{}iam?Action=UpdateRole&RoleName={}",
-            client.endpoint, role.role_name,
-        );
-        let namespace = role.namespace;
+    pub(crate) fn update_role(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        description: &str,
+        max_session_duration: u64,
+    ) -> Result<()> {
+        let request_url = format!("{}iam?Action=UpdateRole&RoleName={}", client.endpoint, name,);
         let mut req = client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
-            .header("x-emc-namespace", &namespace);
+            .header("x-emc-namespace", namespace);
 
-        if !role.description.is_empty() {
-            req = req.query(&[("Description", role.description)]);
-        }
-        if role.max_session_duration > 0 {
-            req = req.query(&[("MaxSessionDuration", role.max_session_duration)]);
+        req = req.query(&[("Description", description)]);
+        if (3600..=3600 * 12).contains(&max_session_duration) {
+            req = req.query(&[("MaxSessionDuration", max_session_duration)]);
         }
 
         let resp = req.send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to update role")?;
-        let resp: UpdateRoleResponse = serde_json::from_str(&text).with_context(|| {
+        get_content_text(resp).with_context(|| "Failed to update role")?;
+        Ok(())
+    }
+
+    pub(crate) fn update_assume_role_policy(
+        client: &mut ManagementClient,
+        role_name: &str,
+        namespace: &str,
+        policy_document: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=UpdateAssumeRolePolicy&RoleName={}&PolicyDocument={}",
+            client.endpoint, role_name, policy_document
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to update assume role policy")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
             format!(
-                "Unable to deserialise UpdateRoleResponse. Body was: \"{}\"",
+                "Unable to deserialise UpdateAssumeRolePolicyResponse. Body was: \"{}\"",
                 text
             )
         })?;
-        let mut role = resp.update_role_result.role;
-        role.namespace = namespace;
-        Ok(role)
+        Ok(())
+    }
+
+    pub(crate) fn update_permission_boundary(
+        client: &mut ManagementClient,
+        role_name: &str,
+        namespace: &str,
+        permissions_boundary_arn: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=PutRolePermissionsBoundary&RoleName={}&PermissionsBoundary={}",
+            client.endpoint, role_name, permissions_boundary_arn
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp)
+            .with_context(|| "Failed to update iam role permissions boundary")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise PutRolePermissionsBoundaryResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(())
+    }
+
+    pub(crate) fn delete_permission_boundary(
+        client: &mut ManagementClient,
+        role_name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=DeleteRolePermissionsBoundary&RoleName={}",
+            client.endpoint, role_name,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp)
+            .with_context(|| "Failed to delete iam role permissions boundary")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise DeleteRolePermissionsBoundaryResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(())
+    }
+
+    pub(crate) fn add_tag(
+        client: &mut ManagementClient,
+        role_name: &str,
+        namespace: &str,
+        tags: Vec<IamTag>,
+    ) -> Result<()> {
+        if tags.is_empty() {
+            return Ok(());
+        }
+        let mut request_url = format!(
+            "{}iam?Action=TagRole&RoleName={}",
+            client.endpoint, role_name,
+        );
+        for (index, tag) in tags.iter().enumerate() {
+            request_url = format!(
+                "{}&Tags.member.{}.Key={}&Tags.member.{}.Value={}",
+                request_url,
+                index + 1,
+                tag.key,
+                index + 1,
+                tag.value
+            );
+        }
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to tag iam role")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise TagRoleResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(())
+    }
+
+    pub(crate) fn delete_tag(
+        client: &mut ManagementClient,
+        role_name: &str,
+        namespace: &str,
+        tags: Vec<IamTag>,
+    ) -> Result<()> {
+        if tags.is_empty() {
+            return Ok(());
+        }
+        let mut request_url: String = format!(
+            "{}iam?Action=UntagRole&RoleName={}",
+            client.endpoint, role_name,
+        );
+        for (index, tag) in tags.iter().enumerate() {
+            request_url = format!("{}&TagKeys.member.{}={}", request_url, index + 1, tag.key);
+        }
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to untag iam role")?;
+        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise UntagRoleResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(())
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, role: &Self) -> Result<Self> {
+        let current_role = Self::get(client, &role.role_name, &role.namespace)?;
+
+        if role.description != current_role.description
+            || role.max_session_duration != current_role.max_session_duration
+        {
+            Self::update_role(
+                client,
+                &role.role_name,
+                &role.namespace,
+                &role.description,
+                role.max_session_duration,
+            )?;
+        }
+
+        if role.assume_role_policy_document != current_role.assume_role_policy_document {
+            Self::update_assume_role_policy(
+                client,
+                &role.role_name,
+                &role.namespace,
+                &role.assume_role_policy_document,
+            )?;
+        }
+
+        if role.permissions_boundary.permissions_boundary_arn
+            != current_role.permissions_boundary.permissions_boundary_arn
+        {
+            if !current_role
+                .permissions_boundary
+                .permissions_boundary_arn
+                .is_empty()
+            {
+                Self::delete_permission_boundary(client, &role.role_name, &role.namespace)?;
+            }
+            if !role
+                .permissions_boundary
+                .permissions_boundary_arn
+                .is_empty()
+            {
+                Self::update_permission_boundary(
+                    client,
+                    &role.role_name,
+                    &role.namespace,
+                    &role.permissions_boundary.permissions_boundary_arn,
+                )?;
+            }
+        }
+
+        if role.tags != current_role.tags {
+            if !current_role.tags.is_empty() {
+                Self::delete_tag(client, &role.role_name, &role.namespace, current_role.tags)?;
+            }
+            if !role.tags.is_empty() {
+                Self::add_tag(client, &role.role_name, &role.namespace, role.tags.clone())?;
+            }
+        }
+
+        Self::get(client, &role.role_name, &role.namespace)
     }
 
     pub(crate) fn delete(

@@ -2,18 +2,21 @@ use objectscale_client::client::ManagementClient;
 use objectscale_client::iam::{IamTag, PermissionsBoundary, RoleBuilder};
 
 fn main() {
-    let endpoint = "https://10.225.108.189:443";
+    let endpoint = "https://10.225.108.217:4443";
     let username = "root";
-    let password = "Password123@";
+    let password = "Password123!";
     let insecure = true;
 
-    let namespace = "osai0a9250592a131336";
-    let role_name = "test";
-    let arn = "urn:osc:iam:::policy/CRRFullAccess";
-    let assume_doc = r#"{"Version":"2024-07-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:osc:iam::osai0a9250592a131336:user/luis"]},"Action":"sts:AssumeRole"}]}"#;
+    let role_name = "luis_role";
+    let namespace = "ns1";
+    let arn = "urn:ecs:iam:::policy/ECSS3FullAccess";
+    let new_arn = "urn:ecs:iam:::policy/IAMFullAccess";
+    let assume_doc = r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:root"]},"Action":"sts:AssumeRole"}]}"#;
+    let new_assume_doc = r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:user/luis"]},"Action":"sts:AssumeRole"}]}"#;
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
+
     let role = RoleBuilder::default()
         .role_name(role_name)
         .assume_role_policy_document(assume_doc)
@@ -31,8 +34,20 @@ fn main() {
     let role = client.create_role(role).expect("create role");
     println!("Created role: {:?}", role);
 
-    let role = client.get_role(role_name, namespace).expect("get role");
+    let mut role = client.get_role(role_name, namespace).expect("get role");
     println!("Get role: {:?}", role);
+
+    role.description = "luis role".to_string();
+    role.max_session_duration = 3600 * 2;
+    role.permissions_boundary.permissions_boundary_arn = new_arn.to_string();
+    role.assume_role_policy_document = new_assume_doc.to_string();
+    role.tags = vec![IamTag {
+        key: "key2".to_string(),
+        value: "value2".to_string(),
+    }];
+
+    let role = client.update_role(role).expect("update role");
+    println!("Updated role: {:?}", role);
 
     client
         .delete_role(role_name, namespace)

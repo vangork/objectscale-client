@@ -451,7 +451,7 @@ impl ManagementClient {
     ///
     pub fn update_role(&mut self, role: Role) -> Result<Role> {
         self.auth()?;
-        Role::update(self, role)
+        Role::update(self, &role)
     }
 
     /// Delete specified IAM Role.
