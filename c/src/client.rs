@@ -1963,7 +1963,7 @@ pub unsafe extern "C" fn management_client_create_bucket(
     let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let bucket = bucket.to_string();
-        let bucket: objectscale_client::bucket::Bucket =
+        let bucket: objectscale_client::provisioning::Bucket =
             serde_json::from_str(&bucket).expect("deserialize bucket");
 
         management_client.management_client.create_bucket(bucket)
@@ -2040,7 +2040,7 @@ pub unsafe extern "C" fn management_client_update_bucket(
     let management_client = &mut *management_client;
     match catch_unwind(AssertUnwindSafe(move || {
         let bucket = bucket.to_string();
-        let bucket: objectscale_client::bucket::Bucket =
+        let bucket: objectscale_client::provisioning::Bucket =
             serde_json::from_str(&bucket).expect("deserialize bucket");
 
         management_client.management_client.update_bucket(bucket)

@@ -440,3 +440,50 @@ impl Bucket {
         Ok(buckets)
     }
 }
+
+/// Keystore is to manage the certificates of a virtual data center (VDC)
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct VdcKeystore {
+    /// Keystore certificate chain in PEM format
+    pub chain: String,
+    /// The private key used to sign the certificate in PEM format.
+    #[serde(default)]
+    pub private_key: String,
+}
+
+impl VdcKeystore {
+    pub(crate) fn get(client: &mut ManagementClient) -> Result<Self> {
+        let request_url = format!("{}vdc/keystore", client.endpoint);
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get vdc keystore")?;
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!("Unable to deserialise VdcKeystore. Body was: \"{}\"", text)
+        })?;
+        Ok(resp)
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, keystore: &Self) -> Result<()> {
+        let request_url = format!("{}vdc/keystore", client.endpoint);
+        let body = format!(
+            r#"{{"key_and_certificate":{{"private_key":"{}","certificate_chain":"{}"}}}}"#,
+            keystore.private_key, keystore.chain
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header(CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Update vdc keystore failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+}

@@ -12,6 +12,7 @@ fn main() {
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
+
     let group = GroupBuilder::default()
         .group_name(group_name)
         .namespace(namespace)

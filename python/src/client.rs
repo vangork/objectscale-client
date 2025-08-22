@@ -7,7 +7,7 @@ use crate::iam::{
     UserGroupMembership, UserPolicyAttachment,
 };
 use crate::tenant::Tenant;
-use objectscale_client::{bucket, client, iam, tenant};
+use objectscale_client::{client, iam, provisioning, tenant};
 use pyo3::prelude::*;
 use pyo3::{exceptions, PyResult};
 
@@ -816,7 +816,7 @@ impl ManagementClient {
     /// bucket: Bucket to create.
     ///
     pub fn create_bucket(&mut self, bucket: &Bucket) -> PyResult<Bucket> {
-        let bucket = bucket::Bucket::from(bucket.clone());
+        let bucket = provisioning::Bucket::from(bucket.clone());
         let result = self.management_client.create_bucket(bucket);
         match result {
             Ok(bucket) => Ok(Bucket::from(bucket)),
@@ -842,7 +842,7 @@ impl ManagementClient {
     /// bucket: Bucket to update.
     ///
     pub fn update_bucket(&mut self, bucket: &Bucket) -> PyResult<Bucket> {
-        let bucket = bucket::Bucket::from(bucket.clone());
+        let bucket = provisioning::Bucket::from(bucket.clone());
         let result = self.management_client.update_bucket(bucket);
         match result {
             Ok(bucket) => Ok(Bucket::from(bucket)),

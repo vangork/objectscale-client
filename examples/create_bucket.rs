@@ -1,5 +1,5 @@
-use objectscale_client::bucket::{BucketBuilder, BucketTag, MetaData, SearchMetaData};
 use objectscale_client::client::ManagementClient;
+use objectscale_client::provisioning::{BucketBuilder, BucketTag, MetaData, SearchMetaData};
 
 fn main() {
     let endpoint = "https://10.225.108.217:4443";

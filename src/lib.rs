@@ -44,9 +44,9 @@
 //! [tenant]: crate::tenant
 //!
 
-pub mod bucket;
 pub mod client;
 pub mod iam;
+pub mod provisioning;
 mod response;
 pub mod tenancy;
 pub mod user;

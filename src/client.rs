@@ -11,11 +11,11 @@
 //! Applications should use create ManagementClient and ObjectstoreClient to manage ObjectScale resources.
 //!
 
-use crate::bucket::Bucket;
 use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment,
     User, UserGroupMembership, UserPolicyAttachment,
 };
+use crate::provisioning::{Bucket, VdcKeystore};
 use crate::response::get_content_text;
 use crate::tenancy::Namespace;
 use crate::user::{ManagementUser, ObjectUser};
@@ -770,5 +770,22 @@ impl ManagementClient {
     pub fn list_object_users(&mut self) -> Result<Vec<ObjectUser>> {
         self.auth()?;
         ObjectUser::list(self)
+    }
+
+    /// Get the certificate chain being used by ECS
+    ///
+    pub fn get_vdc_keystore(&mut self) -> Result<VdcKeystore> {
+        self.auth()?;
+        VdcKeystore::get(self)
+    }
+
+    /// Set the certificate chain being used by ECS.
+    ///
+    /// keystore: VdcKeystore to be updated
+    ///
+    pub fn update_vdc_keystore(&mut self, keystore: VdcKeystore) -> Result<VdcKeystore> {
+        self.auth()?;
+        VdcKeystore::update(self, &keystore)?;
+        VdcKeystore::get(self)
     }
 }

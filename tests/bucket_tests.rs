@@ -1,5 +1,5 @@
 mod common;
-use objectscale_client::bucket::{BucketBuilder, BucketTag};
+use objectscale_client::provisioning::{BucketBuilder, BucketTag};
 use objectscale_client::tenancy::NamespaceBuilder;
 
 #[test]

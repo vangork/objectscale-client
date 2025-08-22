@@ -1,4 +1,4 @@
-use objectscale_client::bucket;
+use objectscale_client::provisioning;
 use pyo3::prelude::*;
 use serde::Serialize;
 use std::convert::From;
@@ -102,8 +102,8 @@ pub(crate) struct Bucket {
     tags: Vec<BucketTag>,
 }
 
-impl From<bucket::Bucket> for Bucket {
-    fn from(bucket: bucket::Bucket) -> Self {
+impl From<provisioning::Bucket> for Bucket {
+    fn from(bucket: provisioning::Bucket) -> Self {
         Self {
             name: bucket.name,
             id: bucket.id,
@@ -152,12 +152,12 @@ impl From<bucket::Bucket> for Bucket {
     }
 }
 
-impl From<Bucket> for bucket::Bucket {
+impl From<Bucket> for provisioning::Bucket {
     fn from(bucket: Bucket) -> Self {
         Self {
             name: bucket.name,
             id: bucket.id,
-            link: bucket::Link::from(bucket.link),
+            link: provisioning::Link::from(bucket.link),
             namespace: bucket.namespace,
             vpool: bucket.vpool,
             locked: bucket.locked,
@@ -186,21 +186,21 @@ impl From<Bucket> for bucket::Bucket {
             default_group_dir_read_permission: bucket.default_group_dir_read_permission,
             default_group_dir_write_permission: bucket.default_group_dir_write_permission,
             default_group_dir_execute_permission: bucket.default_group_dir_execute_permission,
-            min_max_governor: bucket::MinMaxGovernor::from(bucket.min_max_governor),
+            min_max_governor: provisioning::MinMaxGovernor::from(bucket.min_max_governor),
             audit_delete_expiration: bucket.audit_delete_expiration,
             enable_advanced_metadata_search: bucket.enable_advanced_metadata_search,
             advanced_metadata_search_target_name: bucket.advanced_metadata_search_target_name,
             advanced_metadata_search_target_stream: bucket.advanced_metadata_search_target_stream,
             is_empty_bucket_in_progress: bucket.is_empty_bucket_in_progress,
             versioning_status: bucket.versioning_status,
-            search_metadata: bucket::SearchMetaData::from(bucket.search_metadata),
+            search_metadata: provisioning::SearchMetaData::from(bucket.search_metadata),
             local_object_metadata_reads: bucket.local_object_metadata_reads,
             api_type: bucket.api_type,
             owner: bucket.owner,
             tags: bucket
                 .tags
                 .into_iter()
-                .map(bucket::BucketTag::from)
+                .map(provisioning::BucketTag::from)
                 .collect(),
         }
     }
@@ -230,8 +230,8 @@ pub(crate) struct BucketTag {
     value: String,
 }
 
-impl From<bucket::BucketTag> for BucketTag {
-    fn from(bucket_tag: bucket::BucketTag) -> Self {
+impl From<provisioning::BucketTag> for BucketTag {
+    fn from(bucket_tag: provisioning::BucketTag) -> Self {
         Self {
             key: bucket_tag.key,
             value: bucket_tag.value,
@@ -239,7 +239,7 @@ impl From<bucket::BucketTag> for BucketTag {
     }
 }
 
-impl From<BucketTag> for bucket::BucketTag {
+impl From<BucketTag> for provisioning::BucketTag {
     fn from(bucket_tag: BucketTag) -> Self {
         Self {
             key: bucket_tag.key,
@@ -272,8 +272,8 @@ pub(crate) struct Link {
     href: String,
 }
 
-impl From<bucket::Link> for Link {
-    fn from(link: bucket::Link) -> Self {
+impl From<provisioning::Link> for Link {
+    fn from(link: provisioning::Link) -> Self {
         Self {
             rel: link.rel,
             href: link.href,
@@ -281,7 +281,7 @@ impl From<bucket::Link> for Link {
     }
 }
 
-impl From<Link> for bucket::Link {
+impl From<Link> for provisioning::Link {
     fn from(link: Link) -> Self {
         Self {
             rel: link.rel,
@@ -317,8 +317,8 @@ pub(crate) struct MetaData {
     r#type: String,
 }
 
-impl From<bucket::MetaData> for MetaData {
-    fn from(meta_data: bucket::MetaData) -> Self {
+impl From<provisioning::MetaData> for MetaData {
+    fn from(meta_data: provisioning::MetaData) -> Self {
         Self {
             datatype: meta_data.datatype,
             name: meta_data.name,
@@ -327,7 +327,7 @@ impl From<bucket::MetaData> for MetaData {
     }
 }
 
-impl From<MetaData> for bucket::MetaData {
+impl From<MetaData> for provisioning::MetaData {
     fn from(meta_data: MetaData) -> Self {
         Self {
             datatype: meta_data.datatype,
@@ -370,8 +370,8 @@ pub(crate) struct MinMaxGovernor {
     maximum_variable_retention: i64,
 }
 
-impl From<bucket::MinMaxGovernor> for MinMaxGovernor {
-    fn from(min_max_governor: bucket::MinMaxGovernor) -> Self {
+impl From<provisioning::MinMaxGovernor> for MinMaxGovernor {
+    fn from(min_max_governor: provisioning::MinMaxGovernor) -> Self {
         Self {
             enforce_retention: min_max_governor.enforce_retention,
             minimum_fixed_retention: min_max_governor.minimum_fixed_retention,
@@ -382,7 +382,7 @@ impl From<bucket::MinMaxGovernor> for MinMaxGovernor {
     }
 }
 
-impl From<MinMaxGovernor> for bucket::MinMaxGovernor {
+impl From<MinMaxGovernor> for provisioning::MinMaxGovernor {
     fn from(min_max_governor: MinMaxGovernor) -> Self {
         Self {
             enforce_retention: min_max_governor.enforce_retention,
@@ -424,8 +424,8 @@ pub(crate) struct SearchMetaData {
     metadata_tokens: bool,
 }
 
-impl From<bucket::SearchMetaData> for SearchMetaData {
-    fn from(search_meta_data: bucket::SearchMetaData) -> Self {
+impl From<provisioning::SearchMetaData> for SearchMetaData {
+    fn from(search_meta_data: provisioning::SearchMetaData) -> Self {
         Self {
             is_enabled: search_meta_data.is_enabled,
             metadata: search_meta_data
@@ -439,14 +439,14 @@ impl From<bucket::SearchMetaData> for SearchMetaData {
     }
 }
 
-impl From<SearchMetaData> for bucket::SearchMetaData {
+impl From<SearchMetaData> for provisioning::SearchMetaData {
     fn from(search_meta_data: SearchMetaData) -> Self {
         Self {
             is_enabled: search_meta_data.is_enabled,
             metadata: search_meta_data
                 .metadata
                 .into_iter()
-                .map(bucket::MetaData::from)
+                .map(provisioning::MetaData::from)
                 .collect(),
             max_keys: search_meta_data.max_keys,
             metadata_tokens: search_meta_data.metadata_tokens,
