@@ -47,6 +47,7 @@
 pub mod client;
 pub mod iam;
 pub mod provisioning;
+pub mod replication;
 mod response;
 pub mod tenancy;
 pub mod user;

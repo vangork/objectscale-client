@@ -8,7 +8,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 //
 
-//! Define the bucket details.
+//! Define the provisioning details.
 //!
 use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
@@ -451,6 +451,7 @@ pub struct Vdc {
     /// Indicates whether the resource is remote.
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub remote: bool,
+    // TODO:
     // #[serde(deserialize_with = "deserialize_default_from_null")]
     // pub vdc: String,
     /// Name assigned to this resource in ECS. The resource name is set by a user and can be changed at any time. It is not a unique identifier.
@@ -460,7 +461,10 @@ pub struct Vdc {
     /// Hyperlink to the details for this resource
     pub link: Link,
     /// Timestamp that shows when this resource was created in ECS
-    #[serde(deserialize_with = "deserialize_default_from_null", rename = "creation_time")]
+    #[serde(
+        deserialize_with = "deserialize_default_from_null",
+        rename = "creation_time"
+    )]
     pub creation_time: String,
     /// Indicates whether the resource is inactive. When a user removes a resource, the resource is put in this state before it is removed from the ECS database.
     pub inactive: bool,
@@ -508,9 +512,8 @@ impl Vdc {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to get vdc")?;
-        let resp: Self = serde_json::from_str(&text).with_context(|| {
-            format!("Unable to deserialise Vdc. Body was: \"{}\"", text)
-        })?;
+        let resp: Self = serde_json::from_str(&text)
+            .with_context(|| format!("Unable to deserialise Vdc. Body was: \"{}\"", text))?;
         Ok(resp)
     }
 
@@ -523,9 +526,8 @@ impl Vdc {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to list VDCs")?;
-        let resp: VdcList = serde_json::from_str(&text).with_context(|| {
-            format!("Unable to deserialise VdcList. Body was: \"{}\"", text)
-        })?;
+        let resp: VdcList = serde_json::from_str(&text)
+            .with_context(|| format!("Unable to deserialise VdcList. Body was: \"{}\"", text))?;
         Ok(resp.vdc)
     }
 }
@@ -587,7 +589,7 @@ pub struct StoragePool {
     pub id: String,
     /// Description
     pub description: String,
-    /// 
+    /// Flag indicating that storage pool is protected
     pub is_protected: bool,
     /// Flag indicating that cold storage encoding is enabled
     pub is_cold_storage_enabled: bool,
@@ -640,7 +642,10 @@ impl StoragePool {
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to list storage pools")?;
         let resp: StoragePoolList = serde_json::from_str(&text).with_context(|| {
-            format!("Unable to deserialise StoragePoolList. Body was: \"{}\"", text)
+            format!(
+                "Unable to deserialise StoragePoolList. Body was: \"{}\"",
+                text
+            )
         })?;
         Ok(resp.varray)
     }

@@ -63,6 +63,7 @@ pub struct Namespace {
     /// Indicates whether the resource is remote
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub remote: bool,
+    // TODO:
     // pub vdc: String,
     /// Hyperlink to the details for this resource
     pub link: Link,

@@ -15,7 +15,8 @@ use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment,
     User, UserGroupMembership, UserPolicyAttachment,
 };
-use crate::provisioning::{Bucket, StoragePool, VdcKeystore, Vdc};
+use crate::provisioning::{Bucket, StoragePool, Vdc, VdcKeystore};
+use crate::replication::ReplicationGroup;
 use crate::response::get_content_text;
 use crate::tenancy::Namespace;
 use crate::user::{ManagementUser, ObjectUser};
@@ -814,10 +815,26 @@ impl ManagementClient {
         StoragePool::get(self, id)
     }
 
-    /// Gets all details of all configured VDCs.
+    /// Gets a list of storage pools from the local VDC.
     ///
     pub fn list_storage_pools(&mut self) -> Result<Vec<StoragePool>> {
         self.auth()?;
         StoragePool::list(self)
+    }
+
+    /// Gets the details for the specified replication group.
+    ///
+    /// Replication group identifier for which details needs to be retrieved
+    ///
+    pub fn get_replication_group(&mut self, id: &str) -> Result<ReplicationGroup> {
+        self.auth()?;
+        ReplicationGroup::get(self, id)
+    }
+
+    /// Lists all configured replication groups.
+    ///
+    pub fn list_replication_groups(&mut self) -> Result<Vec<ReplicationGroup>> {
+        self.auth()?;
+        ReplicationGroup::list(self)
     }
 }
