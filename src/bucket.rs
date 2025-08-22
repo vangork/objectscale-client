@@ -238,32 +238,6 @@ impl Bucket {
         Ok(resp.name)
     }
 
-    pub(crate) fn add_tag(
-        client: &mut ManagementClient,
-        bucket_name: &str,
-        namespace: &str,
-        tags: Vec<BucketTag>,
-    ) -> Result<()> {
-        let tag_request = TagRequest {
-            tag_set: tags,
-            namespace: namespace.to_string(),
-        };
-        let body = serde_json::to_string(&tag_request)?;
-        let request_url = format!("{}object/bucket/{}/tags", client.endpoint, bucket_name);
-        let resp = client
-            .http_client
-            .post(request_url)
-            .header(ACCEPT, "application/json")
-            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
-            .header(CONTENT_TYPE, "application/json")
-            .body(body)
-            .send()?;
-        if !resp.status().is_success() {
-            bail!("Request failed: {}", resp.text()?);
-        }
-        Ok(())
-    }
-
     pub(crate) fn get(
         client: &mut ManagementClient,
         name: &str,
@@ -285,17 +259,74 @@ impl Bucket {
         Ok(resp)
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, bucket: Bucket) -> Result<()> {
+    pub(crate) fn add_tag(
+        client: &mut ManagementClient,
+        bucket_name: &str,
+        namespace: &str,
+        tags: Vec<BucketTag>,
+    ) -> Result<()> {
+        let tag_request = TagRequest {
+            tag_set: tags,
+            namespace: namespace.to_string(),
+        };
+        let body = serde_json::to_string(&tag_request)?;
+        let request_url = format!("{}object/bucket/{}/tags", client.endpoint, bucket_name);
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header(CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Update bucket tags failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn delete_tag(
+        client: &mut ManagementClient,
+        bucket_name: &str,
+        namespace: &str,
+        tags: Vec<BucketTag>,
+    ) -> Result<()> {
+        let tag_request = TagRequest {
+            tag_set: tags,
+            namespace: namespace.to_string(),
+        };
+        let body = serde_json::to_string(&tag_request)?;
+        let request_url = format!("{}object/bucket/{}/tags", client.endpoint, bucket_name);
+        let resp = client
+            .http_client
+            .delete(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header(CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Delete bucket tags failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn update_owner(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        owner: &str,
+    ) -> Result<()> {
         // // Set Bucket Audit Delete Expiration
         // let request_url = format!(
         //     "{}object/bucket/{}/auditDeleteExpiration?expiration={}&namespace={}",
         //     client.endpoint, bucket.name, bucket.audit_delete_expiration, bucket.namespace,
         // );
         // Update Bucket Owner
-        let request_url = format!("{}object/bucket/{}/owner", client.endpoint, bucket.name,);
+        let request_url = format!("{}object/bucket/{}/owner", client.endpoint, name,);
         let body = format!(
             r#"<object_bucket_update_owner><new_owner>{}</new_owner><namespace>{}</namespace><reset_previous_owners>true</reset_previous_owners></object_bucket_update_owner>"#,
-            bucket.owner, bucket.namespace
+            owner, namespace
         );
         let resp = client
             .http_client
@@ -306,9 +337,28 @@ impl Bucket {
             .body(body)
             .send()?;
         if !resp.status().is_success() {
-            bail!("Request failed: {}", resp.text()?);
+            bail!("Update bucket owner failed: {}", resp.text()?);
         }
         Ok(())
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, bucket: &Self) -> Result<Self> {
+        let current_bucket = Self::get(client, &bucket.name, &bucket.namespace)?;
+
+        if bucket.owner != current_bucket.owner {
+            Self::update_owner(client, &bucket.name, &bucket.namespace, &bucket.owner)?;
+        }
+
+        if bucket.tags != current_bucket.tags {
+            if !current_bucket.tags.is_empty() {
+                Self::delete_tag(client, &bucket.name, &bucket.namespace, current_bucket.tags)?;
+            }
+            if !bucket.tags.is_empty() {
+                Self::add_tag(client, &bucket.name, &bucket.namespace, bucket.tags.clone())?;
+            }
+        }
+
+        Self::get(client, &bucket.name, &bucket.namespace)
     }
 
     pub(crate) fn delete(
@@ -328,7 +378,7 @@ impl Bucket {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         if !resp.status().is_success() {
-            bail!("Request failed: {}", resp.text()?);
+            bail!("Delete bucket failed: {}", resp.text()?);
         } else if resp.status().as_u16() == 202 {
             // TODO: whether to check response
             // it may last for a while

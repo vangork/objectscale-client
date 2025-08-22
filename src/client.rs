@@ -622,10 +622,7 @@ impl ManagementClient {
     ///
     pub fn update_bucket(&mut self, bucket: Bucket) -> Result<Bucket> {
         self.auth()?;
-        let name = bucket.name.clone();
-        let namespace = bucket.namespace.clone();
-        Bucket::update(self, bucket)?;
-        Bucket::get(self, &name, &namespace)
+        Bucket::update(self, &bucket)
     }
 
     /// Deletes the specified bucket.
