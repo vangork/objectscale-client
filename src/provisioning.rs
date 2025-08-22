@@ -522,9 +522,9 @@ impl Vdc {
             .header(ACCEPT, "application/json")
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to lsit VDCs")?;
+        let text = get_content_text(resp).with_context(|| "Failed to list VDCs")?;
         let resp: VdcList = serde_json::from_str(&text).with_context(|| {
-            format!("Unable to deserialise Vdc. Body was: \"{}\"", text)
+            format!("Unable to deserialise VdcList. Body was: \"{}\"", text)
         })?;
         Ok(resp.vdc)
     }
@@ -574,5 +574,74 @@ impl VdcKeystore {
             bail!("Update vdc keystore failed: {}", resp.text()?);
         }
         Ok(())
+    }
+}
+
+/// Storage pool is a logical construct that contains physical nodes.
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoragePool {
+    /// Storage pool name
+    pub name: String,
+    /// Storage pool id
+    pub id: String,
+    /// Description
+    pub description: String,
+    /// 
+    pub is_protected: bool,
+    /// Flag indicating that cold storage encoding is enabled
+    pub is_cold_storage_enabled: bool,
+    /// Number of Data Blocks in EC Scheme
+    pub number_of_data_blocks: u64,
+    /// Number of Code Blocks in EC Scheme
+    pub number_of_code_blocks: u64,
+    /// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert
+    pub warning_alert_at: i64,
+    /// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert
+    pub error_alert_at: i64,
+    /// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert
+    pub critical_alert_at: i64,
+    /// Drive technology of VArray
+    pub label: String,
+    /// Drive technology of VArray
+    pub drive_technology: String,
+    /// flag for status, -1 for null, 0 ~ 6 for value
+    pub status: i64,
+}
+
+#[derive(Deserialize)]
+struct StoragePoolList {
+    varray: Vec<StoragePool>,
+}
+
+impl StoragePool {
+    pub(crate) fn get(client: &mut ManagementClient, id: &str) -> Result<Self> {
+        let request_url = format!("{}vdc/data-services/varrays/{}", client.endpoint, id);
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get storage pool")?;
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!("Unable to deserialise StoragePool. Body was: \"{}\"", text)
+        })?;
+        Ok(resp)
+    }
+
+    pub(crate) fn list(client: &mut ManagementClient) -> Result<Vec<Self>> {
+        let request_url = format!("{}vdc/data-services/varrays", client.endpoint);
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to list storage pools")?;
+        let resp: StoragePoolList = serde_json::from_str(&text).with_context(|| {
+            format!("Unable to deserialise StoragePoolList. Body was: \"{}\"", text)
+        })?;
+        Ok(resp.varray)
     }
 }

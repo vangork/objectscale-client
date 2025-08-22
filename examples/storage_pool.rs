@@ -6,14 +6,14 @@ fn main() {
     let password = "Password123!";
     let insecure = true;
 
-    let name = "vdc1";
+    let id = "urn:storageos:VirtualArray:2a36f1a7-4281-453d-8927-788f8033416b";
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
 
-    let vdc = client.get_vdc(name).expect("get vdc");
-    println!("Get vdc: {:?}", vdc);
+    let sp = client.get_storage_pool(id).expect("get storage pool");
+    println!("Get storage pool: {:?}", sp);
 
-    let vdcs = client.list_vdcs().expect("list vdcs");
-    println!("List vdcs: {:?}", vdcs);
+    let sps = client.list_storage_pools().expect("list storage pools");
+    println!("List storage pools: {:?}", sps);
 }

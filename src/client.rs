@@ -15,7 +15,7 @@ use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment,
     User, UserGroupMembership, UserPolicyAttachment,
 };
-use crate::provisioning::{Bucket, VdcKeystore, Vdc};
+use crate::provisioning::{Bucket, StoragePool, VdcKeystore, Vdc};
 use crate::response::get_content_text;
 use crate::tenancy::Namespace;
 use crate::user::{ManagementUser, ObjectUser};
@@ -803,5 +803,21 @@ impl ManagementClient {
     pub fn list_vdcs(&mut self) -> Result<Vec<Vdc>> {
         self.auth()?;
         Vdc::list(self)
+    }
+
+    /// Gets the details for the specified storage pool.
+    ///
+    /// id: Storage pool identifier to be retrieved
+    ///
+    pub fn get_storage_pool(&mut self, id: &str) -> Result<StoragePool> {
+        self.auth()?;
+        StoragePool::get(self, id)
+    }
+
+    /// Gets all details of all configured VDCs.
+    ///
+    pub fn list_storage_pools(&mut self) -> Result<Vec<StoragePool>> {
+        self.auth()?;
+        StoragePool::list(self)
     }
 }
