@@ -2340,3 +2340,213 @@ impl UserGroupMembership {
         Ok(memberships)
     }
 }
+
+/// ObjectScale IAM features for S3 work with SAML identity providers to handle authentication and SAML Assertion generation
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "PascalCase")]
+#[builder(setter(skip))]
+pub struct SamlProvider {
+    /// Arn that identifies the SAML Identity Provider.
+    #[serde(default)]
+    pub arn: String,
+    #[serde(default)]
+    #[builder(setter(into))]
+    pub name: String,
+    /// ISO 8601 format DateTime when SAML Identity Provider was created.
+    pub create_date: String,
+    /// ISO 8601 format DateTime when SAML Identity Provider will be valid.
+    pub valid_until: String,
+    #[builder(setter(into))]
+    #[serde(default, rename = "SAMLMetadataDocument")]
+    pub metadata_docucment: String,
+    #[builder(setter(into))]
+    #[serde(default)]
+    pub namespace: String,
+}
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct CreateSamlProviderResult {
+    #[serde(rename = "SAMLProviderArn")]
+    pub saml_provider_arn: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct CreateSamlProviderResponse {
+    pub response_metadata: ResponseMetadata,
+    #[serde(rename = "CreateSAMLProviderResult")]
+    pub create_saml_provider_result: CreateSamlProviderResult,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct GetSamlProviderResponse {
+    pub response_metadata: ResponseMetadata,
+    #[serde(rename = "GetSAMLProviderResult")]
+    pub get_saml_provider_result: SamlProvider,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct UpdateSAMLProviderResponse {
+    pub response_metadata: ResponseMetadata,
+    pub update_saml_provider_result: CreateSamlProviderResult,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListSamlProvidersResult {
+    #[serde(rename = "SAMLProviderList")]
+    pub saml_provider_list: Vec<SamlProvider>,
+    pub is_truncated: bool,
+    pub marker: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListSamlProvidersResponse {
+    pub response_metadata: ResponseMetadata,
+    #[serde(rename = "ListSAMLProvidersResult")]
+    pub list_saml_provider_result: ListSamlProvidersResult,
+}
+
+fn get_name_from_arn(arn: &str) -> String {
+    arn.split('/').collect::<Vec<&str>>()[1].to_string()
+}
+
+impl SamlProvider {
+    pub(crate) fn create(client: &mut ManagementClient, provider: Self) -> Result<Self> {
+        let request_url = format!(
+            "{}iam?Action=CreateSAMLProvider&Name={}&SAMLMetadataDocument={}",
+            client.endpoint, provider.name, provider.metadata_docucment,
+        );
+        let namespace = provider.namespace;
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", &namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to create SAML provider")?;
+        let resp: CreateSamlProviderResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise CreateSamlProviderResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Self::get(
+            client,
+            &resp.create_saml_provider_result.saml_provider_arn,
+            &namespace,
+        )
+    }
+
+    pub(crate) fn get(client: &mut ManagementClient, arn: &str, namespace: &str) -> Result<Self> {
+        let request_url = format!(
+            "{}iam?Action=GetSAMLProvider&SAMLProviderArn={}&",
+            client.endpoint, arn,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get SAML provider")?;
+        let resp: GetSamlProviderResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise GetSamlProviderResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        let mut provider = resp.get_saml_provider_result;
+        provider.arn = arn.to_string();
+        provider.name = get_name_from_arn(arn);
+        provider.namespace = namespace.to_string();
+        Ok(provider)
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, provider: &Self) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=UpdateSAMLProvider&SAMLProviderArn={}&SAMLMetadataDocument={}",
+            client.endpoint, provider.arn, provider.metadata_docucment,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", &provider.namespace)
+            .send()?;
+        let _ = get_content_text(resp).with_context(|| "Failed to update SAML provider")?;
+        Ok(())
+    }
+
+    pub(crate) fn delete(client: &mut ManagementClient, arn: &str, namespace: &str) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=DeleteSAMLProvider&SAMLProviderArn={}",
+            client.endpoint, arn,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to delete SAML provider")?;
+        Ok(())
+    }
+
+    pub(crate) fn list(client: &mut ManagementClient, namespace: &str) -> Result<Vec<Self>> {
+        let request_url = format!("{}iam?Action=ListSAMLProviders", client.endpoint);
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to list SAML providers")?;
+        let mut resp: ListSamlProvidersResponse =
+            serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListSamlProvidersResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+        let mut providers: Vec<Self> = vec![];
+        for provider in resp.list_saml_provider_result.saml_provider_list {
+            let provider = Self::get(client, &provider.arn, namespace)?;
+            providers.push(provider);
+        }
+        while let Some(marker) = resp.list_saml_provider_result.marker {
+            let request_url = format!(
+                "{}iam?Action=ListSAMLProviders&Marker={}",
+                client.endpoint, marker,
+            );
+            let response = client
+                .http_client
+                .post(request_url)
+                .header(ACCEPT, "application/json")
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+                .header("x-emc-namespace", namespace)
+                .send()?;
+            let text =
+                get_content_text(response).with_context(|| "Failed to list SAML providers")?;
+            resp = serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListSamlProvidersResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+            for provider in resp.list_saml_provider_result.saml_provider_list {
+                let provider = Self::get(client, &provider.arn, namespace)?;
+                providers.push(provider);
+            }
+        }
+        Ok(providers)
+    }
+}

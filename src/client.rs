@@ -13,7 +13,7 @@
 
 use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment,
-    User, UserGroupMembership, UserPolicyAttachment,
+    SamlProvider, User, UserGroupMembership, UserPolicyAttachment,
 };
 use crate::provisioning::{Bucket, StoragePool, Vdc, VdcKeystore};
 use crate::replication::ReplicationGroup;
@@ -566,6 +566,60 @@ impl ManagementClient {
     ) -> Result<Vec<UserGroupMembership>> {
         self.auth()?;
         UserGroupMembership::list_by_user(self, user_name, namespace)
+    }
+
+    /// Create SAML Identity Provider
+    ///
+    /// provider: SAML provider to create
+    ///
+    pub fn create_saml_provider(&mut self, provider: SamlProvider) -> Result<SamlProvider> {
+        self.auth()?;
+        SamlProvider::create(self, provider)
+    }
+
+    /// Retrieve the SAML IdP document.
+    ///
+    /// arn: The name of the provider to retrieve.
+    /// namespace: Namespace of the role(id of the account the role belongs to). Cannot be empty.
+    ///
+    pub fn get_saml_provider(&mut self, arn: &str, namespace: &str) -> Result<SamlProvider> {
+        self.auth()?;
+        SamlProvider::get(self, arn, namespace)
+    }
+
+    /// Update the SAML Identity Provider.
+    ///
+    /// role: SAML Identity Provider to update
+    ///
+    pub fn update_saml_provider(&mut self, provider: SamlProvider) -> Result<SamlProvider> {
+        self.auth()?;
+        let current_provider = SamlProvider::get(self, &provider.arn, &provider.namespace)?;
+        let url_string = format!("http://example.com/?param={}", provider.metadata_docucment);
+        let url = Url::parse(&url_string).expect("Failed to parse metadata docucment");
+        let (_, value) = url.query_pairs().next().expect("metadata docucment");
+        if value != current_provider.metadata_docucment {
+            SamlProvider::update(self, &provider)?;
+        }
+        SamlProvider::get(self, &provider.arn, &provider.namespace)
+    }
+
+    /// Delete the SAML Identity Provider.
+    ///
+    /// arn: The ARN of the provider to delete.
+    /// namespace: ECS namespace IAM entity belongs to
+    ///
+    pub fn delete_saml_provider(&mut self, arn: &str, namespace: &str) -> Result<()> {
+        self.auth()?;
+        SamlProvider::delete(self, arn, namespace)
+    }
+
+    /// List the SAML Identity Providers.
+    ///
+    /// namespace: ECS namespace IAM entity belongs to
+    ///
+    pub fn list_saml_providers(&mut self, namespace: &str) -> Result<Vec<SamlProvider>> {
+        self.auth()?;
+        SamlProvider::list(self, namespace)
     }
 
     /// Lists the IAM users that the specified IAM group contains.
