@@ -6,9 +6,9 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 pub fn create_management_client() -> ManagementClient {
-    let endpoint = "https://10.225.108.189:443";
+    let endpoint = "https://10.225.108.217:4443";
     let username = "root";
-    let password = "Password123@";
+    let password = "Password123!";
     let insecure = true;
 
     let url = Url::parse(endpoint).expect("parse url");

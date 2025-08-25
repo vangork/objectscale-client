@@ -51,7 +51,7 @@ pub struct UserMapping {
 #[builder(setter(skip))]
 #[serde(rename(serialize = "namespace_create"))]
 pub struct Namespace {
-    /// Name assigned to this resource in ECS. The resource name is set by a user and can be changed at any time. It is not a unique identifier. Non-updateable
+    /// Name assigned to this resource in ECS. The resource name is set by a user and can be changed at any time. It is not a unique identifier. Required
     #[builder(setter(into))]
     #[serde(rename(serialize = "namespace"))]
     pub name: String,
@@ -74,62 +74,63 @@ pub struct Namespace {
     /// Indicated whether the resource is an internal resource
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub internal: bool,
-    /// Default replication group identifier for this tenant when creating buckets
-    #[builder(setter(into, skip = false), default)]
+    /// Default replication group identifier for this tenant when creating buckets. Required. Updatable
+    #[builder(setter(into, skip = false))]
     pub default_data_services_vpool: String,
-    /// List of replication group that are allowed access to namespace
+    /// List of replication group that are allowed access to namespace.
     pub allowed_vpools_list: Vec<String>,
-    /// List of replication group that are not allowed access to namespace
+    /// List of replication group that are not allowed access to namespace.
     pub disallowed_vpools_list: Vec<String>,
-    /// Comma separated list of namespace admins
+    /// Comma separated list of namespace admins. Updatable
+    #[builder(setter(into, skip = false), default)]
     pub namespace_admins: String,
-    /// User Mapping
+    /// User Mapping. Updatable
     #[builder(setter(skip = false), default)]
     pub user_mapping: Vec<UserMapping>,
     /// encryption status of the namesapce
     #[builder(setter(skip = false), default = "false")]
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub is_encryption_enabled: bool,
-    /// Default bucket quota size.
+    /// Default bucket quota size. Default: -1. Updatable.
     #[builder(setter(skip = false), default = -1)]
     pub default_bucket_block_size: i64,
-    /// List of groups from AD Server
+    /// List of groups from AD Server. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub external_group_admins: String,
-    /// Namespace isStaleAllowed flag
+    /// Namespace isStaleAllowed flag. Default: false. Updatable.
     #[builder(setter(skip = false), default = "false")]
     pub is_stale_allowed: bool,
-    /// Defines the default behavior for allowing Object Lock with ADO on new buckets created in the namespace. Optional.
+    /// Defines the default behavior for allowing Object Lock with ADO on new buckets created in the namespace. Default: false. Updatable
     #[builder(setter(skip = false), default = "false")]
     pub is_object_lock_with_ado_allowed: bool,
-    /// Namespace isComplianceEnabled flag
+    /// Namespace isComplianceEnabled flag. Default: false.
     #[builder(setter(skip = false), default = "false")]
     pub is_compliance_enabled: bool,
-    /// Notification Size in GB
+    /// Notification Size in GB. Default: -1. Updatable.
     #[serde(rename = "notificationSize")]
     #[builder(setter(skip = false), default = -1)]
     pub notification_size: i64,
-    /// Block Size in GB
+    /// Block Size in GB. Default: -1. Updatable.
     #[serde(rename = "blockSize")]
     #[builder(setter(skip = false), default = -1)]
     pub block_size: i64,
-    /// Notification Size in Count
+    /// Notification Size in Count. Default: -1. Updatable.
     #[serde(rename = "notificationSizeInCount")]
     #[builder(setter(skip = false), default = -1)]
     pub notification_size_in_count: i64,
-    /// Block Size in Count
+    /// Block Size in Count. Default: -1. Updatable.
     #[serde(rename = "blockSizeInCount")]
     #[builder(setter(skip = false), default = -1)]
     pub block_size_in_count: i64,
-    /// Default bucket audit delete expiration
+    /// Default bucket audit delete expiration. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub default_audit_delete_expiration: i64,
-    /// retention classes
+    /// retention classes. Updatable
     #[builder(setter(skip = false), default)]
     pub retention_classes: RetionClasses,
     /// root user name
     pub root_user_name: String,
-    /// root user password
+    /// root user password.
     #[builder(setter(into, skip = false), default)]
     pub root_user_password: String,
 }
