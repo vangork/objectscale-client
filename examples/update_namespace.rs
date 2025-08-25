@@ -26,9 +26,9 @@ fn main() {
     namespace.block_size_in_count = -1;
     namespace.notification_size_in_count = -1;
     namespace.retention_classes.retention_class[0].period = 2;
-    let namespace = client
+    let state = client
         .update_namespace(namespace)
         .expect("update namespace");
 
-    println!("Update bucket: {:?}", namespace);
+    println!("Update namespace: {:?}", state);
 }

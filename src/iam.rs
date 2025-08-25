@@ -300,12 +300,14 @@ impl User {
         Ok(())
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, user: &Self) -> Result<Self> {
+    pub(crate) fn update(client: &mut ManagementClient, user: &Self) -> Result<bool> {
         let current_user = Self::get(client, &user.user_name, &user.namespace)?;
+        let mut updated = false;
 
         if user.permissions_boundary.permissions_boundary_arn
             != current_user.permissions_boundary.permissions_boundary_arn
         {
+            updated = true;
             if !current_user
                 .permissions_boundary
                 .permissions_boundary_arn
@@ -328,6 +330,7 @@ impl User {
         }
 
         if user.tags != current_user.tags {
+            updated = true;
             if !current_user.tags.is_empty() {
                 Self::delete_tag(client, &user.user_name, &user.namespace, current_user.tags)?;
             }
@@ -336,7 +339,7 @@ impl User {
             }
         }
 
-        Self::get(client, &user.user_name, &user.namespace)
+        Ok(updated)
     }
 
     pub(crate) fn delete(
@@ -1661,12 +1664,14 @@ impl Role {
         Ok(())
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, role: &Self) -> Result<Self> {
+    pub(crate) fn update(client: &mut ManagementClient, role: &Self) -> Result<bool> {
         let current_role = Self::get(client, &role.role_name, &role.namespace)?;
+        let mut updated = false;
 
         if role.description != current_role.description
             || role.max_session_duration != current_role.max_session_duration
         {
+            updated = true;
             Self::update_role(
                 client,
                 &role.role_name,
@@ -1677,6 +1682,7 @@ impl Role {
         }
 
         if role.assume_role_policy_document != current_role.assume_role_policy_document {
+            updated = true;
             Self::update_assume_role_policy(
                 client,
                 &role.role_name,
@@ -1688,6 +1694,7 @@ impl Role {
         if role.permissions_boundary.permissions_boundary_arn
             != current_role.permissions_boundary.permissions_boundary_arn
         {
+            updated = true;
             if !current_role
                 .permissions_boundary
                 .permissions_boundary_arn
@@ -1710,6 +1717,7 @@ impl Role {
         }
 
         if role.tags != current_role.tags {
+            updated = true;
             if !current_role.tags.is_empty() {
                 Self::delete_tag(client, &role.role_name, &role.namespace, current_role.tags)?;
             }
@@ -1718,7 +1726,7 @@ impl Role {
             }
         }
 
-        Self::get(client, &role.role_name, &role.namespace)
+        Ok(updated)
     }
 
     pub(crate) fn delete(

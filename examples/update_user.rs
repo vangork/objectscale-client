@@ -20,7 +20,7 @@ fn main() {
         key: "key2".to_string(),
         value: "value2".to_string(),
     }];
-    let user = client.update_user(user).expect("update user");
+    let state = client.update_user(user).expect("update user");
 
-    println!("Update user: {:?}", user);
+    println!("Update user: {:?}", state);
 }

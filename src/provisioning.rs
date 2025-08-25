@@ -342,14 +342,17 @@ impl Bucket {
         Ok(())
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, bucket: &Self) -> Result<Self> {
+    pub(crate) fn update(client: &mut ManagementClient, bucket: &Self) -> Result<bool> {
         let current_bucket = Self::get(client, &bucket.name, &bucket.namespace)?;
+        let mut updated = false;
 
         if bucket.owner != current_bucket.owner {
+            updated = true;
             Self::update_owner(client, &bucket.name, &bucket.namespace, &bucket.owner)?;
         }
 
         if bucket.tags != current_bucket.tags {
+            updated = true;
             if !current_bucket.tags.is_empty() {
                 Self::delete_tag(client, &bucket.name, &bucket.namespace, current_bucket.tags)?;
             }
@@ -358,7 +361,7 @@ impl Bucket {
             }
         }
 
-        Self::get(client, &bucket.name, &bucket.namespace)
+        Ok(updated)
     }
 
     pub(crate) fn delete(

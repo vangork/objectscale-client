@@ -14,7 +14,7 @@ pub struct TenancyLink {
     pub href: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct RetionClass {
     /// Name of the retention class
     pub name: String,
@@ -22,7 +22,7 @@ pub struct RetionClass {
     pub period: i64,
 }
 
-#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct RetionClasses {
     /// Retention class, add and update only
     pub retention_class: Vec<RetionClass>,
@@ -307,12 +307,12 @@ impl Namespace {
         client: &mut ManagementClient,
         namespace: &Namespace,
         current_namespace: &Namespace,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         // TODO: support to change vpool && root_user_password
         let update_namespace = UpdateNamespace::from(namespace.to_owned());
         let current_update_namespace = UpdateNamespace::from(current_namespace.to_owned());
         if update_namespace == current_update_namespace {
-            return Ok(());
+            return Ok(false);
         };
         let request_url = format!(
             "{}object/namespaces/namespace/{}",
@@ -330,7 +330,7 @@ impl Namespace {
         if !resp.status().is_success() {
             bail!("Update namespace failed: {}", resp.text()?);
         }
-        Ok(())
+        Ok(true)
     }
 
     pub(crate) fn create_retention_class(
@@ -388,20 +388,21 @@ impl Namespace {
         client: &mut ManagementClient,
         namespace: Self,
         current_namespace: Option<Self>,
-    ) -> Result<Namespace> {
+    ) -> Result<bool> {
         let current_namespace = if let Some(namespace) = current_namespace {
             namespace
         } else {
             Self::get(client, &namespace.id)?
         };
 
-        Self::update_namespace(client, &namespace, &current_namespace)?;
+        let mut updated = Self::update_namespace(client, &namespace, &current_namespace)?;
 
         if namespace.block_size != current_namespace.block_size
             || namespace.notification_size != current_namespace.notification_size
             || namespace.block_size_in_count != current_namespace.block_size_in_count
             || namespace.notification_size_in_count != current_namespace.notification_size_in_count
         {
+            updated = true;
             if namespace.block_size == -1
                 && namespace.notification_size == -1
                 && namespace.block_size_in_count == -1
@@ -419,26 +420,28 @@ impl Namespace {
                 )?;
             }
         }
-        for class in &namespace.retention_classes.retention_class {
-            let classes = &current_namespace.retention_classes.retention_class;
-            if classes.iter().any(|c| c.name == class.name) {
-                Self::update_retention_class(
-                    client,
-                    &current_namespace.id,
-                    class.name.clone(),
-                    class.period,
-                )?;
-            } else {
-                Self::create_retention_class(
-                    client,
-                    &current_namespace.id,
-                    class.name.clone(),
-                    class.period,
-                )?;
+        if namespace.retention_classes != current_namespace.retention_classes {
+            updated = true;
+            for class in &namespace.retention_classes.retention_class {
+                let classes = &current_namespace.retention_classes.retention_class;
+                if classes.iter().any(|c| c.name == class.name) {
+                    Self::update_retention_class(
+                        client,
+                        &current_namespace.id,
+                        class.name.clone(),
+                        class.period,
+                    )?;
+                } else {
+                    Self::create_retention_class(
+                        client,
+                        &current_namespace.id,
+                        class.name.clone(),
+                        class.period,
+                    )?;
+                }
             }
         }
-
-        Self::get(client, &current_namespace.id)
+        Ok(updated)
     }
 
     pub(crate) fn delete(client: &mut ManagementClient, id: &str) -> Result<()> {

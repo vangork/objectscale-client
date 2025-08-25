@@ -70,11 +70,11 @@ impl ManagementClient {
     ///
     /// user: IAM User to be updated
     ///
-    pub fn update_user(&mut self, user: &User) -> PyResult<User> {
+    pub fn update_user(&mut self, user: &User) -> PyResult<bool> {
         let user = iam::User::from(user.clone());
         let result = self.management_client.update_user(user);
         match result {
-            Ok(user) => Ok(User::from(user)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -183,11 +183,11 @@ impl ManagementClient {
     ///
     /// access_key: AccessKey to update
     ///
-    pub fn update_access_key(&mut self, access_key: &AccessKey) -> PyResult<AccessKey> {
+    pub fn update_access_key(&mut self, access_key: &AccessKey) -> PyResult<bool> {
         let access_key = iam::AccessKey::from(access_key.clone());
         let result = self.management_client.update_access_key(access_key);
         match result {
-            Ok(access_key) => Ok(AccessKey::from(access_key)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -424,11 +424,11 @@ impl ManagementClient {
     ///
     /// role: IAM Role to update
     ///
-    pub fn update_role(&mut self, role: &Role) -> PyResult<Role> {
+    pub fn update_role(&mut self, role: &Role) -> PyResult<bool> {
         let role = iam::Role::from(role.clone());
         let result = self.management_client.update_role(role);
         match result {
-            Ok(role) => Ok(Role::from(role)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -632,11 +632,11 @@ impl ManagementClient {
     ///
     /// role: SAML Identity Provider to update
     ///
-    pub fn update_saml_provider(&mut self, provider: &SamlProvider) -> PyResult<SamlProvider> {
+    pub fn update_saml_provider(&mut self, provider: &SamlProvider) -> PyResult<bool> {
         let provider = iam::SamlProvider::from(provider.clone());
         let result = self.management_client.update_saml_provider(provider);
         match result {
-            Ok(saml_provider) => Ok(SamlProvider::from(saml_provider)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -731,11 +731,11 @@ impl ManagementClient {
     ///
     /// bucket: Bucket to update.
     ///
-    pub fn update_bucket(&mut self, bucket: &Bucket) -> PyResult<Bucket> {
+    pub fn update_bucket(&mut self, bucket: &Bucket) -> PyResult<bool> {
         let bucket = provisioning::Bucket::from(bucket.clone());
         let result = self.management_client.update_bucket(bucket);
         match result {
-            Ok(bucket) => Ok(Bucket::from(bucket)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -790,11 +790,11 @@ impl ManagementClient {
     ///
     /// namespace: Namespace to be updated
     ///
-    pub fn update_namespace(&mut self, namespace: &Namespace) -> PyResult<Namespace> {
+    pub fn update_namespace(&mut self, namespace: &Namespace) -> PyResult<bool> {
         let namespace = tenancy::Namespace::from(namespace.clone());
         let result = self.management_client.update_namespace(namespace);
         match result {
-            Ok(namespace) => Ok(Namespace::from(namespace)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -852,11 +852,11 @@ impl ManagementClient {
     ///
     /// user: ManagementUser to be updated
     ///
-    pub fn update_management_user(&mut self, user: &ManagementUser) -> PyResult<ManagementUser> {
+    pub fn update_management_user(&mut self, user: &ManagementUser) -> PyResult<bool> {
         let user = user::ManagementUser::from(user.clone());
         let result = self.management_client.update_management_user(user);
         match result {
-            Ok(management_user) => Ok(ManagementUser::from(management_user)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -916,11 +916,11 @@ impl ManagementClient {
     ///
     /// user: ObjectUser to be updated
     ///
-    pub fn update_object_user(&mut self, user: &ObjectUser) -> PyResult<ObjectUser> {
+    pub fn update_object_user(&mut self, user: &ObjectUser) -> PyResult<bool> {
         let user = user::ObjectUser::from(user.clone());
         let result = self.management_client.update_object_user(user);
         match result {
-            Ok(object_user) => Ok(ObjectUser::from(object_user)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -962,11 +962,11 @@ impl ManagementClient {
     ///
     /// keystore: VdcKeystore to be updated
     ///
-    pub fn update_vdc_keystore(&mut self, keystore: &VdcKeystore) -> PyResult<VdcKeystore> {
+    pub fn update_vdc_keystore(&mut self, keystore: &VdcKeystore) -> PyResult<bool> {
         let keystore = provisioning::VdcKeystore::from(keystore.clone());
         let result = self.management_client.update_vdc_keystore(keystore);
         match result {
-            Ok(vdc_keystore) => Ok(VdcKeystore::from(vdc_keystore)),
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }

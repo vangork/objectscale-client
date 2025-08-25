@@ -16,9 +16,9 @@ fn main() {
     user.is_system_admin = true;
     user.is_system_monitor = true;
     user.is_security_admin = true;
-    let user = client
+    let state = client
         .update_management_user(user)
         .expect("update management user");
 
-    println!("Update bucket: {:?}", user);
+    println!("Update management user: {:?}", state);
 }

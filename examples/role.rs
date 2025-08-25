@@ -31,11 +31,8 @@ fn main() {
         .namespace(namespace)
         .build()
         .expect("role");
-    let role = client.create_role(role).expect("create role");
+    let mut role = client.create_role(role).expect("create role");
     println!("Created role: {:?}", role);
-
-    let mut role = client.get_role(role_name, namespace).expect("get role");
-    println!("Get role: {:?}", role);
 
     role.description = "luis role".to_string();
     role.max_session_duration = 3600 * 2;
@@ -45,9 +42,11 @@ fn main() {
         key: "key2".to_string(),
         value: "value2".to_string(),
     }];
+    let state = client.update_role(role).expect("update role");
+    println!("Updated role: {:?}", state);
 
-    let role = client.update_role(role).expect("update role");
-    println!("Updated role: {:?}", role);
+    let role = client.get_role(role_name, namespace).expect("get role");
+    println!("Get role: {:?}", role);
 
     client
         .delete_role(role_name, namespace)

@@ -21,21 +21,22 @@ fn main() {
         .namespace(namespace)
         .build()
         .expect("new saml provider");
-    let provider = client
+    let mut provider = client
         .create_saml_provider(provider)
         .expect("create provider");
     println!("Created provider: {:?}", provider);
-
-    let mut provider = client
-        .get_saml_provider(&provider.arn, namespace)
-        .expect("get saml provider");
-    println!("Get saml provider: {:?}", provider);
+    let arn = provider.arn.clone();
 
     provider.metadata_docucment = new_meta_doc.to_string();
-    let provider = client
+    let state = client
         .update_saml_provider(provider)
         .expect("update provider");
-    println!("Updated provider: {:?}", provider);
+    println!("Updated provider: {:?}", state);
+
+    let provider = client
+        .get_saml_provider(&arn, namespace)
+        .expect("get saml provider");
+    println!("Get saml provider: {:?}", provider);
 
     client
         .delete_saml_provider(&provider.arn, namespace)

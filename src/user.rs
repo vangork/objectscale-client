@@ -131,8 +131,9 @@ impl ManagementUser {
         Ok(())
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, user: Self) -> Result<Self> {
+    pub(crate) fn update(client: &mut ManagementClient, user: Self) -> Result<bool> {
         let current_user = Self::get(client, &user.user_id)?;
+        let mut updated = false;
 
         let password = user.password.trim().to_string();
         if user.is_system_admin != current_user.is_system_admin
@@ -140,6 +141,7 @@ impl ManagementUser {
             || user.is_security_admin != current_user.is_security_admin
             || !password.is_empty()
         {
+            updated = true;
             Self::update_user(
                 client,
                 &user.user_id,
@@ -151,10 +153,11 @@ impl ManagementUser {
         }
 
         if !user.is_locked && current_user.is_locked {
+            updated = true;
             Self::unlock(client, &user.user_id, &password)?;
         }
 
-        Self::get(client, &user.user_id)
+        Ok(updated)
     }
 
     pub(crate) fn delete(client: &mut ManagementClient, id: &str) -> Result<()> {
@@ -361,14 +364,17 @@ impl ObjectUser {
         Ok(())
     }
 
-    pub(crate) fn update(client: &mut ManagementClient, user: &Self) -> Result<Self> {
+    pub(crate) fn update(client: &mut ManagementClient, user: &Self) -> Result<bool> {
         let current_user = Self::get(client, &user.name, &user.namespace)?;
+        let mut updated = false;
 
         if user.locked != current_user.locked {
+            updated = true;
             Self::update_lock(client, &user.name, &user.namespace, user.locked)?;
         }
 
         if user.tag != current_user.tag {
+            updated = true;
             if !current_user.tag.is_empty() {
                 Self::delete_tag(client, &user.name, &user.namespace, current_user.tag)?;
             }
@@ -377,7 +383,7 @@ impl ObjectUser {
             }
         }
 
-        Self::get(client, &user.name, &user.namespace)
+        Ok(updated)
     }
 
     pub(crate) fn delete(client: &mut ManagementClient, name: &str, namespace: &str) -> Result<()> {

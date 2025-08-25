@@ -198,7 +198,7 @@ impl ManagementClient {
     ///
     /// user: IAM User to be updated
     ///
-    pub fn update_user(&mut self, user: User) -> Result<User> {
+    pub fn update_user(&mut self, user: User) -> Result<bool> {
         self.auth()?;
         User::update(self, &user)
     }
@@ -275,16 +275,19 @@ impl ManagementClient {
     ///
     /// access_key: AccessKey to update
     ///
-    pub fn update_access_key(&mut self, access_key: AccessKey) -> Result<AccessKey> {
+    pub fn update_access_key(&mut self, access_key: AccessKey) -> Result<bool> {
         self.auth()?;
-        AccessKey::update(self, access_key.clone())?;
         let access_keys = self.list_access_keys(&access_key.user_name, &access_key.namespace)?;
-        let access_key = access_keys
-            .iter()
-            .find(|key| key.access_key_id == access_key.access_key_id);
-        access_key
-            .map(|key| key.to_owned())
-            .ok_or(anyhow!("AccessKey not found"))
+        let current_access_key = access_keys
+            .into_iter()
+            .find(|key| key.access_key_id == access_key.access_key_id)
+            .ok_or(anyhow!("AccessKey not found"))?;
+        if access_key.status != current_access_key.status {
+            AccessKey::update(self, access_key.clone())?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Deletes the access key pair associated with the specified IAM user.
@@ -450,7 +453,7 @@ impl ManagementClient {
     ///
     /// role: IAM Role to update
     ///
-    pub fn update_role(&mut self, role: Role) -> Result<Role> {
+    pub fn update_role(&mut self, role: Role) -> Result<bool> {
         self.auth()?;
         Role::update(self, &role)
     }
@@ -591,7 +594,7 @@ impl ManagementClient {
     ///
     /// role: SAML Identity Provider to update
     ///
-    pub fn update_saml_provider(&mut self, provider: SamlProvider) -> Result<SamlProvider> {
+    pub fn update_saml_provider(&mut self, provider: SamlProvider) -> Result<bool> {
         self.auth()?;
         let current_provider = SamlProvider::get(self, &provider.arn, &provider.namespace)?;
         let url_string = format!("http://example.com/?param={}", provider.metadata_docucment);
@@ -599,8 +602,10 @@ impl ManagementClient {
         let (_, value) = url.query_pairs().next().expect("metadata docucment");
         if value != current_provider.metadata_docucment {
             SamlProvider::update(self, &provider)?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-        SamlProvider::get(self, &provider.arn, &provider.namespace)
     }
 
     /// Delete the SAML Identity Provider.
@@ -675,7 +680,7 @@ impl ManagementClient {
     ///
     /// bucket: Bucket to update.
     ///
-    pub fn update_bucket(&mut self, bucket: Bucket) -> Result<Bucket> {
+    pub fn update_bucket(&mut self, bucket: Bucket) -> Result<bool> {
         self.auth()?;
         Bucket::update(self, &bucket)
     }
@@ -698,7 +703,10 @@ impl ManagementClient {
     pub fn create_namespace(&mut self, namespace: Namespace) -> Result<Namespace> {
         self.auth()?;
         let new_namespace = Namespace::create(self, &namespace)?;
-        Namespace::update(self, namespace, Some(new_namespace))
+        let id = new_namespace.id.clone();
+        // update retention class
+        Namespace::update(self, namespace, Some(new_namespace))?;
+        Namespace::get(self, &id)
     }
 
     /// Gets the details for the given namespace.
@@ -714,7 +722,7 @@ impl ManagementClient {
     ///
     /// namespace: Namespace to be updated
     ///
-    pub fn update_namespace(&mut self, namespace: Namespace) -> Result<Namespace> {
+    pub fn update_namespace(&mut self, namespace: Namespace) -> Result<bool> {
         self.auth()?;
         Namespace::update(self, namespace, None)
     }
@@ -759,7 +767,7 @@ impl ManagementClient {
     ///
     /// user: ManagementUser to be updated
     ///
-    pub fn update_management_user(&mut self, user: ManagementUser) -> Result<ManagementUser> {
+    pub fn update_management_user(&mut self, user: ManagementUser) -> Result<bool> {
         self.auth()?;
         ManagementUser::update(self, user)
     }
@@ -805,7 +813,7 @@ impl ManagementClient {
     ///
     /// user: ObjectUser to be updated
     ///
-    pub fn update_object_user(&mut self, user: ObjectUser) -> Result<ObjectUser> {
+    pub fn update_object_user(&mut self, user: ObjectUser) -> Result<bool> {
         self.auth()?;
         ObjectUser::update(self, &user)
     }
@@ -838,10 +846,17 @@ impl ManagementClient {
     ///
     /// keystore: VdcKeystore to be updated
     ///
-    pub fn update_vdc_keystore(&mut self, keystore: VdcKeystore) -> Result<VdcKeystore> {
+    pub fn update_vdc_keystore(&mut self, keystore: VdcKeystore) -> Result<bool> {
         self.auth()?;
-        VdcKeystore::update(self, &keystore)?;
-        VdcKeystore::get(self)
+        let current_keystore = VdcKeystore::get(self)?;
+        if keystore.chain != current_keystore.chain
+            || keystore.private_key != current_keystore.private_key
+        {
+            VdcKeystore::update(self, &keystore)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Gets the details for a VDC the identify of which is specified by its name.

@@ -14,8 +14,8 @@ fn main() {
 
     store.chain = "chain".to_string();
     store.private_key = "pvk".to_string();
-    let store = client
+    let state = client
         .update_vdc_keystore(store)
         .expect("update vdc keystore");
-    println!("Updated vdc keystore: {:?}", store);
+    println!("Updated vdc keystore: {:?}", state);
 }

@@ -18,7 +18,7 @@ fn main() {
         key: "key2".to_string(),
         value: "value2".to_string(),
     }];
-    let bucket = client.update_bucket(bucket).expect("update bucket");
+    let state = client.update_bucket(bucket).expect("update bucket");
 
-    println!("Update bucket: {:?}", bucket);
+    println!("Update bucket: {:?}", state);
 }

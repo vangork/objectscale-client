@@ -21,7 +21,7 @@ fn main() {
         name: "name2".to_string(),
         value: "value2".to_string(),
     }];
-    let user = client.update_object_user(user).expect("update object user");
+    let state = client.update_object_user(user).expect("update object user");
 
-    println!("Update object user: {:?}", user);
+    println!("Update object user: {:?}", state);
 }

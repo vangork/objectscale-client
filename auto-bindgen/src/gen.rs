@@ -1742,6 +1742,8 @@ impl Bindgen {
                         } else {
                             if method.return_ty == Ty::Result("".to_string()) {
                                 ("_".to_string(), "()".to_string())
+                            } else if method.return_ty == Ty::Result("bool".to_string()) {
+                                ("state".to_string(), "state".to_string())
                             } else if let Ty::Result(name) = &method.return_ty {
                                 (
                                     name.to_case(Case::Snake),
@@ -1891,8 +1893,8 @@ impl Bindgen {
             std::fs::create_dir_all(&gen_dir).unwrap();
         }
 
-        self.gen_c(gen_dir);
-        self.gen_go_over_c(gen_dir);
+        //self.gen_c(gen_dir);
+        //self.gen_go_over_c(gen_dir);
         self.gen_python(gen_dir);
     }
 }
