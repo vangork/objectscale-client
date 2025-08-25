@@ -13,7 +13,7 @@ pub(crate) struct AccessKey {
     create_date: String,
     // The secret key
     secret_access_key: String,
-    // The status of the access key {Active | Inactive}
+    // The status of the access key {Active | Inactive}. Updatable
     status: String,
     // The name of the user that the access key is associated with.
     #[pyo3(set)]
@@ -51,135 +51,6 @@ impl From<AccessKey> for iam::AccessKey {
 
 #[pymethods]
 impl AccessKey {
-    #[new]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn __str__(&self) -> String {
-        format!("{}", serde_json::to_string(self).unwrap())
-    }
-}
-
-// An ObjectScale Account is a logical construct that corresponds to a customer business unit, tenant, project, and so on.
-#[derive(Clone, Debug, Default, Serialize)]
-#[pyclass(get_all)]
-pub(crate) struct Account {
-    // The Id of the account
-    account_id: String,
-    // The name/id of the object scale that the account is associated with
-    objscale: String,
-    // The date and time, in the format of YYYY-MM-DDTHH:mm:ssZ, when the account created
-    create_date: String,
-    // Indicate if encryption is enabled for the account
-    #[pyo3(set)]
-    encryption_enabled: bool,
-    // account disabled
-    account_disabled: bool,
-    // An Alias for an account
-    #[pyo3(set)]
-    alias: String,
-    // The description for an account
-    #[pyo3(set)]
-    description: String,
-    // protection enabled
-    protection_enabled: bool,
-    // Tso id
-    tso_id: String,
-    // Labels
-    #[pyo3(set)]
-    tags: Vec<Tag>,
-}
-
-impl From<iam::Account> for Account {
-    fn from(account: iam::Account) -> Self {
-        Self {
-            account_id: account.account_id,
-            objscale: account.objscale,
-            create_date: account.create_date,
-            encryption_enabled: account.encryption_enabled,
-            account_disabled: account.account_disabled,
-            alias: account.alias,
-            description: account.description,
-            protection_enabled: account.protection_enabled,
-            tso_id: account.tso_id,
-            tags: account.tags.into_iter().map(Tag::from).collect(),
-        }
-    }
-}
-
-impl From<Account> for iam::Account {
-    fn from(account: Account) -> Self {
-        Self {
-            account_id: account.account_id,
-            objscale: account.objscale,
-            create_date: account.create_date,
-            encryption_enabled: account.encryption_enabled,
-            account_disabled: account.account_disabled,
-            alias: account.alias,
-            description: account.description,
-            protection_enabled: account.protection_enabled,
-            tso_id: account.tso_id,
-            tags: account.tags.into_iter().map(iam::Tag::from).collect(),
-        }
-    }
-}
-
-#[pymethods]
-impl Account {
-    #[new]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn __str__(&self) -> String {
-        format!("{}", serde_json::to_string(self).unwrap())
-    }
-}
-
-// IAM Account access key
-#[derive(Clone, Debug, Default, Serialize)]
-#[pyclass(get_all)]
-pub(crate) struct AccountAccessKey {
-    // The Id of this access key
-    access_key_id: String,
-    // The date and time, in the format of YYYY-MM-DDTHH:mm:ssZ, when the access key was created.
-    create_date: String,
-    // The secret key
-    secret_access_key: String,
-    // The status of the access key {Active | Inactive}
-    status: String,
-    // The name of the user that the access key is associated with.
-    #[pyo3(set)]
-    account_id: String,
-}
-
-impl From<iam::AccountAccessKey> for AccountAccessKey {
-    fn from(account_access_key: iam::AccountAccessKey) -> Self {
-        Self {
-            access_key_id: account_access_key.access_key_id,
-            create_date: account_access_key.create_date,
-            secret_access_key: account_access_key.secret_access_key,
-            status: account_access_key.status,
-            account_id: account_access_key.account_id,
-        }
-    }
-}
-
-impl From<AccountAccessKey> for iam::AccountAccessKey {
-    fn from(account_access_key: AccountAccessKey) -> Self {
-        Self {
-            access_key_id: account_access_key.access_key_id,
-            create_date: account_access_key.create_date,
-            secret_access_key: account_access_key.secret_access_key,
-            status: account_access_key.status,
-            account_id: account_access_key.account_id,
-        }
-    }
-}
-
-#[pymethods]
-impl AccountAccessKey {
     #[new]
     fn new() -> Self {
         Self::default()
@@ -346,52 +217,38 @@ impl GroupPolicyAttachment {
     }
 }
 
-//
+// Lables for IAM account, role and user.
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
-pub(crate) struct LoginProfile {
-    //
-    create_date: String,
-    //
+pub(crate) struct IamTag {
+    // tag key
     #[pyo3(set)]
-    user_name: String,
-    //
+    key: String,
+    // tag value
     #[pyo3(set)]
-    password_reset_required: bool,
-    //
-    #[pyo3(set)]
-    password: String,
-    //
-    #[pyo3(set)]
-    namespace: String,
+    value: String,
 }
 
-impl From<iam::LoginProfile> for LoginProfile {
-    fn from(login_profile: iam::LoginProfile) -> Self {
+impl From<iam::IamTag> for IamTag {
+    fn from(iam_tag: iam::IamTag) -> Self {
         Self {
-            create_date: login_profile.create_date,
-            user_name: login_profile.user_name,
-            password_reset_required: login_profile.password_reset_required,
-            password: login_profile.password,
-            namespace: login_profile.namespace,
+            key: iam_tag.key,
+            value: iam_tag.value,
         }
     }
 }
 
-impl From<LoginProfile> for iam::LoginProfile {
-    fn from(login_profile: LoginProfile) -> Self {
+impl From<IamTag> for iam::IamTag {
+    fn from(iam_tag: IamTag) -> Self {
         Self {
-            create_date: login_profile.create_date,
-            user_name: login_profile.user_name,
-            password_reset_required: login_profile.password_reset_required,
-            password: login_profile.password,
-            namespace: login_profile.namespace,
+            key: iam_tag.key,
+            value: iam_tag.value,
         }
     }
 }
 
 #[pymethods]
-impl LoginProfile {
+impl IamTag {
     #[new]
     fn new() -> Self {
         Self::default()
@@ -548,7 +405,7 @@ pub(crate) struct Role {
     description: String,
     // The maximum session duration (in seconds) that you want to set for the specified role.
     #[pyo3(set)]
-    max_session_duration: i32,
+    max_session_duration: i64,
     // The path to the IAM role.
     path: String,
     // Unique Id associated with the role.
@@ -558,7 +415,7 @@ pub(crate) struct Role {
     role_name: String,
     // The list of Tags associated with the role.
     #[pyo3(set)]
-    tags: Vec<Tag>,
+    tags: Vec<IamTag>,
     // Permissions boundary
     #[pyo3(set)]
     permissions_boundary: PermissionsBoundary,
@@ -578,7 +435,7 @@ impl From<iam::Role> for Role {
             path: role.path,
             role_id: role.role_id,
             role_name: role.role_name,
-            tags: role.tags.into_iter().map(Tag::from).collect(),
+            tags: role.tags.into_iter().map(IamTag::from).collect(),
             permissions_boundary: PermissionsBoundary::from(role.permissions_boundary),
             namespace: role.namespace,
         }
@@ -596,7 +453,7 @@ impl From<Role> for iam::Role {
             path: role.path,
             role_id: role.role_id,
             role_name: role.role_name,
-            tags: role.tags.into_iter().map(iam::Tag::from).collect(),
+            tags: role.tags.into_iter().map(iam::IamTag::from).collect(),
             permissions_boundary: iam::PermissionsBoundary::from(role.permissions_boundary),
             namespace: role.namespace,
         }
@@ -666,38 +523,55 @@ impl RolePolicyAttachment {
     }
 }
 
-// Lables for IAM account, role and user.
+// ObjectScale IAM features for S3 work with SAML identity providers to handle authentication and SAML Assertion generation
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
-pub(crate) struct Tag {
-    // tag key
+pub(crate) struct SamlProvider {
+    // Arn that identifies the SAML Identity Provider.
+    arn: String,
+    //
     #[pyo3(set)]
-    key: String,
-    // tag value
+    name: String,
+    // ISO 8601 format DateTime when SAML Identity Provider was created.
+    create_date: String,
+    // ISO 8601 format DateTime when SAML Identity Provider will be valid.
+    valid_until: String,
+    //
     #[pyo3(set)]
-    value: String,
+    metadata_docucment: String,
+    //
+    #[pyo3(set)]
+    namespace: String,
 }
 
-impl From<iam::Tag> for Tag {
-    fn from(tag: iam::Tag) -> Self {
+impl From<iam::SamlProvider> for SamlProvider {
+    fn from(saml_provider: iam::SamlProvider) -> Self {
         Self {
-            key: tag.key,
-            value: tag.value,
+            arn: saml_provider.arn,
+            name: saml_provider.name,
+            create_date: saml_provider.create_date,
+            valid_until: saml_provider.valid_until,
+            metadata_docucment: saml_provider.metadata_docucment,
+            namespace: saml_provider.namespace,
         }
     }
 }
 
-impl From<Tag> for iam::Tag {
-    fn from(tag: Tag) -> Self {
+impl From<SamlProvider> for iam::SamlProvider {
+    fn from(saml_provider: SamlProvider) -> Self {
         Self {
-            key: tag.key,
-            value: tag.value,
+            arn: saml_provider.arn,
+            name: saml_provider.name,
+            create_date: saml_provider.create_date,
+            valid_until: saml_provider.valid_until,
+            metadata_docucment: saml_provider.metadata_docucment,
+            namespace: saml_provider.namespace,
         }
     }
 }
 
 #[pymethods]
-impl Tag {
+impl SamlProvider {
     #[new]
     fn new() -> Self {
         Self::default()
@@ -726,9 +600,9 @@ pub(crate) struct User {
     // Simple name identifying the User.
     #[pyo3(set)]
     user_name: String,
-    // The list of Tags associated with the User.
+    // List of Tags associated with the User.
     #[pyo3(set)]
-    tags: Vec<Tag>,
+    tags: Vec<IamTag>,
     //
     #[pyo3(set)]
     namespace: String,
@@ -743,7 +617,7 @@ impl From<iam::User> for User {
             permissions_boundary: PermissionsBoundary::from(user.permissions_boundary),
             user_id: user.user_id,
             user_name: user.user_name,
-            tags: user.tags.into_iter().map(Tag::from).collect(),
+            tags: user.tags.into_iter().map(IamTag::from).collect(),
             namespace: user.namespace,
         }
     }
@@ -758,7 +632,7 @@ impl From<User> for iam::User {
             permissions_boundary: iam::PermissionsBoundary::from(user.permissions_boundary),
             user_id: user.user_id,
             user_name: user.user_name,
-            tags: user.tags.into_iter().map(iam::Tag::from).collect(),
+            tags: user.tags.into_iter().map(iam::IamTag::from).collect(),
             namespace: user.namespace,
         }
     }

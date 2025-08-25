@@ -1324,7 +1324,7 @@ pub struct Role {
     /// If you do not specify a value for this setting, the default maximum of one hour is applied.
     /// This setting can have a value from 1 hour to 12 hours
     #[builder(setter(skip = false), default = 3600)]
-    pub max_session_duration: u64,
+    pub max_session_duration: i64,
     /// The path to the IAM role.
     pub path: String,
     /// Unique Id associated with the role.
@@ -1484,7 +1484,7 @@ impl Role {
         name: &str,
         namespace: &str,
         description: &str,
-        max_session_duration: u64,
+        max_session_duration: i64,
     ) -> Result<()> {
         let request_url = format!("{}iam?Action=UpdateRole&RoleName={}", client.endpoint, name,);
         let mut req = client

@@ -878,7 +878,7 @@ impl ManagementClient {
 
     /// Gets the details for the specified replication group.
     ///
-    /// Replication group identifier for which details needs to be retrieved
+    /// id: Replication group identifier for which details needs to be retrieved
     ///
     pub fn get_replication_group(&mut self, id: &str) -> Result<ReplicationGroup> {
         self.auth()?;

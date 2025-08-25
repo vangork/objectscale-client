@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_bool_from_anything, deserialize_default_from_null};
 
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
-pub struct Link {
+pub struct TenancyLink {
     pub rel: String,
     pub href: String,
 }
@@ -19,7 +19,7 @@ pub struct RetionClass {
     /// Name of the retention class
     pub name: String,
     /// Period of the retention class in seconds
-    pub period: u64,
+    pub period: i64,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
@@ -66,9 +66,9 @@ pub struct Namespace {
     // TODO:
     // pub vdc: String,
     /// Hyperlink to the details for this resource
-    pub link: Link,
+    pub link: TenancyLink,
     /// Timestamp that shows when this resource was created in ECS
-    pub creation_time: u64,
+    pub creation_time: i64,
     /// Indicates whether the resource is inactive. When a user removes a resource, the resource is put in this state before it is removed from the ECS database
     pub inactive: bool,
     /// Indicated whether the resource is an internal resource
@@ -337,7 +337,7 @@ impl Namespace {
         client: &mut ManagementClient,
         id: &str,
         name: String,
-        period: u64,
+        period: i64,
     ) -> Result<()> {
         let request_url = format!(
             "{}object/namespaces/namespace/{}/retention",
@@ -363,7 +363,7 @@ impl Namespace {
         client: &mut ManagementClient,
         id: &str,
         name: String,
-        period: u64,
+        period: i64,
     ) -> Result<()> {
         let request_url = format!(
             "{}object/namespaces/namespace/{}/retention/{}",

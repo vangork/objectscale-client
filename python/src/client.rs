@@ -1,13 +1,18 @@
 #![allow(unused_imports)]
 
-use crate::bucket::{Bucket, BucketTag, Link, MetaData, MinMaxGovernor, SearchMetaData};
 use crate::iam::{
-    AccessKey, Account, AccountAccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment,
-    LoginProfile, PermissionsBoundary, Policy, Role, RolePolicyAttachment, Tag, User,
-    UserGroupMembership, UserPolicyAttachment,
+    AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, IamTag, PermissionsBoundary,
+    Policy, Role, RolePolicyAttachment, SamlProvider, User, UserGroupMembership,
+    UserPolicyAttachment,
 };
-use crate::tenant::Tenant;
-use objectscale_client::{client, iam, provisioning, tenant};
+use crate::provisioning::{
+    Bucket, BucketTag, MetaData, MinMaxGovernor, ProvisioningLink, SearchMetaData, StoragePool,
+    Vdc, VdcKeystore,
+};
+use crate::replication::{ReplicationGroup, VarrayMapping};
+use crate::tenancy::{Attribute, Namespace, RetionClass, RetionClasses, TenancyLink, UserMapping};
+use crate::user::{ManagementUser, ObjectUser, UserTag};
+use objectscale_client::{client, iam, provisioning, replication, tenancy, user};
 use pyo3::prelude::*;
 use pyo3::{exceptions, PyResult};
 
@@ -35,74 +40,6 @@ impl ManagementClient {
         }
     }
 
-    pub fn new_objectstore_client(&self, endpoint: &str) -> PyResult<ObjectstoreClient> {
-        let result = self.management_client.new_objectstore_client(endpoint);
-        match result {
-            Ok(objectstore_client) => Ok(ObjectstoreClient { objectstore_client }),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Create an IAM account.
-    ///
-    /// account: Iam Account to create
-    ///
-    pub fn create_account(&mut self, account: &Account) -> PyResult<Account> {
-        let account = iam::Account::from(account.clone());
-        let result = self.management_client.create_account(account);
-        match result {
-            Ok(account) => Ok(Account::from(account)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Get an IAM account.
-    ///
-    /// account_id: Id of the account
-    ///
-    pub fn get_account(&mut self, account_id: &str) -> PyResult<Account> {
-        let result = self.management_client.get_account(account_id);
-        match result {
-            Ok(account) => Ok(Account::from(account)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Update an IAM account.
-    ///
-    /// account: Iam Account to update
-    ///
-    pub fn update_account(&mut self, account: &Account) -> PyResult<Account> {
-        let account = iam::Account::from(account.clone());
-        let result = self.management_client.update_account(account);
-        match result {
-            Ok(account) => Ok(Account::from(account)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Delete an IAM account.
-    ///
-    /// account_id: Id of the account
-    ///
-    pub fn delete_account(&mut self, account_id: &str) -> PyResult<()> {
-        let result = self.management_client.delete_account(account_id);
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// List all IAM accounts.
-    ///
-    pub fn list_accounts(&mut self) -> PyResult<Vec<Account>> {
-        let result = self.management_client.list_accounts();
-        match result {
-            Ok(accounts) => Ok(accounts.into_iter().map(Account::from).collect()),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
     /// Creates a new IAM User.
     ///
     /// user: IAM User to create
@@ -116,13 +53,26 @@ impl ManagementClient {
         }
     }
 
-    /// Returns the information about the specified IAM User.
+    /// Retrieve IAM user.
     ///
-    /// user_name: The name of the user to retrieve. Cannot be empty.
-    /// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
+    /// name: The name of the user to retrieve.
+    /// namespace: ECS namespace IAM entity belongs to
     ///
-    pub fn get_user(&mut self, user_name: &str, namespace: &str) -> PyResult<User> {
-        let result = self.management_client.get_user(user_name, namespace);
+    pub fn get_user(&mut self, name: &str, namespace: &str) -> PyResult<User> {
+        let result = self.management_client.get_user(name, namespace);
+        match result {
+            Ok(user) => Ok(User::from(user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Updates an IAM user.
+    ///
+    /// user: IAM User to be updated
+    ///
+    pub fn update_user(&mut self, user: &User) -> PyResult<User> {
+        let user = iam::User::from(user.clone());
+        let result = self.management_client.update_user(user);
         match result {
             Ok(user) => Ok(User::from(user)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
@@ -145,10 +95,6 @@ impl ManagementClient {
     /// Lists the IAM users.
     ///
     /// namespace: Namespace of users(id of the account the user belongs to). Cannot be empty.
-    ///
-    /// TODO:
-    /// list_user won't show tags, or permissions boundary if any
-    /// fix it or report bug
     ///
     pub fn list_users(&mut self, namespace: &str) -> PyResult<Vec<User>> {
         let result = self.management_client.list_users(namespace);
@@ -220,53 +166,6 @@ impl ManagementClient {
         }
     }
 
-    /// Creates a password for the specified IAM user.
-    ///
-    /// login_profile: LoginProfile to create
-    ///
-    pub fn create_login_profile(&mut self, login_profile: &LoginProfile) -> PyResult<LoginProfile> {
-        let login_profile = iam::LoginProfile::from(login_profile.clone());
-        let result = self.management_client.create_login_profile(login_profile);
-        match result {
-            Ok(login_profile) => Ok(LoginProfile::from(login_profile)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Retrieves the password for the specified IAM user
-    ///
-    /// user_name: Name of the user to delete password. Cannot be empty.
-    /// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-    ///
-    pub fn get_login_profile(
-        &mut self,
-        user_name: &str,
-        namespace: &str,
-    ) -> PyResult<LoginProfile> {
-        let result = self
-            .management_client
-            .get_login_profile(user_name, namespace);
-        match result {
-            Ok(login_profile) => Ok(LoginProfile::from(login_profile)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Deletes the password for the specified IAM user
-    ///
-    /// user_name: Name of the user to delete password. Cannot be empty.
-    /// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-    ///
-    pub fn delete_login_profile(&mut self, user_name: &str, namespace: &str) -> PyResult<()> {
-        let result = self
-            .management_client
-            .delete_login_profile(user_name, namespace);
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
     /// Creates AccessKey for user.
     ///
     /// access_key: AccessKey to create
@@ -329,79 +228,6 @@ impl ManagementClient {
             .list_access_keys(user_name, namespace);
         match result {
             Ok(access_keys) => Ok(access_keys.into_iter().map(AccessKey::from).collect()),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Creates account AccessKey.
-    ///
-    /// account_access_key: Account Access Key to create
-    ///
-    pub fn create_account_access_key(
-        &mut self,
-        account_access_key: &AccountAccessKey,
-    ) -> PyResult<AccountAccessKey> {
-        let account_access_key = iam::AccountAccessKey::from(account_access_key.clone());
-        let result = self
-            .management_client
-            .create_account_access_key(account_access_key);
-        match result {
-            Ok(account_access_key) => Ok(AccountAccessKey::from(account_access_key)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Updates account AccessKey.
-    ///
-    /// account_access_key: Account Access Key to update
-    ///
-    pub fn update_account_access_key(
-        &mut self,
-        account_access_key: &AccountAccessKey,
-    ) -> PyResult<AccountAccessKey> {
-        let account_access_key = iam::AccountAccessKey::from(account_access_key.clone());
-        let result = self
-            .management_client
-            .update_account_access_key(account_access_key);
-        match result {
-            Ok(account_access_key) => Ok(AccountAccessKey::from(account_access_key)),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Deletes the access key pair associated with the specified IAM account.
-    ///
-    /// access_key_id: The ID of the access key. Cannot be empty.
-    /// account_id: The id of the account. Cannot be empty.
-    ///
-    pub fn delete_account_access_key(
-        &mut self,
-        access_key_id: &str,
-        account_id: &str,
-    ) -> PyResult<()> {
-        let result = self
-            .management_client
-            .delete_account_access_key(access_key_id, account_id);
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
-        }
-    }
-
-    /// Returns information about the access key IDs associated with the specified IAM account.
-    ///
-    /// account_id: The id of the account. Cannot be empty.
-    ///
-    pub fn list_account_access_keys(
-        &mut self,
-        account_id: &str,
-    ) -> PyResult<Vec<AccountAccessKey>> {
-        let result = self.management_client.list_account_access_keys(account_id);
-        match result {
-            Ok(account_access_keys) => Ok(account_access_keys
-                .into_iter()
-                .map(AccountAccessKey::from)
-                .collect()),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -776,6 +602,70 @@ impl ManagementClient {
         }
     }
 
+    /// Create SAML Identity Provider
+    ///
+    /// provider: SAML provider to create
+    ///
+    pub fn create_saml_provider(&mut self, provider: &SamlProvider) -> PyResult<SamlProvider> {
+        let provider = iam::SamlProvider::from(provider.clone());
+        let result = self.management_client.create_saml_provider(provider);
+        match result {
+            Ok(saml_provider) => Ok(SamlProvider::from(saml_provider)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Retrieve the SAML IdP document.
+    ///
+    /// arn: The name of the provider to retrieve.
+    /// namespace: Namespace of the role(id of the account the role belongs to). Cannot be empty.
+    ///
+    pub fn get_saml_provider(&mut self, arn: &str, namespace: &str) -> PyResult<SamlProvider> {
+        let result = self.management_client.get_saml_provider(arn, namespace);
+        match result {
+            Ok(saml_provider) => Ok(SamlProvider::from(saml_provider)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Update the SAML Identity Provider.
+    ///
+    /// role: SAML Identity Provider to update
+    ///
+    pub fn update_saml_provider(&mut self, provider: &SamlProvider) -> PyResult<SamlProvider> {
+        let provider = iam::SamlProvider::from(provider.clone());
+        let result = self.management_client.update_saml_provider(provider);
+        match result {
+            Ok(saml_provider) => Ok(SamlProvider::from(saml_provider)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Delete the SAML Identity Provider.
+    ///
+    /// arn: The ARN of the provider to delete.
+    /// namespace: ECS namespace IAM entity belongs to
+    ///
+    pub fn delete_saml_provider(&mut self, arn: &str, namespace: &str) -> PyResult<()> {
+        let result = self.management_client.delete_saml_provider(arn, namespace);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// List the SAML Identity Providers.
+    ///
+    /// namespace: ECS namespace IAM entity belongs to
+    ///
+    pub fn list_saml_providers(&mut self, namespace: &str) -> PyResult<Vec<SamlProvider>> {
+        let result = self.management_client.list_saml_providers(namespace);
+        match result {
+            Ok(saml_providers) => Ok(saml_providers.into_iter().map(SamlProvider::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
     /// Lists the IAM users that the specified IAM group contains.
     ///
     /// group_name: The name of the group to list contained users for. Cannot be empty.
@@ -870,74 +760,282 @@ impl ManagementClient {
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
-}
 
-// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
-#[pyclass]
-pub(crate) struct ObjectstoreClient {
-    objectstore_client: client::ObjectstoreClient,
-}
-
-#[pymethods]
-impl ObjectstoreClient {
-    /// Creates the tenant which will associate an IAM Account within an objectstore.
+    /// Creates a namespace with the given details.
     ///
-    /// tenant: Tenant to create
+    /// namespace: Namespace to create
     ///
-    pub fn create_tenant(&mut self, tenant: &Tenant) -> PyResult<Tenant> {
-        let tenant = tenant::Tenant::from(tenant.clone());
-        let result = self.objectstore_client.create_tenant(tenant);
+    pub fn create_namespace(&mut self, namespace: &Namespace) -> PyResult<Namespace> {
+        let namespace = tenancy::Namespace::from(namespace.clone());
+        let result = self.management_client.create_namespace(namespace);
         match result {
-            Ok(tenant) => Ok(Tenant::from(tenant)),
+            Ok(namespace) => Ok(Namespace::from(namespace)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
 
-    /// Get the tenant.
+    /// Gets the details for the given namespace.
     ///
-    /// name: The associated account id. Cannot be empty.
+    /// id: Namespace identifier for which details needs to be retrieved.
     ///
-    pub fn get_tenant(&mut self, name: &str) -> PyResult<Tenant> {
-        let result = self.objectstore_client.get_tenant(name);
+    pub fn get_namespace(&mut self, id: &str) -> PyResult<Namespace> {
+        let result = self.management_client.get_namespace(id);
         match result {
-            Ok(tenant) => Ok(Tenant::from(tenant)),
+            Ok(namespace) => Ok(Namespace::from(namespace)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
 
-    /// Updates Tenant details like default_bucket_size and alias.
+    /// Update a namespace with the given details.
     ///
-    /// tenant: Tenant to update
+    /// namespace: Namespace to be updated
     ///
-    pub fn update_tenant(&mut self, tenant: &Tenant) -> PyResult<Tenant> {
-        let tenant = tenant::Tenant::from(tenant.clone());
-        let result = self.objectstore_client.update_tenant(tenant);
+    pub fn update_namespace(&mut self, namespace: &Namespace) -> PyResult<Namespace> {
+        let namespace = tenancy::Namespace::from(namespace.clone());
+        let result = self.management_client.update_namespace(namespace);
         match result {
-            Ok(tenant) => Ok(Tenant::from(tenant)),
+            Ok(namespace) => Ok(Namespace::from(namespace)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
 
-    /// Delete the tenant from an object store. Tenant must not own any buckets.
+    /// Deactivates and deletes the given namespace and all associated user mappings.
     ///
-    /// name: The associated account id. Cannot be empty.
+    /// id: An active namespace identifier which needs to be deactivated/deleted
     ///
-    pub fn delete_tenant(&mut self, name: &str) -> PyResult<()> {
-        let result = self.objectstore_client.delete_tenant(name);
+    pub fn delete_namespace(&mut self, id: &str) -> PyResult<()> {
+        let result = self.management_client.delete_namespace(id);
         match result {
             Ok(_) => Ok(()),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
 
-    /// Get the list of tenants.
+    /// Gets the list of all configured namespaces.
     ///
-    /// name_prefix: Case sensitive prefix of the tenant name with a wild card(*). Can be empty or any_prefix_string*.
+    /// name_prefix: Case sensitive prefix of the Namespace name with a wild card(*) Ex : any_prefix_string*.
     ///
-    pub fn list_tenants(&mut self, name_prefix: &str) -> PyResult<Vec<Tenant>> {
-        let result = self.objectstore_client.list_tenants(name_prefix);
+    pub fn list_namespaces(&mut self, name_prefix: &str) -> PyResult<Vec<Namespace>> {
+        let result = self.management_client.list_namespaces(name_prefix);
         match result {
-            Ok(tenants) => Ok(tenants.into_iter().map(Tenant::from).collect()),
+            Ok(namespaces) => Ok(namespaces.into_iter().map(Namespace::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Creates local users for the VDC.
+    ///
+    /// user: ManagementUser to create
+    ///
+    pub fn create_management_user(&mut self, user: &ManagementUser) -> PyResult<ManagementUser> {
+        let user = user::ManagementUser::from(user.clone());
+        let result = self.management_client.create_management_user(user);
+        match result {
+            Ok(management_user) => Ok(ManagementUser::from(management_user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets details for the specified local management user.
+    ///
+    /// id: User identifier for which local user information needs to be retrieved
+    ///
+    pub fn get_management_user(&mut self, id: &str) -> PyResult<ManagementUser> {
+        let result = self.management_client.get_management_user(id);
+        match result {
+            Ok(management_user) => Ok(ManagementUser::from(management_user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Updates user details for the specified local management user.
+    ///
+    /// user: ManagementUser to be updated
+    ///
+    pub fn update_management_user(&mut self, user: &ManagementUser) -> PyResult<ManagementUser> {
+        let user = user::ManagementUser::from(user.clone());
+        let result = self.management_client.update_management_user(user);
+        match result {
+            Ok(management_user) => Ok(ManagementUser::from(management_user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Deletes local management user information for the specified user identifier.
+    ///
+    /// id: User identifier for which local user information needs to be deleted.
+    ///
+    pub fn delete_management_user(&mut self, id: &str) -> PyResult<()> {
+        let result = self.management_client.delete_management_user(id);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets all configured local management users.
+    ///
+    pub fn list_management_users(&mut self) -> PyResult<Vec<ManagementUser>> {
+        let result = self.management_client.list_management_users();
+        match result {
+            Ok(management_users) => Ok(management_users
+                .into_iter()
+                .map(ManagementUser::from)
+                .collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Creates a user for a specified namespace.
+    ///
+    /// user: ObjectUser to create
+    ///
+    pub fn create_object_user(&mut self, user: &ObjectUser) -> PyResult<ObjectUser> {
+        let user = user::ObjectUser::from(user.clone());
+        let result = self.management_client.create_object_user(user);
+        match result {
+            Ok(object_user) => Ok(ObjectUser::from(object_user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets user details for the specified user belong to the specified namespace.
+    ///
+    /// name: Valid user identifier
+    /// namespace: The namespace to which user belong
+    ///
+    pub fn get_object_user(&mut self, name: &str, namespace: &str) -> PyResult<ObjectUser> {
+        let result = self.management_client.get_object_user(name, namespace);
+        match result {
+            Ok(object_user) => Ok(ObjectUser::from(object_user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Updates user details for the specified object user.
+    ///
+    /// user: ObjectUser to be updated
+    ///
+    pub fn update_object_user(&mut self, user: &ObjectUser) -> PyResult<ObjectUser> {
+        let user = user::ObjectUser::from(user.clone());
+        let result = self.management_client.update_object_user(user);
+        match result {
+            Ok(object_user) => Ok(ObjectUser::from(object_user)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Deletes the specified user and its secret keys.
+    ///
+    /// name: User to be deleted.
+    /// namespace: Namespace identifier to associate with the user
+    ///
+    pub fn delete_object_user(&mut self, name: &str, namespace: &str) -> PyResult<()> {
+        let result = self.management_client.delete_object_user(name, namespace);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets identifiers for all configured users.
+    ///
+    pub fn list_object_users(&mut self) -> PyResult<Vec<ObjectUser>> {
+        let result = self.management_client.list_object_users();
+        match result {
+            Ok(object_users) => Ok(object_users.into_iter().map(ObjectUser::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Get the certificate chain being used by ECS
+    ///
+    pub fn get_vdc_keystore(&mut self) -> PyResult<VdcKeystore> {
+        let result = self.management_client.get_vdc_keystore();
+        match result {
+            Ok(vdc_keystore) => Ok(VdcKeystore::from(vdc_keystore)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Set the certificate chain being used by ECS.
+    ///
+    /// keystore: VdcKeystore to be updated
+    ///
+    pub fn update_vdc_keystore(&mut self, keystore: &VdcKeystore) -> PyResult<VdcKeystore> {
+        let keystore = provisioning::VdcKeystore::from(keystore.clone());
+        let result = self.management_client.update_vdc_keystore(keystore);
+        match result {
+            Ok(vdc_keystore) => Ok(VdcKeystore::from(vdc_keystore)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets the details for a VDC the identify of which is specified by its name.
+    ///
+    /// name: VDC name for which VDC Information is to be retrieved
+    ///
+    pub fn get_vdc(&mut self, name: &str) -> PyResult<Vdc> {
+        let result = self.management_client.get_vdc(name);
+        match result {
+            Ok(vdc) => Ok(Vdc::from(vdc)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets all details of all configured VDCs.
+    ///
+    pub fn list_vdcs(&mut self) -> PyResult<Vec<Vdc>> {
+        let result = self.management_client.list_vdcs();
+        match result {
+            Ok(vdcs) => Ok(vdcs.into_iter().map(Vdc::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets the details for the specified storage pool.
+    ///
+    /// id: Storage pool identifier to be retrieved
+    ///
+    pub fn get_storage_pool(&mut self, id: &str) -> PyResult<StoragePool> {
+        let result = self.management_client.get_storage_pool(id);
+        match result {
+            Ok(storage_pool) => Ok(StoragePool::from(storage_pool)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets a list of storage pools from the local VDC.
+    ///
+    pub fn list_storage_pools(&mut self) -> PyResult<Vec<StoragePool>> {
+        let result = self.management_client.list_storage_pools();
+        match result {
+            Ok(storage_pools) => Ok(storage_pools.into_iter().map(StoragePool::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Gets the details for the specified replication group.
+    ///
+    /// id: Replication group identifier for which details needs to be retrieved
+    ///
+    pub fn get_replication_group(&mut self, id: &str) -> PyResult<ReplicationGroup> {
+        let result = self.management_client.get_replication_group(id);
+        match result {
+            Ok(replication_group) => Ok(ReplicationGroup::from(replication_group)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Lists all configured replication groups.
+    ///
+    pub fn list_replication_groups(&mut self) -> PyResult<Vec<ReplicationGroup>> {
+        let result = self.management_client.list_replication_groups();
+        match result {
+            Ok(replication_groups) => Ok(replication_groups
+                .into_iter()
+                .map(ReplicationGroup::from)
+                .collect()),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }

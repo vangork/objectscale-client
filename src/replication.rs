@@ -49,7 +49,7 @@ pub struct ReplicationGroup {
     // pub link: Link,
     /// Timestamp that shows when this resource was created in ECS
     #[serde(rename = "creation_time")]
-    pub creation_time: u64,
+    pub creation_time: i64,
     /// Indicates whether the resource is inactive. When a user removes a resource, the resource is put in this state before it is removed from the ECS database.
     pub inactive: bool,
     /// Indicated whether the resource is an internal resource
