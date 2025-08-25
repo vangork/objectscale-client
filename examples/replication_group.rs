@@ -11,13 +11,13 @@ fn main() {
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
 
-    let rp = client
+    let rg = client
         .get_replication_group(id)
         .expect("get replication group");
-    println!("Get replication group: {:?}", rp);
+    println!("Get replication group: {:?}", rg);
 
-    let rps = client
+    let rgs = client
         .list_replication_groups()
         .expect("list replication groups");
-    println!("List replication groups: {:?}", rps);
+    println!("List replication groups: {:?}", rgs);
 }

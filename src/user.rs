@@ -13,23 +13,23 @@ use serde_aux::field_attributes::deserialize_default_from_null;
 #[builder(setter(skip))]
 #[serde(rename(serialize = "mgmt_user_info_create"))]
 pub struct ManagementUser {
-    /// User Id
+    /// User Id. Required
     #[serde(rename = "userId")]
     #[builder(setter(into, skip = false))]
     pub user_id: String,
-    /// User Password. Updatable
+    /// User Password. Required. Updatable
     #[serde(default)]
     #[builder(setter(into, skip = false))]
     pub password: String,
-    /// Flag indicating whether management user is System Admin. Updatable
+    /// Flag indicating whether management user is System Admin. Default: false. Updatable
     #[serde(rename = "isSystemAdmin")]
     #[builder(setter(skip = false), default = "false")]
     pub is_system_admin: bool,
-    /// Flag indicating whether management user is System Monitor. Updatable
+    /// Flag indicating whether management user is System Monitor. Default: false. Updatable
     #[serde(rename = "isSystemMonitor")]
     #[builder(setter(skip = false), default = "false")]
     pub is_system_monitor: bool,
-    /// Flag indicating whether management user is Security Admin. Updatable
+    /// Flag indicating whether management user is Security Admin. Default: false. Updatable
     #[serde(rename = "isSecurityAdmin")]
     #[builder(setter(skip = false), default = "false")]
     pub is_security_admin: bool,
@@ -208,11 +208,11 @@ pub struct UserTag {
 #[builder(setter(skip))]
 #[serde(rename(serialize = "user_create_param"))]
 pub struct ObjectUser {
-    /// User name
+    /// User name. Required
     #[serde(rename(serialize = "user"))]
     #[builder(setter(into, skip = false))]
     pub name: String,
-    /// Namespace that owns the user
+    /// Namespace that owns the user. Required
     #[builder(setter(into, skip = false))]
     pub namespace: String,
     /// Set true if user needs to be is to be locked, false otherwise. Updatable

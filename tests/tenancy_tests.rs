@@ -3,16 +3,18 @@ use objectscale_client::tenancy::{
     Attribute, NamespaceBuilder, RetionClass, RetionClasses, UserMapping,
 };
 
+const REPLICATION_GROUP: &str =
+    "urn:storageos:ReplicationGroupInfo:0e953ad1-94a5-4eb1-825a-d58d29e85434:global";
+
 #[test]
 fn test_namespace() {
     let mut management_client = common::create_management_client();
 
     let namespace_name = "tenancy_test_namespace";
-    let replication_group = "urn:storageos:ReplicationGroupInfo:0e953ad1-94a5-4eb1-825a-d58d29e85434:global";
 
     let namespace = NamespaceBuilder::default()
         .name(namespace_name)
-        .default_data_services_vpool(replication_group)
+        .default_data_services_vpool(REPLICATION_GROUP)
         .build()
         .expect("new namespace");
     let mut namespace = management_client
@@ -21,7 +23,7 @@ fn test_namespace() {
     assert_eq!(namespace.name, namespace_name);
     assert_eq!(namespace.default_bucket_block_size, -1);
     assert_eq!(namespace.is_encryption_enabled, false);
-    assert_eq!(namespace.default_data_services_vpool, replication_group);
+    assert_eq!(namespace.default_data_services_vpool, REPLICATION_GROUP);
 
     let namespace_id = namespace.id.clone();
     let new_namespace_block_size: i64 = 10;
@@ -56,7 +58,10 @@ fn test_namespace() {
         .get_namespace(&namespace_id)
         .expect("get namespace");
     assert_eq!(namespace.name, namespace_name);
-    assert_eq!(namespace.default_bucket_block_size, new_namespace_block_size);
+    assert_eq!(
+        namespace.default_bucket_block_size,
+        new_namespace_block_size
+    );
     assert_eq!(namespace.user_mapping, user_mappings);
     assert_eq!(namespace.block_size, 2);
     assert_eq!(namespace.notification_size, 2);
@@ -66,7 +71,7 @@ fn test_namespace() {
     let namespaces = management_client
         .list_namespaces("")
         .expect("list namespaces");
-    assert_ne!(namespaces.len(), 0);
+    assert!(namespaces.contains(&namespace));
 
     management_client
         .delete_namespace(&namespace_id)

@@ -8,7 +8,7 @@ use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_bool_from_anything, deserialize_default_from_null};
 
-#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct TenancyLink {
     pub rel: String,
     pub href: String,
@@ -47,7 +47,7 @@ pub struct UserMapping {
 }
 
 /// ECS supports access by multiple tenants, where each tenant is defined by a namespace.
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[builder(setter(skip))]
 #[serde(rename(serialize = "namespace_create"))]
 pub struct Namespace {
