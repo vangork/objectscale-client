@@ -31,7 +31,7 @@ pub struct IamTag {
     pub value: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct PermissionsBoundary {
     /// The ARN of the policy set as permissions boundary.
@@ -41,7 +41,7 @@ pub struct PermissionsBoundary {
 }
 
 /// In ObjectScale, an IAM User is a person or application in the account.
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct User {
@@ -51,19 +51,20 @@ pub struct User {
     pub create_date: String,
     /// The path to the IAM User.
     pub path: String,
-    /// Permissions boundary
-    // list users API won't return permissions_boundary
+    /// Permissions boundary. Updatable
     #[builder(setter(skip = false), default)]
+    // list users API won't return permissions_boundary
     #[serde(default)]
     pub permissions_boundary: PermissionsBoundary,
     /// Unique Id associated with the User.
     pub user_id: String,
-    /// Simple name identifying the User.
+    /// Simple name identifying the User. Required
     #[builder(setter(into))]
     pub user_name: String,
-    /// List of Tags associated with the User.
+    /// List of Tags associated with the User. Updatable
     #[builder(setter(skip = false), default)]
     pub tags: Vec<IamTag>,
+    /// Namespace. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -416,16 +417,20 @@ impl User {
     }
 }
 
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct UserPolicyAttachment {
+    /// Username of the user to attach the policy.. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub user_name: String,
+    /// Name of the policy
     pub policy_name: String,
+    /// Arn of the policy to attach.. Required
     #[builder(setter(into))]
     pub policy_arn: String,
+    /// Namespace. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -449,8 +454,8 @@ struct ListAttachedUserPoliciesResponse {
 impl UserPolicyAttachment {
     pub(crate) fn create(
         client: &mut ManagementClient,
-        user_policy_attachment: UserPolicyAttachment,
-    ) -> Result<UserPolicyAttachment> {
+        user_policy_attachment: &UserPolicyAttachment,
+    ) -> Result<()> {
         let request_url = format!(
             "{}iam?Action=AttachUserPolicy&UserName={}&PolicyArn={}",
             client.endpoint, user_policy_attachment.user_name, user_policy_attachment.policy_arn,
@@ -463,15 +468,8 @@ impl UserPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &user_policy_attachment.namespace)
             .send()?;
-        let text =
-            get_content_text(resp).with_context(|| "Failed to create user policy attachment")?;
-        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise AttachUserPolicyResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(user_policy_attachment)
+        get_content_text(resp).with_context(|| "Failed to create user policy attachment")?;
+        Ok(())
     }
 
     pub(crate) fn delete(
@@ -490,14 +488,7 @@ impl UserPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", user_policy_attachment.namespace)
             .send()?;
-        let text =
-            get_content_text(resp).with_context(|| "Failed to delete user policy attachment")?;
-        let _: IamResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise DetachUserPolicyResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
+        get_content_text(resp).with_context(|| "Failed to delete user policy attachment")?;
         Ok(())
     }
 
@@ -559,7 +550,7 @@ impl UserPolicyAttachment {
 }
 
 /// IAM User access key
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct AccessKey {
@@ -572,9 +563,10 @@ pub struct AccessKey {
     pub secret_access_key: String,
     /// The status of the access key {Active | Inactive}. Updatable
     pub status: String,
-    /// The name of the user that the access key is associated with.
+    /// The name of the user that the access key is associated with. Required
     #[builder(setter(into))]
     pub user_name: String,
+    /// Namespace. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -742,7 +734,7 @@ impl AccessKey {
 }
 
 /// IAM policies are documents in JSON format that define permissions for an operation regardless of the method that you use to perform the operation.
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct Policy {
@@ -765,14 +757,16 @@ pub struct Policy {
     pub permissions_boundary_usage_count: i64,
     /// The stable and unique string identifying the policy.
     pub policy_id: String,
-    /// The friendly name of the policy.
+    /// The friendly name of the policy. Required.
     #[builder(setter(into))]
     pub policy_name: String,
     /// The date and time, in ISO 8601 date-time format, when the policy was created.
     pub update_date: String,
+    /// The policy document in JSON format. Required.
     #[builder(setter(into))]
     #[serde(default)]
     pub policy_document: String,
+    /// Namespace. Required.
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -953,7 +947,7 @@ impl Policy {
 }
 
 /// A Group is a collection of Users. You can use groups to specify permissions for a collection of users.
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct Group {
@@ -965,9 +959,10 @@ pub struct Group {
     pub path: String,
     /// Unique Id associated with the Group.
     pub group_id: String,
-    /// Simple name identifying the Group.
+    /// Simple name identifying the Group. Required.
     #[builder(setter(into))]
     pub group_name: String,
+    /// Namespace. Required.
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -1154,16 +1149,20 @@ impl Group {
     }
 }
 
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct GroupPolicyAttachment {
+    /// Name of the group to attach the policy. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub group_name: String,
+    /// Name of the policy to attach
     pub policy_name: String,
+    /// Arn of the policy to attach. Required
     #[builder(setter(into))]
     pub policy_arn: String,
+    /// Namespace. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -1199,8 +1198,8 @@ struct ListAttachedGroupPoliciesResponse {
 impl GroupPolicyAttachment {
     pub(crate) fn create(
         client: &mut ManagementClient,
-        group_policy_attachment: GroupPolicyAttachment,
-    ) -> Result<GroupPolicyAttachment> {
+        group_policy_attachment: &GroupPolicyAttachment,
+    ) -> Result<()> {
         let request_url = format!(
             "{}iam?Action=AttachGroupPolicy&GroupName={}&PolicyArn={}",
             client.endpoint, group_policy_attachment.group_name, group_policy_attachment.policy_arn,
@@ -1213,15 +1212,8 @@ impl GroupPolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &group_policy_attachment.namespace)
             .send()?;
-        let text =
-            get_content_text(resp).with_context(|| "Failed to create group policy attachment")?;
-        let _: AttachGroupPolicyResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise AttachGroupPolicyResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(group_policy_attachment)
+        get_content_text(resp).with_context(|| "Failed to create group policy attachment")?;
+        Ok(())
     }
 
     pub(crate) fn delete(
@@ -1309,40 +1301,41 @@ impl GroupPolicyAttachment {
 }
 
 /// A role is similar to a user, in that it is an identity with permission policies that determine what the identity can and cannot do.
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct Role {
     /// Arn that identifies the role.
     pub arn: String,
-    /// The trust relationship policy document that grants an entity permission to assume the role.
+    /// The trust relationship policy document that grants an entity permission to assume the role. Required.
     #[builder(setter(into))]
     pub assume_role_policy_document: String,
     /// ISO 8601 DateTime when role was created.
     pub create_date: String,
-    /// The description of the IAM role.
+    /// The description of the IAM role. Updatable
     #[builder(setter(into), default)]
     pub description: String,
     /// The maximum session duration (in seconds) that you want to set for the specified role.
     /// If you do not specify a value for this setting, the default maximum of one hour is applied.
-    /// This setting can have a value from 1 hour to 12 hours
+    /// This setting can have a value from 1 hour to 12 hours. The default is 1 hour. Updatable
     #[builder(setter(skip = false), default = 3600)]
     pub max_session_duration: i64,
     /// The path to the IAM role.
     pub path: String,
     /// Unique Id associated with the role.
     pub role_id: String,
-    /// Simple name identifying the role.
+    /// Simple name identifying the role. Required
     #[builder(setter(into))]
     pub role_name: String,
-    /// The list of Tags associated with the role.
+    /// The list of Tags associated with the role. Updatable
     #[builder(setter(skip = false), default)]
     pub tags: Vec<IamTag>,
-    /// Permissions boundary
+    /// Permissions boundary. Updatable
     #[builder(setter(skip = false), default)]
     // get/list role API won't have permissions_boundary if not set
     #[serde(default)]
     pub permissions_boundary: PermissionsBoundary,
+    /// Namespace. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -1798,16 +1791,19 @@ impl Role {
     }
 }
 
-#[derive(Builder, Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 #[builder(setter(skip))]
 pub struct RolePolicyAttachment {
+    /// Simple name identifying the role. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub role_name: String,
     pub policy_name: String,
+    /// Arn that identifies the policy. Required
     #[builder(setter(into))]
     pub policy_arn: String,
+    /// Namespace. Required
     #[builder(setter(into))]
     #[serde(default)]
     pub namespace: String,
@@ -1843,8 +1839,8 @@ struct ListAttachedRolePoliciesResponse {
 impl RolePolicyAttachment {
     pub(crate) fn create(
         client: &mut ManagementClient,
-        role_policy_attachment: RolePolicyAttachment,
-    ) -> Result<RolePolicyAttachment> {
+        role_policy_attachment: &RolePolicyAttachment,
+    ) -> Result<()> {
         let request_url = format!(
             "{}iam?Action=AttachRolePolicy&RoleName={}&PolicyArn={}",
             client.endpoint, role_policy_attachment.role_name, role_policy_attachment.policy_arn,
@@ -1857,15 +1853,8 @@ impl RolePolicyAttachment {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .header("x-emc-namespace", &role_policy_attachment.namespace)
             .send()?;
-        let text =
-            get_content_text(resp).with_context(|| "Failed to create role policy attachment")?;
-        let _: AttachRolePolicyResponse = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise AttachRolePolicyResponse. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(role_policy_attachment)
+        get_content_text(resp).with_context(|| "Failed to create role policy attachment")?;
+        Ok(())
     }
 
     pub(crate) fn delete(

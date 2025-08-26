@@ -233,7 +233,11 @@ impl ManagementClient {
         user_policy_attachment: UserPolicyAttachment,
     ) -> Result<UserPolicyAttachment> {
         self.auth()?;
-        UserPolicyAttachment::create(self, user_policy_attachment)
+        UserPolicyAttachment::create(self, &user_policy_attachment)?;
+        let list = UserPolicyAttachment::list(self, &user_policy_attachment.user_name, &user_policy_attachment.namespace)?;
+        list.into_iter().find(|attachment| attachment.policy_arn == user_policy_attachment.policy_arn).ok_or_else(|| {
+            anyhow!("Failed to locate the new created user policy attachment")
+        })
     }
 
     /// Remove the specified managed policy attached to the specified user.
@@ -401,7 +405,11 @@ impl ManagementClient {
         group_policy_attachment: GroupPolicyAttachment,
     ) -> Result<GroupPolicyAttachment> {
         self.auth()?;
-        GroupPolicyAttachment::create(self, group_policy_attachment)
+        GroupPolicyAttachment::create(self, &group_policy_attachment)?;
+        let list = GroupPolicyAttachment::list(self, &group_policy_attachment.group_name, &group_policy_attachment.namespace)?;
+        list.into_iter().find(|attachment| attachment.policy_arn == group_policy_attachment.policy_arn).ok_or_else(|| {
+            anyhow!("Failed to locate the new created group policy attachment")
+        })
     }
 
     /// Remove the specified managed policy attached to the specified group.
@@ -486,7 +494,11 @@ impl ManagementClient {
         role_policy_attachment: RolePolicyAttachment,
     ) -> Result<RolePolicyAttachment> {
         self.auth()?;
-        RolePolicyAttachment::create(self, role_policy_attachment)
+        RolePolicyAttachment::create(self, &role_policy_attachment)?;
+        let list = RolePolicyAttachment::list(self, &role_policy_attachment.role_name, &role_policy_attachment.namespace)?;
+        list.into_iter().find(|attachment| attachment.policy_arn == role_policy_attachment.policy_arn).ok_or_else(|| {
+            anyhow!("Failed to locate the new created role policy attachment")
+        })
     }
 
     /// Remove the specified managed policy attached to the specified role.
