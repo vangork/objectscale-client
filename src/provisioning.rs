@@ -520,6 +520,18 @@ impl Vdc {
         Ok(resp)
     }
 
+    pub(crate) fn delete(client: &mut ManagementClient, id: &str) -> Result<()> {
+        let request_url = format!("{}object/vdcs/vdc/{}/deactivate", client.endpoint, id);
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to delete vdc")?;
+        Ok(())
+    }
+
     pub(crate) fn list(client: &mut ManagementClient) -> Result<Vec<Self>> {
         let request_url = format!("{}object/vdcs/vdc/list", client.endpoint);
         let resp = client

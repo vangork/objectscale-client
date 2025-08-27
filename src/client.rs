@@ -892,6 +892,15 @@ impl ManagementClient {
         Vdc::get(self, name)
     }
 
+    /// Deactivates and deletes a VDC.
+    ///
+    /// id: VDC identifier for which VDC Information needs to be deleted
+    ///
+    pub fn delete_vdc(&mut self, id: &str) -> Result<()> {
+        self.auth()?;
+        Vdc::delete(self, id)
+    }
+
     /// Gets all details of all configured VDCs.
     ///
     pub fn list_vdcs(&mut self) -> Result<Vec<Vdc>> {
