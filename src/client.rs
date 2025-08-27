@@ -917,6 +917,15 @@ impl ManagementClient {
         StoragePool::get(self, id)
     }
 
+    /// Updates storage pool for the specified identifier..
+    ///
+    /// sp: Storage pool to be updated
+    ///
+    pub fn update_storage_pool(&mut self, sp: StoragePool) -> Result<bool> {
+        self.auth()?;
+        StoragePool::update(self, &sp)
+    }
+
     /// Gets a list of storage pools from the local VDC.
     ///
     pub fn list_storage_pools(&mut self) -> Result<Vec<StoragePool>> {

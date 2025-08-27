@@ -626,6 +626,32 @@ pub struct StoragePool {
     pub status: i64,
 }
 
+#[derive(PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateStoragePool {
+    pub name: String,
+    pub description: String,
+    pub warning_alert_at: i64,
+    pub error_alert_at: i64,
+    pub critical_alert_at: i64,
+    // just meet the need of the update payload
+    // wont allow to change
+    pub is_protected: bool,
+}
+
+impl From<StoragePool> for UpdateStoragePool {
+    fn from(pool: StoragePool) -> Self {
+        Self {
+            name: pool.name,
+            description: pool.description,
+            warning_alert_at: pool.warning_alert_at,
+            error_alert_at: pool.error_alert_at,
+            critical_alert_at: pool.critical_alert_at,
+            is_protected: pool.is_protected,
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct StoragePoolList {
     varray: Vec<StoragePool>,
@@ -645,6 +671,45 @@ impl StoragePool {
             format!("Unable to deserialise StoragePool. Body was: \"{}\"", text)
         })?;
         Ok(resp)
+    }
+
+    pub(crate) fn update_storage_pool(
+        client: &mut ManagementClient,
+        storage_pool: &Self,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}vdc/data-services/varrays/{}",
+            client.endpoint, storage_pool.id
+        );
+        let update_storage_pool = UpdateStoragePool::from(storage_pool.to_owned());
+        let body = serde_json::to_string(&update_storage_pool).unwrap();
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header(CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Update storage pool failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, storage_pool: &Self) -> Result<bool> {
+        let current_storage_pool = Self::get(client, &storage_pool.id)?;
+        let mut updated_storage_pool = UpdateStoragePool::from(storage_pool.clone());
+        let current_updated_storege_pool = UpdateStoragePool::from(current_storage_pool);
+        // prevent is_protected from being updated
+        // changing is_protected seems to be destructive
+        updated_storage_pool.is_protected = current_updated_storege_pool.is_protected;
+        if current_updated_storege_pool != updated_storage_pool {
+            Self::update_storage_pool(client, storage_pool)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     pub(crate) fn list(client: &mut ManagementClient) -> Result<Vec<Self>> {

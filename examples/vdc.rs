@@ -16,9 +16,9 @@ fn main() {
     let vdc = client.get_vdc(name).expect("get vdc");
     println!("Get vdc: {:?}", vdc);
 
-    let name = "urn:storageos:VirtualDataCenterData:f360245e-f2ab-4408-91f4-00f8d36bed89";
-    client.delete_vdc(name).expect("delete vdc");
-    println!("Deleted vdc: {}", name);
+    let id = "urn:storageos:VirtualDataCenterData:f360245e-f2ab-4408-91f4-00f8d36bed89";
+    client.delete_vdc(id).expect("delete vdc");
+    println!("Deleted vdc: {}", id);
 
     let vdcs = client.list_vdcs().expect("list vdcs");
     println!("List vdcs: {:?}", vdcs);
