@@ -520,6 +520,7 @@ impl Vdc {
         Ok(resp)
     }
 
+    // A deleted VDC cannot be added back
     pub(crate) fn delete(client: &mut ManagementClient, id: &str) -> Result<()> {
         let request_url = format!("{}object/vdcs/vdc/{}/deactivate", client.endpoint, id);
         let resp = client
@@ -598,11 +599,11 @@ impl VdcKeystore {
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoragePool {
-    /// Storage pool name
+    /// Storage pool name. Updatable
     pub name: String,
     /// Storage pool id
     pub id: String,
-    /// Description
+    /// Description. Updatable
     pub description: String,
     /// Flag indicating that storage pool is protected
     pub is_protected: bool,
@@ -612,11 +613,11 @@ pub struct StoragePool {
     pub number_of_data_blocks: i64,
     /// Number of Code Blocks in EC Scheme
     pub number_of_code_blocks: i64,
-    /// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert
+    /// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
     pub warning_alert_at: i64,
-    /// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert
+    /// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
     pub error_alert_at: i64,
-    /// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert
+    /// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
     pub critical_alert_at: i64,
     /// Drive technology of VArray
     pub label: String,

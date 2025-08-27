@@ -34,18 +34,16 @@ pub const AUTH_HEADER_KEY: &str = "X-SDS-AUTH-TOKEN";
 /// # Examples
 /// ```no_run
 /// use objectscale_client::client::ManagementClient;
-/// use objectscale_client::iam::AccountBuilder;
 ///
 /// fn main() {
 ///     let endpoint = "https://192.168.1.1:443";
-///     let username = "admin";
+///     let username = "user";
 ///     let password = "pass";
 ///     let insecure = false;
 ///     let account_alias = "test";
 ///     let mut client = ManagementClient::new(endpoint, username, password, insecure).expect("management client");
-///     let account = AccountBuilder::default().alias(account_alias).build().expect("build account");
-///     let account = client.create_account(account).expect("create account");
-///     println!("Created account: {:?}", account);
+///     let vdcs = client.list_vdcs().expect("list vdcs");
+///     println!("List vdcs: {:?}", vdcs);
 /// }
 /// ```
 #[derive(Clone, Debug)]
