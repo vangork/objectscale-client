@@ -20,14 +20,21 @@ use serde_aux::field_attributes::deserialize_default_from_null;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct VarrayMapping {
+    /// Virtual data center id
     pub name: String,
+    /// Storage pool id
     pub value: String,
+    /// is replication target
     pub is_replication_target: bool,
 }
 
 /// Storage pool is a logical construct that contains physical nodes.
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(
+    rename_all = "camelCase",
+    rename(serialize = "data_service_vpool_create")
+)]
+#[builder(setter(skip))]
 pub struct ReplicationGroup {
     /// Indicates whether the resource is global.
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -39,6 +46,8 @@ pub struct ReplicationGroup {
     // #[serde(deserialize_with = "deserialize_default_from_null")]
     // pub vdc: String,
     /// Varray mappings
+    #[builder(setter(skip = false), default)]
+    #[serde(rename(serialize = "zone_mappings", deserialize = "varrayMappings"))]
     pub varray_mappings: Vec<VarrayMapping>,
     /// Unique name identifying this classification of replication group. Required. Updatable
     #[builder(setter(into))]
@@ -57,15 +66,20 @@ pub struct ReplicationGroup {
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub internal: bool,
     /// Description of the replication group. Updatable
+    #[builder(setter(into), default)]
     pub description: String,
     /// Parameter to check if the Vpool can access all Namespace. Updatable
+    #[builder(setter(skip = false), default = true)]
     pub is_allow_all_namespaces: bool,
     /// Parameter to check if the rebalancing is enabled. Updatable
     #[serde(rename = "enable_rebalancing")]
+    #[builder(setter(skip = false), default = false)]
     pub enable_rebalancing: bool,
     /// Parameter to check if to use replication targets
+    #[builder(setter(skip = false), default = false)]
     pub use_replication_target: bool,
-    /// Parameter to check for full replication
+    /// set full replication flag. Non-updatable
+    #[builder(setter(skip = false), default = false)]
     pub is_full_rep: bool,
 }
 
@@ -75,26 +89,19 @@ struct ReplicationGroupList {
 }
 
 impl ReplicationGroup {
-    // TODO: replication group cannot be deleted after creation
-    pub(crate) fn create(client: &mut ManagementClient, replication_group: &Self) -> Result<Self> {
+    pub(crate) fn create(client: &mut ManagementClient, replication_group: &Self) -> Result<()> {
         let request_url = format!("{}vdc/data-service/vpools", client.endpoint);
-        let body = serde_json::to_string(replication_group)?;
+        let body = quick_xml::se::to_string(replication_group)?;
         let resp = client
             .http_client
             .post(request_url)
             .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/xml")
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .body(body)
             .send()?;
-        let text = get_content_text(resp).with_context(|| "Failed to create replication group")?;
-        println!("{}", text);
-        let resp: Self = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Unable to deserialise ReplicationGroup. Body was: \"{}\"",
-                text
-            )
-        })?;
-        Ok(resp)
+        get_content_text(resp).with_context(|| "Failed to create replication group")?;
+        Ok(())
     }
 
     pub(crate) fn get(client: &mut ManagementClient, id: &str) -> Result<Self> {
@@ -115,7 +122,6 @@ impl ReplicationGroup {
         Ok(resp)
     }
 
-    // TODO: addvarrays && removevarrays from replication group: removed array cannot be added back to the replication group
     pub(crate) fn update_replication_group(
         client: &mut ManagementClient,
         replication_group: &Self,
@@ -149,6 +155,7 @@ impl ReplicationGroup {
         Ok(())
     }
 
+    // TODO: addvarrays && removevarrays from replication group: removed array cannot be added back to the replication group
     pub(crate) fn update(client: &mut ManagementClient, replication_group: &Self) -> Result<bool> {
         let current_replication_group = Self::get(client, &replication_group.id)?;
         let mut updated = false;

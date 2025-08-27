@@ -915,6 +915,19 @@ impl ManagementClient {
         StoragePool::list(self)
     }
 
+    /// Creates a replication group that includes the specified storage pools
+    ///
+    /// rg: ReplicationGroup to create
+    ///
+    pub fn create_replication_group(&mut self, rg: ReplicationGroup) -> Result<ReplicationGroup> {
+        self.auth()?;
+        ReplicationGroup::create(self, &rg)?;
+        let list = ReplicationGroup::list(self)?;
+        list.into_iter()
+            .find(|item| rg.name == item.name)
+            .ok_or_else(|| anyhow!("Replication group with name {} not found", rg.name))
+    }
+
     /// Gets the details for the specified replication group.
     ///
     /// id: Replication group identifier for which details needs to be retrieved
