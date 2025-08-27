@@ -234,10 +234,14 @@ impl ManagementClient {
     ) -> Result<UserPolicyAttachment> {
         self.auth()?;
         UserPolicyAttachment::create(self, &user_policy_attachment)?;
-        let list = UserPolicyAttachment::list(self, &user_policy_attachment.user_name, &user_policy_attachment.namespace)?;
-        list.into_iter().find(|attachment| attachment.policy_arn == user_policy_attachment.policy_arn).ok_or_else(|| {
-            anyhow!("Failed to locate the new created user policy attachment")
-        })
+        let list = UserPolicyAttachment::list(
+            self,
+            &user_policy_attachment.user_name,
+            &user_policy_attachment.namespace,
+        )?;
+        list.into_iter()
+            .find(|attachment| attachment.policy_arn == user_policy_attachment.policy_arn)
+            .ok_or_else(|| anyhow!("Failed to locate the new created user policy attachment"))
     }
 
     /// Remove the specified managed policy attached to the specified user.
@@ -406,10 +410,14 @@ impl ManagementClient {
     ) -> Result<GroupPolicyAttachment> {
         self.auth()?;
         GroupPolicyAttachment::create(self, &group_policy_attachment)?;
-        let list = GroupPolicyAttachment::list(self, &group_policy_attachment.group_name, &group_policy_attachment.namespace)?;
-        list.into_iter().find(|attachment| attachment.policy_arn == group_policy_attachment.policy_arn).ok_or_else(|| {
-            anyhow!("Failed to locate the new created group policy attachment")
-        })
+        let list = GroupPolicyAttachment::list(
+            self,
+            &group_policy_attachment.group_name,
+            &group_policy_attachment.namespace,
+        )?;
+        list.into_iter()
+            .find(|attachment| attachment.policy_arn == group_policy_attachment.policy_arn)
+            .ok_or_else(|| anyhow!("Failed to locate the new created group policy attachment"))
     }
 
     /// Remove the specified managed policy attached to the specified group.
@@ -495,10 +503,14 @@ impl ManagementClient {
     ) -> Result<RolePolicyAttachment> {
         self.auth()?;
         RolePolicyAttachment::create(self, &role_policy_attachment)?;
-        let list = RolePolicyAttachment::list(self, &role_policy_attachment.role_name, &role_policy_attachment.namespace)?;
-        list.into_iter().find(|attachment| attachment.policy_arn == role_policy_attachment.policy_arn).ok_or_else(|| {
-            anyhow!("Failed to locate the new created role policy attachment")
-        })
+        let list = RolePolicyAttachment::list(
+            self,
+            &role_policy_attachment.role_name,
+            &role_policy_attachment.namespace,
+        )?;
+        list.into_iter()
+            .find(|attachment| attachment.policy_arn == role_policy_attachment.policy_arn)
+            .ok_or_else(|| anyhow!("Failed to locate the new created role policy attachment"))
     }
 
     /// Remove the specified managed policy attached to the specified role.
@@ -909,7 +921,21 @@ impl ManagementClient {
     ///
     pub fn get_replication_group(&mut self, id: &str) -> Result<ReplicationGroup> {
         self.auth()?;
-        ReplicationGroup::get(self, id)
+        // ReplicationGroup::get won't return the latest value after update
+        // so use list instead
+        let list = ReplicationGroup::list(self)?;
+        list.into_iter()
+            .find(|rg| rg.id == id)
+            .ok_or_else(|| anyhow!("Replication group with id {} not found", id))
+    }
+
+    /// Updates the name and description for a replication group.
+    ///
+    /// rg: Replication group which details needs to be updated
+    ///
+    pub fn update_replication_group(&mut self, rg: &ReplicationGroup) -> Result<bool> {
+        self.auth()?;
+        ReplicationGroup::update(self, rg)
     }
 
     /// Lists all configured replication groups.
