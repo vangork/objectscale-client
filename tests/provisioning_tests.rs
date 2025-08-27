@@ -80,7 +80,9 @@ fn test_vdc() {
 fn test_vdc_keystore() {
     let mut management_client = common::create_management_client();
 
-    let store = management_client.get_vdc_keystore().expect("get vdc keystore");
+    let store = management_client
+        .get_vdc_keystore()
+        .expect("get vdc keystore");
     assert!(!store.chain.is_empty());
 }
 
@@ -89,7 +91,9 @@ fn storage_pool() {
     let mut management_client = common::create_management_client();
 
     let sp_id = "urn:storageos:VirtualArray:2a36f1a7-4281-453d-8927-788f8033416b";
-    let mut sp = management_client.get_storage_pool(sp_id).expect("get storage pool");
+    let mut sp = management_client
+        .get_storage_pool(sp_id)
+        .expect("get storage pool");
     assert_eq!(sp.id, sp_id);
 
     let original_sp = sp.clone();
@@ -99,10 +103,14 @@ fn storage_pool() {
     sp.warning_alert_at = 35;
     sp.error_alert_at = -1;
     sp.critical_alert_at = -1;
-    let state = management_client.update_storage_pool(sp).expect("update storage pool");
+    let state = management_client
+        .update_storage_pool(sp)
+        .expect("update storage pool");
     assert_eq!(state, true);
 
-    let sp = management_client.get_storage_pool(sp_id).expect("get storage pool");
+    let sp = management_client
+        .get_storage_pool(sp_id)
+        .expect("get storage pool");
     assert_eq!(sp.name, "sp2");
     assert_eq!(sp.description, "sp2 description");
     assert_eq!(sp.warning_alert_at, 35);
@@ -113,8 +121,11 @@ fn storage_pool() {
         .update_storage_pool(original_sp)
         .expect("update storage pool");
 
-    let sp = management_client.get_storage_pool(sp_id).expect("get storage pool");
-    let sps = management_client.list_storage_pools().expect("list storage pools");
+    let sp = management_client
+        .get_storage_pool(sp_id)
+        .expect("get storage pool");
+    let sps = management_client
+        .list_storage_pools()
+        .expect("list storage pools");
     assert!(sps.contains(&sp));
-
 }

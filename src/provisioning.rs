@@ -60,7 +60,7 @@ pub struct SearchMetaData {
     /// Getter for maxKeys.
     pub max_keys: i32,
     /// Getter for the mdTokens flag.
-    #[serde(alias = "metadata_tokens")]
+    #[serde(rename = "metadata_tokens")]
     pub metadata_tokens: bool,
 }
 
@@ -103,7 +103,7 @@ pub struct Bucket {
     /// Bucket "file system access enabled" status
     pub fs_access_enabled: bool,
     /// Bucket soft quota
-    #[serde(alias = "softquota")]
+    #[serde(rename = "softquota")]
     pub soft_quota: String,
     /// Bucket creation time
     pub created: String,
@@ -132,10 +132,12 @@ pub struct Bucket {
     /// Notification size in GB
     pub notification_size: i64,
     /// Block size in count
-    #[serde(alias = "blockSizeInCount")]
+    #[serde(rename = "blockSizeInCount")]
+    #[builder(setter(skip = false), default = -1)]
     pub block_size_in_count: i64,
     /// Notification size in count
-    #[serde(alias = "notificationSizeInCount")]
+    #[serde(rename = "notificationSizeInCount")]
+    #[builder(setter(skip = false), default = -1)]
     pub notification_size_in_count: i64,
     /// Bucket isEncryptionEnabled flag
     #[builder(setter(skip = false), default = "false")]
@@ -163,15 +165,15 @@ pub struct Bucket {
     #[builder(setter(skip = false), default = "-2")]
     pub audit_delete_expiration: i64,
     /// Enable advanced metadata search
-    #[serde(alias = "enableAdvancedMetadataSearch")]
+    #[serde(rename = "enableAdvancedMetadataSearch")]
     pub enable_advanced_metadata_search: bool,
     #[serde(
-        alias = "advancedMetadataSearchTargetName",
+        rename = "advancedMetadataSearchTargetName",
         deserialize_with = "deserialize_default_from_null"
     )]
     pub advanced_metadata_search_target_name: String,
     #[serde(
-        alias = "advancedMetadataSearchTargetStream",
+        rename = "advancedMetadataSearchTargetStream",
         deserialize_with = "deserialize_default_from_null"
     )]
     pub advanced_metadata_search_target_stream: String,
@@ -208,7 +210,7 @@ struct CreateBucketResponse {
 #[serde(rename_all = "PascalCase")]
 struct ListBucketsResponse {
     // Does not align with API description
-    #[serde(alias = "object_bucket")]
+    #[serde(rename = "object_bucket")]
     pub object_bucket: Vec<Bucket>,
     pub filter: String,
     pub next_marker: Option<String>,

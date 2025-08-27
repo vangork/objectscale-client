@@ -40,7 +40,6 @@ pub const AUTH_HEADER_KEY: &str = "X-SDS-AUTH-TOKEN";
 ///     let username = "user";
 ///     let password = "pass";
 ///     let insecure = false;
-///     let account_alias = "test";
 ///     let mut client = ManagementClient::new(endpoint, username, password, insecure).expect("management client");
 ///     let vdcs = client.list_vdcs().expect("list vdcs");
 ///     println!("List vdcs: {:?}", vdcs);
