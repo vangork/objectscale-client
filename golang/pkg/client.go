@@ -35,125 +35,6 @@ func (managementClient *ManagementClient) Close() {
 	C.destroy_management_client(managementClient.managementClient)
 }
 
-func (managementClient *ManagementClient) NewObjectstoreClient(endpoint string) (*ObjectstoreClient, error) {
-	msg := C.RCString{}
-	cEndpoint := intoRCString(endpoint)
-
-	objectstoreClient, err := C.management_client_new_objectstore_client(managementClient.managementClient, cEndpoint, &msg)
-	if err != nil {
-		return nil, errorWithMessage(err, msg)
-	}
-	return &ObjectstoreClient{
-		objectstoreClient,
-	}, nil
-}
-
-// Close the ObjectstoreClient.
-// Make sure to call this function when you are done using the objectstore client.
-func (objectstoreClient *ObjectstoreClient) Close() {
-	C.destroy_objectstore_client(objectstoreClient.objectstoreClient)
-}
-
-// Create an IAM account.
-//
-// account: Iam Account to create
-func (managementClient *ManagementClient) CreateAccount(account *Account) (*Account, error) {
-	msg := C.RCString{}
-	accountJson, err := json.Marshal(account)
-	if err != nil {
-		return nil, err
-	}
-	cAccount := intoRCString(string(accountJson))
-
-	cAccountFn, errFn := C.management_client_create_account(managementClient.managementClient, cAccount, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountJsonFn := fromRCString(cAccountFn)
-	var accountFn Account
-	errUnmarshal := json.Unmarshal([]byte(accountJsonFn), &accountFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &accountFn, nil
-}
-
-// Get an IAM account.
-//
-// account_id: Id of the account
-func (managementClient *ManagementClient) GetAccount(accountId string) (*Account, error) {
-	msg := C.RCString{}
-	cAccountId := intoRCString(accountId)
-
-	cAccountFn, errFn := C.management_client_get_account(managementClient.managementClient, cAccountId, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountJsonFn := fromRCString(cAccountFn)
-	var accountFn Account
-	errUnmarshal := json.Unmarshal([]byte(accountJsonFn), &accountFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &accountFn, nil
-}
-
-// Update an IAM account.
-//
-// account: Iam Account to update
-func (managementClient *ManagementClient) UpdateAccount(account *Account) (*Account, error) {
-	msg := C.RCString{}
-	accountJson, err := json.Marshal(account)
-	if err != nil {
-		return nil, err
-	}
-	cAccount := intoRCString(string(accountJson))
-
-	cAccountFn, errFn := C.management_client_update_account(managementClient.managementClient, cAccount, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountJsonFn := fromRCString(cAccountFn)
-	var accountFn Account
-	errUnmarshal := json.Unmarshal([]byte(accountJsonFn), &accountFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &accountFn, nil
-}
-
-// Delete an IAM account.
-//
-// account_id: Id of the account
-func (managementClient *ManagementClient) DeleteAccount(accountId string) error {
-	msg := C.RCString{}
-	cAccountId := intoRCString(accountId)
-
-	_, errFn := C.management_client_delete_account(managementClient.managementClient, cAccountId, &msg)
-	if errFn != nil {
-		return errorWithMessage(errFn, msg)
-	}
-	return nil
-
-}
-
-// List all IAM accounts.
-func (managementClient *ManagementClient) ListAccounts() ([]Account, error) {
-	msg := C.RCString{}
-
-	cAccountsFn, errFn := C.management_client_list_accounts(managementClient.managementClient, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountsJsonFn := fromRCString(cAccountsFn)
-	var accountsFn []Account
-	errUnmarshal := json.Unmarshal([]byte(accountsJsonFn), &accountsFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return accountsFn, nil
-}
-
 // Creates a new IAM User.
 //
 // user: IAM User to create
@@ -169,35 +50,54 @@ func (managementClient *ManagementClient) CreateUser(user *User) (*User, error) 
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userJsonFn := fromRCString(cUserFn)
+	userYamlFn := fromRCString(cUserFn)
 	var userFn User
-	errUnmarshal := json.Unmarshal([]byte(userJsonFn), &userFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userYamlFn), &userFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
 	return &userFn, nil
 }
 
-// Returns the information about the specified IAM User.
+// Retrieve IAM user.
 //
-// user_name: The name of the user to retrieve. Cannot be empty.
-// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-func (managementClient *ManagementClient) GetUser(userName string, namespace string) (*User, error) {
+// name: The name of the user to retrieve.
+// namespace: ECS namespace IAM entity belongs to
+func (managementClient *ManagementClient) GetUser(name string, namespace string) (*User, error) {
 	msg := C.RCString{}
-	cUserName := intoRCString(userName)
+	cName := intoRCString(name)
 	cNamespace := intoRCString(namespace)
 
-	cUserFn, errFn := C.management_client_get_user(managementClient.managementClient, cUserName, cNamespace, &msg)
+	cUserFn, errFn := C.management_client_get_user(managementClient.managementClient, cName, cNamespace, &msg)
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userJsonFn := fromRCString(cUserFn)
+	userYamlFn := fromRCString(cUserFn)
 	var userFn User
-	errUnmarshal := json.Unmarshal([]byte(userJsonFn), &userFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userYamlFn), &userFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
 	return &userFn, nil
+}
+
+// Updates an IAM user.
+//
+// user: IAM User to be updated
+func (managementClient *ManagementClient) UpdateUser(user *User) (bool, error) {
+	msg := C.RCString{}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		return false, err
+	}
+	cUser := intoRCString(string(userJson))
+
+	state, errFn := C.management_client_update_user(managementClient.managementClient, cUser, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
 }
 
 // Delete specified IAM User.
@@ -220,10 +120,6 @@ func (managementClient *ManagementClient) DeleteUser(userName string, namespace 
 // Lists the IAM users.
 //
 // namespace: Namespace of users(id of the account the user belongs to). Cannot be empty.
-//
-// TODO:
-// list_user won't show tags, or permissions boundary if any
-// fix it or report bug
 func (managementClient *ManagementClient) ListUsers(namespace string) ([]User, error) {
 	msg := C.RCString{}
 	cNamespace := intoRCString(namespace)
@@ -232,9 +128,9 @@ func (managementClient *ManagementClient) ListUsers(namespace string) ([]User, e
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	usersJsonFn := fromRCString(cUsersFn)
+	usersYamlFn := fromRCString(cUsersFn)
 	var usersFn []User
-	errUnmarshal := json.Unmarshal([]byte(usersJsonFn), &usersFn)
+	errUnmarshal := yaml.Unmarshal([]byte(usersYamlFn), &usersFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -258,9 +154,9 @@ func (managementClient *ManagementClient) CreateUserPolicyAttachment(userPolicyA
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userPolicyAttachmentJsonFn := fromRCString(cUserPolicyAttachmentFn)
+	userPolicyAttachmentYamlFn := fromRCString(cUserPolicyAttachmentFn)
 	var userPolicyAttachmentFn UserPolicyAttachment
-	errUnmarshal := json.Unmarshal([]byte(userPolicyAttachmentJsonFn), &userPolicyAttachmentFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userPolicyAttachmentYamlFn), &userPolicyAttachmentFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -299,76 +195,13 @@ func (managementClient *ManagementClient) ListUserPolicyAttachments(userName str
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userPolicyAttachmentsJsonFn := fromRCString(cUserPolicyAttachmentsFn)
+	userPolicyAttachmentsYamlFn := fromRCString(cUserPolicyAttachmentsFn)
 	var userPolicyAttachmentsFn []UserPolicyAttachment
-	errUnmarshal := json.Unmarshal([]byte(userPolicyAttachmentsJsonFn), &userPolicyAttachmentsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userPolicyAttachmentsYamlFn), &userPolicyAttachmentsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
 	return userPolicyAttachmentsFn, nil
-}
-
-// Creates a password for the specified IAM user.
-//
-// login_profile: LoginProfile to create
-func (managementClient *ManagementClient) CreateLoginProfile(loginProfile *LoginProfile) (*LoginProfile, error) {
-	msg := C.RCString{}
-	loginProfileJson, err := json.Marshal(loginProfile)
-	if err != nil {
-		return nil, err
-	}
-	cLoginProfile := intoRCString(string(loginProfileJson))
-
-	cLoginProfileFn, errFn := C.management_client_create_login_profile(managementClient.managementClient, cLoginProfile, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	loginProfileJsonFn := fromRCString(cLoginProfileFn)
-	var loginProfileFn LoginProfile
-	errUnmarshal := json.Unmarshal([]byte(loginProfileJsonFn), &loginProfileFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &loginProfileFn, nil
-}
-
-// Retrieves the password for the specified IAM user
-//
-// user_name: Name of the user to delete password. Cannot be empty.
-// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-func (managementClient *ManagementClient) GetLoginProfile(userName string, namespace string) (*LoginProfile, error) {
-	msg := C.RCString{}
-	cUserName := intoRCString(userName)
-	cNamespace := intoRCString(namespace)
-
-	cLoginProfileFn, errFn := C.management_client_get_login_profile(managementClient.managementClient, cUserName, cNamespace, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	loginProfileJsonFn := fromRCString(cLoginProfileFn)
-	var loginProfileFn LoginProfile
-	errUnmarshal := json.Unmarshal([]byte(loginProfileJsonFn), &loginProfileFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &loginProfileFn, nil
-}
-
-// Deletes the password for the specified IAM user
-//
-// user_name: Name of the user to delete password. Cannot be empty.
-// namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
-func (managementClient *ManagementClient) DeleteLoginProfile(userName string, namespace string) error {
-	msg := C.RCString{}
-	cUserName := intoRCString(userName)
-	cNamespace := intoRCString(namespace)
-
-	_, errFn := C.management_client_delete_login_profile(managementClient.managementClient, cUserName, cNamespace, &msg)
-	if errFn != nil {
-		return errorWithMessage(errFn, msg)
-	}
-	return nil
-
 }
 
 // Creates AccessKey for user.
@@ -386,9 +219,9 @@ func (managementClient *ManagementClient) CreateAccessKey(accessKey *AccessKey) 
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	accessKeyJsonFn := fromRCString(cAccessKeyFn)
+	accessKeyYamlFn := fromRCString(cAccessKeyFn)
 	var accessKeyFn AccessKey
-	errUnmarshal := json.Unmarshal([]byte(accessKeyJsonFn), &accessKeyFn)
+	errUnmarshal := yaml.Unmarshal([]byte(accessKeyYamlFn), &accessKeyFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -398,25 +231,20 @@ func (managementClient *ManagementClient) CreateAccessKey(accessKey *AccessKey) 
 // Updates AccessKey for user.
 //
 // access_key: AccessKey to update
-func (managementClient *ManagementClient) UpdateAccessKey(accessKey *AccessKey) (*AccessKey, error) {
+func (managementClient *ManagementClient) UpdateAccessKey(accessKey *AccessKey) (bool, error) {
 	msg := C.RCString{}
 	accessKeyJson, err := json.Marshal(accessKey)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	cAccessKey := intoRCString(string(accessKeyJson))
 
-	cAccessKeyFn, errFn := C.management_client_update_access_key(managementClient.managementClient, cAccessKey, &msg)
+	state, errFn := C.management_client_update_access_key(managementClient.managementClient, cAccessKey, &msg)
 	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
+		return false, errorWithMessage(errFn, msg)
 	}
-	accessKeyJsonFn := fromRCString(cAccessKeyFn)
-	var accessKeyFn AccessKey
-	errUnmarshal := json.Unmarshal([]byte(accessKeyJsonFn), &accessKeyFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &accessKeyFn, nil
+	return bool(state), nil
+
 }
 
 // Deletes the access key pair associated with the specified IAM user.
@@ -451,98 +279,13 @@ func (managementClient *ManagementClient) ListAccessKeys(userName string, namesp
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	accessKeysJsonFn := fromRCString(cAccessKeysFn)
+	accessKeysYamlFn := fromRCString(cAccessKeysFn)
 	var accessKeysFn []AccessKey
-	errUnmarshal := json.Unmarshal([]byte(accessKeysJsonFn), &accessKeysFn)
+	errUnmarshal := yaml.Unmarshal([]byte(accessKeysYamlFn), &accessKeysFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
 	return accessKeysFn, nil
-}
-
-// Creates account AccessKey.
-//
-// account_access_key: Account Access Key to create
-func (managementClient *ManagementClient) CreateAccountAccessKey(accountAccessKey *AccountAccessKey) (*AccountAccessKey, error) {
-	msg := C.RCString{}
-	accountAccessKeyJson, err := json.Marshal(accountAccessKey)
-	if err != nil {
-		return nil, err
-	}
-	cAccountAccessKey := intoRCString(string(accountAccessKeyJson))
-
-	cAccountAccessKeyFn, errFn := C.management_client_create_account_access_key(managementClient.managementClient, cAccountAccessKey, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountAccessKeyJsonFn := fromRCString(cAccountAccessKeyFn)
-	var accountAccessKeyFn AccountAccessKey
-	errUnmarshal := json.Unmarshal([]byte(accountAccessKeyJsonFn), &accountAccessKeyFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &accountAccessKeyFn, nil
-}
-
-// Updates account AccessKey.
-//
-// account_access_key: Account Access Key to update
-func (managementClient *ManagementClient) UpdateAccountAccessKey(accountAccessKey *AccountAccessKey) (*AccountAccessKey, error) {
-	msg := C.RCString{}
-	accountAccessKeyJson, err := json.Marshal(accountAccessKey)
-	if err != nil {
-		return nil, err
-	}
-	cAccountAccessKey := intoRCString(string(accountAccessKeyJson))
-
-	cAccountAccessKeyFn, errFn := C.management_client_update_account_access_key(managementClient.managementClient, cAccountAccessKey, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountAccessKeyJsonFn := fromRCString(cAccountAccessKeyFn)
-	var accountAccessKeyFn AccountAccessKey
-	errUnmarshal := json.Unmarshal([]byte(accountAccessKeyJsonFn), &accountAccessKeyFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &accountAccessKeyFn, nil
-}
-
-// Deletes the access key pair associated with the specified IAM account.
-//
-// access_key_id: The ID of the access key. Cannot be empty.
-// account_id: The id of the account. Cannot be empty.
-func (managementClient *ManagementClient) DeleteAccountAccessKey(accessKeyId string, accountId string) error {
-	msg := C.RCString{}
-	cAccessKeyId := intoRCString(accessKeyId)
-	cAccountId := intoRCString(accountId)
-
-	_, errFn := C.management_client_delete_account_access_key(managementClient.managementClient, cAccessKeyId, cAccountId, &msg)
-	if errFn != nil {
-		return errorWithMessage(errFn, msg)
-	}
-	return nil
-
-}
-
-// Returns information about the access key IDs associated with the specified IAM account.
-//
-// account_id: The id of the account. Cannot be empty.
-func (managementClient *ManagementClient) ListAccountAccessKeys(accountId string) ([]AccountAccessKey, error) {
-	msg := C.RCString{}
-	cAccountId := intoRCString(accountId)
-
-	cAccountAccessKeysFn, errFn := C.management_client_list_account_access_keys(managementClient.managementClient, cAccountId, &msg)
-	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
-	}
-	accountAccessKeysJsonFn := fromRCString(cAccountAccessKeysFn)
-	var accountAccessKeysFn []AccountAccessKey
-	errUnmarshal := json.Unmarshal([]byte(accountAccessKeysJsonFn), &accountAccessKeysFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return accountAccessKeysFn, nil
 }
 
 // Create a new Managed Policy.
@@ -560,9 +303,9 @@ func (managementClient *ManagementClient) CreatePolicy(policy *Policy) (*Policy,
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	policyJsonFn := fromRCString(cPolicyFn)
+	policyYamlFn := fromRCString(cPolicyFn)
 	var policyFn Policy
-	errUnmarshal := json.Unmarshal([]byte(policyJsonFn), &policyFn)
+	errUnmarshal := yaml.Unmarshal([]byte(policyYamlFn), &policyFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -582,9 +325,9 @@ func (managementClient *ManagementClient) GetPolicy(policyArn string, namespace 
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	policyJsonFn := fromRCString(cPolicyFn)
+	policyYamlFn := fromRCString(cPolicyFn)
 	var policyFn Policy
-	errUnmarshal := json.Unmarshal([]byte(policyJsonFn), &policyFn)
+	errUnmarshal := yaml.Unmarshal([]byte(policyYamlFn), &policyFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -619,9 +362,9 @@ func (managementClient *ManagementClient) ListPolicies(namespace string) ([]Poli
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	policysJsonFn := fromRCString(cPolicysFn)
+	policysYamlFn := fromRCString(cPolicysFn)
 	var policysFn []Policy
-	errUnmarshal := json.Unmarshal([]byte(policysJsonFn), &policysFn)
+	errUnmarshal := yaml.Unmarshal([]byte(policysYamlFn), &policysFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -643,9 +386,9 @@ func (managementClient *ManagementClient) CreateGroup(group *Group) (*Group, err
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	groupJsonFn := fromRCString(cGroupFn)
+	groupYamlFn := fromRCString(cGroupFn)
 	var groupFn Group
-	errUnmarshal := json.Unmarshal([]byte(groupJsonFn), &groupFn)
+	errUnmarshal := yaml.Unmarshal([]byte(groupYamlFn), &groupFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -665,9 +408,9 @@ func (managementClient *ManagementClient) GetGroup(groupName string, namespace s
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	groupJsonFn := fromRCString(cGroupFn)
+	groupYamlFn := fromRCString(cGroupFn)
 	var groupFn Group
-	errUnmarshal := json.Unmarshal([]byte(groupJsonFn), &groupFn)
+	errUnmarshal := yaml.Unmarshal([]byte(groupYamlFn), &groupFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -702,9 +445,9 @@ func (managementClient *ManagementClient) ListGroups(namespace string) ([]Group,
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	groupsJsonFn := fromRCString(cGroupsFn)
+	groupsYamlFn := fromRCString(cGroupsFn)
 	var groupsFn []Group
-	errUnmarshal := json.Unmarshal([]byte(groupsJsonFn), &groupsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(groupsYamlFn), &groupsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -726,9 +469,9 @@ func (managementClient *ManagementClient) CreateGroupPolicyAttachment(groupPolic
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	groupPolicyAttachmentJsonFn := fromRCString(cGroupPolicyAttachmentFn)
+	groupPolicyAttachmentYamlFn := fromRCString(cGroupPolicyAttachmentFn)
 	var groupPolicyAttachmentFn GroupPolicyAttachment
-	errUnmarshal := json.Unmarshal([]byte(groupPolicyAttachmentJsonFn), &groupPolicyAttachmentFn)
+	errUnmarshal := yaml.Unmarshal([]byte(groupPolicyAttachmentYamlFn), &groupPolicyAttachmentFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -767,9 +510,9 @@ func (managementClient *ManagementClient) ListGroupPolicyAttachments(groupName s
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	groupPolicyAttachmentsJsonFn := fromRCString(cGroupPolicyAttachmentsFn)
+	groupPolicyAttachmentsYamlFn := fromRCString(cGroupPolicyAttachmentsFn)
 	var groupPolicyAttachmentsFn []GroupPolicyAttachment
-	errUnmarshal := json.Unmarshal([]byte(groupPolicyAttachmentsJsonFn), &groupPolicyAttachmentsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(groupPolicyAttachmentsYamlFn), &groupPolicyAttachmentsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -791,9 +534,9 @@ func (managementClient *ManagementClient) CreateRole(role *Role) (*Role, error) 
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	roleJsonFn := fromRCString(cRoleFn)
+	roleYamlFn := fromRCString(cRoleFn)
 	var roleFn Role
-	errUnmarshal := json.Unmarshal([]byte(roleJsonFn), &roleFn)
+	errUnmarshal := yaml.Unmarshal([]byte(roleYamlFn), &roleFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -813,9 +556,9 @@ func (managementClient *ManagementClient) GetRole(roleName string, namespace str
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	roleJsonFn := fromRCString(cRoleFn)
+	roleYamlFn := fromRCString(cRoleFn)
 	var roleFn Role
-	errUnmarshal := json.Unmarshal([]byte(roleJsonFn), &roleFn)
+	errUnmarshal := yaml.Unmarshal([]byte(roleYamlFn), &roleFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -825,25 +568,20 @@ func (managementClient *ManagementClient) GetRole(roleName string, namespace str
 // Updates a new IAM Role.
 //
 // role: IAM Role to update
-func (managementClient *ManagementClient) UpdateRole(role *Role) (*Role, error) {
+func (managementClient *ManagementClient) UpdateRole(role *Role) (bool, error) {
 	msg := C.RCString{}
 	roleJson, err := json.Marshal(role)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	cRole := intoRCString(string(roleJson))
 
-	cRoleFn, errFn := C.management_client_update_role(managementClient.managementClient, cRole, &msg)
+	state, errFn := C.management_client_update_role(managementClient.managementClient, cRole, &msg)
 	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
+		return false, errorWithMessage(errFn, msg)
 	}
-	roleJsonFn := fromRCString(cRoleFn)
-	var roleFn Role
-	errUnmarshal := json.Unmarshal([]byte(roleJsonFn), &roleFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &roleFn, nil
+	return bool(state), nil
+
 }
 
 // Delete specified IAM Role.
@@ -874,9 +612,9 @@ func (managementClient *ManagementClient) ListRoles(namespace string) ([]Role, e
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	rolesJsonFn := fromRCString(cRolesFn)
+	rolesYamlFn := fromRCString(cRolesFn)
 	var rolesFn []Role
-	errUnmarshal := json.Unmarshal([]byte(rolesJsonFn), &rolesFn)
+	errUnmarshal := yaml.Unmarshal([]byte(rolesYamlFn), &rolesFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -898,9 +636,9 @@ func (managementClient *ManagementClient) CreateRolePolicyAttachment(rolePolicyA
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	rolePolicyAttachmentJsonFn := fromRCString(cRolePolicyAttachmentFn)
+	rolePolicyAttachmentYamlFn := fromRCString(cRolePolicyAttachmentFn)
 	var rolePolicyAttachmentFn RolePolicyAttachment
-	errUnmarshal := json.Unmarshal([]byte(rolePolicyAttachmentJsonFn), &rolePolicyAttachmentFn)
+	errUnmarshal := yaml.Unmarshal([]byte(rolePolicyAttachmentYamlFn), &rolePolicyAttachmentFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -939,9 +677,9 @@ func (managementClient *ManagementClient) ListRolePolicyAttachments(roleName str
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	rolePolicyAttachmentsJsonFn := fromRCString(cRolePolicyAttachmentsFn)
+	rolePolicyAttachmentsYamlFn := fromRCString(cRolePolicyAttachmentsFn)
 	var rolePolicyAttachmentsFn []RolePolicyAttachment
-	errUnmarshal := json.Unmarshal([]byte(rolePolicyAttachmentsJsonFn), &rolePolicyAttachmentsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(rolePolicyAttachmentsYamlFn), &rolePolicyAttachmentsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -965,9 +703,9 @@ func (managementClient *ManagementClient) GetEntitiesForPolicy(policyArn string,
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	entitiesForPolicyJsonFn := fromRCString(cEntitiesForPolicyFn)
+	entitiesForPolicyYamlFn := fromRCString(cEntitiesForPolicyFn)
 	var entitiesForPolicyFn EntitiesForPolicy
-	errUnmarshal := json.Unmarshal([]byte(entitiesForPolicyJsonFn), &entitiesForPolicyFn)
+	errUnmarshal := yaml.Unmarshal([]byte(entitiesForPolicyYamlFn), &entitiesForPolicyFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -989,9 +727,9 @@ func (managementClient *ManagementClient) CreateUserGroupMembership(userGroupMem
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userGroupMembershipJsonFn := fromRCString(cUserGroupMembershipFn)
+	userGroupMembershipYamlFn := fromRCString(cUserGroupMembershipFn)
 	var userGroupMembershipFn UserGroupMembership
-	errUnmarshal := json.Unmarshal([]byte(userGroupMembershipJsonFn), &userGroupMembershipFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userGroupMembershipYamlFn), &userGroupMembershipFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1030,13 +768,115 @@ func (managementClient *ManagementClient) ListUserGroupMembershipsByUser(userNam
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userGroupMembershipsJsonFn := fromRCString(cUserGroupMembershipsFn)
+	userGroupMembershipsYamlFn := fromRCString(cUserGroupMembershipsFn)
 	var userGroupMembershipsFn []UserGroupMembership
-	errUnmarshal := json.Unmarshal([]byte(userGroupMembershipsJsonFn), &userGroupMembershipsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userGroupMembershipsYamlFn), &userGroupMembershipsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
 	return userGroupMembershipsFn, nil
+}
+
+// Create SAML Identity Provider
+//
+// provider: SAML provider to create
+func (managementClient *ManagementClient) CreateSamlProvider(provider *SamlProvider) (*SamlProvider, error) {
+	msg := C.RCString{}
+	providerJson, err := json.Marshal(provider)
+	if err != nil {
+		return nil, err
+	}
+	cProvider := intoRCString(string(providerJson))
+
+	cSamlProviderFn, errFn := C.management_client_create_saml_provider(managementClient.managementClient, cProvider, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	samlProviderYamlFn := fromRCString(cSamlProviderFn)
+	var samlProviderFn SamlProvider
+	errUnmarshal := yaml.Unmarshal([]byte(samlProviderYamlFn), &samlProviderFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &samlProviderFn, nil
+}
+
+// Retrieve the SAML IdP document.
+//
+// arn: The name of the provider to retrieve.
+// namespace: Namespace of the role(id of the account the role belongs to). Cannot be empty.
+func (managementClient *ManagementClient) GetSamlProvider(arn string, namespace string) (*SamlProvider, error) {
+	msg := C.RCString{}
+	cArn := intoRCString(arn)
+	cNamespace := intoRCString(namespace)
+
+	cSamlProviderFn, errFn := C.management_client_get_saml_provider(managementClient.managementClient, cArn, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	samlProviderYamlFn := fromRCString(cSamlProviderFn)
+	var samlProviderFn SamlProvider
+	errUnmarshal := yaml.Unmarshal([]byte(samlProviderYamlFn), &samlProviderFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &samlProviderFn, nil
+}
+
+// Update the SAML Identity Provider.
+//
+// role: SAML Identity Provider to update
+func (managementClient *ManagementClient) UpdateSamlProvider(provider *SamlProvider) (bool, error) {
+	msg := C.RCString{}
+	providerJson, err := json.Marshal(provider)
+	if err != nil {
+		return false, err
+	}
+	cProvider := intoRCString(string(providerJson))
+
+	state, errFn := C.management_client_update_saml_provider(managementClient.managementClient, cProvider, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Delete the SAML Identity Provider.
+//
+// arn: The ARN of the provider to delete.
+// namespace: ECS namespace IAM entity belongs to
+func (managementClient *ManagementClient) DeleteSamlProvider(arn string, namespace string) error {
+	msg := C.RCString{}
+	cArn := intoRCString(arn)
+	cNamespace := intoRCString(namespace)
+
+	_, errFn := C.management_client_delete_saml_provider(managementClient.managementClient, cArn, cNamespace, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// List the SAML Identity Providers.
+//
+// namespace: ECS namespace IAM entity belongs to
+func (managementClient *ManagementClient) ListSamlProviders(namespace string) ([]SamlProvider, error) {
+	msg := C.RCString{}
+	cNamespace := intoRCString(namespace)
+
+	cSamlProvidersFn, errFn := C.management_client_list_saml_providers(managementClient.managementClient, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	samlProvidersYamlFn := fromRCString(cSamlProvidersFn)
+	var samlProvidersFn []SamlProvider
+	errUnmarshal := yaml.Unmarshal([]byte(samlProvidersYamlFn), &samlProvidersFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return samlProvidersFn, nil
 }
 
 // Lists the IAM users that the specified IAM group contains.
@@ -1052,9 +892,9 @@ func (managementClient *ManagementClient) ListUserGroupMembershipsByGroup(groupN
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	userGroupMembershipsJsonFn := fromRCString(cUserGroupMembershipsFn)
+	userGroupMembershipsYamlFn := fromRCString(cUserGroupMembershipsFn)
 	var userGroupMembershipsFn []UserGroupMembership
-	errUnmarshal := json.Unmarshal([]byte(userGroupMembershipsJsonFn), &userGroupMembershipsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(userGroupMembershipsYamlFn), &userGroupMembershipsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1074,9 +914,9 @@ func (managementClient *ManagementClient) ListBuckets(namespace string, namePref
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	bucketsJsonFn := fromRCString(cBucketsFn)
+	bucketsYamlFn := fromRCString(cBucketsFn)
 	var bucketsFn []Bucket
-	errUnmarshal := json.Unmarshal([]byte(bucketsJsonFn), &bucketsFn)
+	errUnmarshal := yaml.Unmarshal([]byte(bucketsYamlFn), &bucketsFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1098,9 +938,9 @@ func (managementClient *ManagementClient) CreateBucket(bucket *Bucket) (*Bucket,
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	bucketJsonFn := fromRCString(cBucketFn)
+	bucketYamlFn := fromRCString(cBucketFn)
 	var bucketFn Bucket
-	errUnmarshal := json.Unmarshal([]byte(bucketJsonFn), &bucketFn)
+	errUnmarshal := yaml.Unmarshal([]byte(bucketYamlFn), &bucketFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1120,9 +960,9 @@ func (managementClient *ManagementClient) GetBucket(name string, namespace strin
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	bucketJsonFn := fromRCString(cBucketFn)
+	bucketYamlFn := fromRCString(cBucketFn)
 	var bucketFn Bucket
-	errUnmarshal := json.Unmarshal([]byte(bucketJsonFn), &bucketFn)
+	errUnmarshal := yaml.Unmarshal([]byte(bucketYamlFn), &bucketFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
@@ -1132,25 +972,20 @@ func (managementClient *ManagementClient) GetBucket(name string, namespace strin
 // Update an bucket.
 //
 // bucket: Bucket to update.
-func (managementClient *ManagementClient) UpdateBucket(bucket *Bucket) (*Bucket, error) {
+func (managementClient *ManagementClient) UpdateBucket(bucket *Bucket) (bool, error) {
 	msg := C.RCString{}
 	bucketJson, err := json.Marshal(bucket)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	cBucket := intoRCString(string(bucketJson))
 
-	cBucketFn, errFn := C.management_client_update_bucket(managementClient.managementClient, cBucket, &msg)
+	state, errFn := C.management_client_update_bucket(managementClient.managementClient, cBucket, &msg)
 	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
+		return false, errorWithMessage(errFn, msg)
 	}
-	bucketJsonFn := fromRCString(cBucketFn)
-	var bucketFn Bucket
-	errUnmarshal := json.Unmarshal([]byte(bucketJsonFn), &bucketFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &bucketFn, nil
+	return bool(state), nil
+
 }
 
 // Deletes the specified bucket.
@@ -1172,87 +1007,77 @@ func (managementClient *ManagementClient) DeleteBucket(name string, namespace st
 
 }
 
-// ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
-type ObjectstoreClient struct {
-	objectstoreClient *C.ObjectstoreClient
-}
-
-// Creates the tenant which will associate an IAM Account within an objectstore.
+// Creates a namespace with the given details.
 //
-// tenant: Tenant to create
-func (objectstoreClient *ObjectstoreClient) CreateTenant(tenant *Tenant) (*Tenant, error) {
+// namespace: Namespace to create
+func (managementClient *ManagementClient) CreateNamespace(namespace *Namespace) (*Namespace, error) {
 	msg := C.RCString{}
-	tenantJson, err := json.Marshal(tenant)
+	namespaceJson, err := json.Marshal(namespace)
 	if err != nil {
 		return nil, err
 	}
-	cTenant := intoRCString(string(tenantJson))
+	cNamespace := intoRCString(string(namespaceJson))
 
-	cTenantFn, errFn := C.objectstore_client_create_tenant(objectstoreClient.objectstoreClient, cTenant, &msg)
+	cNamespaceFn, errFn := C.management_client_create_namespace(managementClient.managementClient, cNamespace, &msg)
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	tenantYamlFn := fromRCString(cTenantFn)
-	var tenantFn Tenant
-	errUnmarshal := yaml.Unmarshal([]byte(tenantYamlFn), &tenantFn)
+	namespaceYamlFn := fromRCString(cNamespaceFn)
+	var namespaceFn Namespace
+	errUnmarshal := yaml.Unmarshal([]byte(namespaceYamlFn), &namespaceFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
-	return &tenantFn, nil
+	return &namespaceFn, nil
 }
 
-// Get the tenant.
+// Gets the details for the given namespace.
 //
-// name: The associated account id. Cannot be empty.
-func (objectstoreClient *ObjectstoreClient) GetTenant(name string) (*Tenant, error) {
+// id: Namespace identifier for which details needs to be retrieved.
+func (managementClient *ManagementClient) GetNamespace(id string) (*Namespace, error) {
 	msg := C.RCString{}
-	cName := intoRCString(name)
+	cId := intoRCString(id)
 
-	cTenantFn, errFn := C.objectstore_client_get_tenant(objectstoreClient.objectstoreClient, cName, &msg)
+	cNamespaceFn, errFn := C.management_client_get_namespace(managementClient.managementClient, cId, &msg)
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	tenantYamlFn := fromRCString(cTenantFn)
-	var tenantFn Tenant
-	errUnmarshal := yaml.Unmarshal([]byte(tenantYamlFn), &tenantFn)
+	namespaceYamlFn := fromRCString(cNamespaceFn)
+	var namespaceFn Namespace
+	errUnmarshal := yaml.Unmarshal([]byte(namespaceYamlFn), &namespaceFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
-	return &tenantFn, nil
+	return &namespaceFn, nil
 }
 
-// Updates Tenant details like default_bucket_size and alias.
+// Update a namespace with the given details.
 //
-// tenant: Tenant to update
-func (objectstoreClient *ObjectstoreClient) UpdateTenant(tenant *Tenant) (*Tenant, error) {
+// namespace: Namespace to be updated
+func (managementClient *ManagementClient) UpdateNamespace(namespace *Namespace) (bool, error) {
 	msg := C.RCString{}
-	tenantJson, err := json.Marshal(tenant)
+	namespaceJson, err := json.Marshal(namespace)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	cTenant := intoRCString(string(tenantJson))
+	cNamespace := intoRCString(string(namespaceJson))
 
-	cTenantFn, errFn := C.objectstore_client_update_tenant(objectstoreClient.objectstoreClient, cTenant, &msg)
+	state, errFn := C.management_client_update_namespace(managementClient.managementClient, cNamespace, &msg)
 	if errFn != nil {
-		return nil, errorWithMessage(errFn, msg)
+		return false, errorWithMessage(errFn, msg)
 	}
-	tenantYamlFn := fromRCString(cTenantFn)
-	var tenantFn Tenant
-	errUnmarshal := yaml.Unmarshal([]byte(tenantYamlFn), &tenantFn)
-	if errUnmarshal != nil {
-		return nil, errUnmarshal
-	}
-	return &tenantFn, nil
+	return bool(state), nil
+
 }
 
-// Delete the tenant from an object store. Tenant must not own any buckets.
+// Deactivates and deletes the given namespace and all associated user mappings.
 //
-// name: The associated account id. Cannot be empty.
-func (objectstoreClient *ObjectstoreClient) DeleteTenant(name string) error {
+// id: An active namespace identifier which needs to be deactivated/deleted
+func (managementClient *ManagementClient) DeleteNamespace(id string) error {
 	msg := C.RCString{}
-	cName := intoRCString(name)
+	cId := intoRCString(id)
 
-	_, errFn := C.objectstore_client_delete_tenant(objectstoreClient.objectstoreClient, cName, &msg)
+	_, errFn := C.management_client_delete_namespace(managementClient.managementClient, cId, &msg)
 	if errFn != nil {
 		return errorWithMessage(errFn, msg)
 	}
@@ -1260,22 +1085,440 @@ func (objectstoreClient *ObjectstoreClient) DeleteTenant(name string) error {
 
 }
 
-// Get the list of tenants.
+// Gets the list of all configured namespaces.
 //
-// name_prefix: Case sensitive prefix of the tenant name with a wild card(*). Can be empty or any_prefix_string*.
-func (objectstoreClient *ObjectstoreClient) ListTenants(namePrefix string) ([]Tenant, error) {
+// name_prefix: Case sensitive prefix of the Namespace name with a wild card(*) Ex : any_prefix_string*.
+func (managementClient *ManagementClient) ListNamespaces(namePrefix string) ([]Namespace, error) {
 	msg := C.RCString{}
 	cNamePrefix := intoRCString(namePrefix)
 
-	cTenantsFn, errFn := C.objectstore_client_list_tenants(objectstoreClient.objectstoreClient, cNamePrefix, &msg)
+	cNamespacesFn, errFn := C.management_client_list_namespaces(managementClient.managementClient, cNamePrefix, &msg)
 	if errFn != nil {
 		return nil, errorWithMessage(errFn, msg)
 	}
-	tenantsYamlFn := fromRCString(cTenantsFn)
-	var tenantsFn []Tenant
-	errUnmarshal := yaml.Unmarshal([]byte(tenantsYamlFn), &tenantsFn)
+	namespacesYamlFn := fromRCString(cNamespacesFn)
+	var namespacesFn []Namespace
+	errUnmarshal := yaml.Unmarshal([]byte(namespacesYamlFn), &namespacesFn)
 	if errUnmarshal != nil {
 		return nil, errUnmarshal
 	}
-	return tenantsFn, nil
+	return namespacesFn, nil
+}
+
+// Creates local users for the VDC.
+//
+// user: ManagementUser to create
+func (managementClient *ManagementClient) CreateManagementUser(user *ManagementUser) (*ManagementUser, error) {
+	msg := C.RCString{}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		return nil, err
+	}
+	cUser := intoRCString(string(userJson))
+
+	cManagementUserFn, errFn := C.management_client_create_management_user(managementClient.managementClient, cUser, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	managementUserYamlFn := fromRCString(cManagementUserFn)
+	var managementUserFn ManagementUser
+	errUnmarshal := yaml.Unmarshal([]byte(managementUserYamlFn), &managementUserFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &managementUserFn, nil
+}
+
+// Gets details for the specified local management user.
+//
+// id: User identifier for which local user information needs to be retrieved
+func (managementClient *ManagementClient) GetManagementUser(id string) (*ManagementUser, error) {
+	msg := C.RCString{}
+	cId := intoRCString(id)
+
+	cManagementUserFn, errFn := C.management_client_get_management_user(managementClient.managementClient, cId, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	managementUserYamlFn := fromRCString(cManagementUserFn)
+	var managementUserFn ManagementUser
+	errUnmarshal := yaml.Unmarshal([]byte(managementUserYamlFn), &managementUserFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &managementUserFn, nil
+}
+
+// Updates user details for the specified local management user.
+//
+// user: ManagementUser to be updated
+func (managementClient *ManagementClient) UpdateManagementUser(user *ManagementUser) (bool, error) {
+	msg := C.RCString{}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		return false, err
+	}
+	cUser := intoRCString(string(userJson))
+
+	state, errFn := C.management_client_update_management_user(managementClient.managementClient, cUser, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Deletes local management user information for the specified user identifier.
+//
+// id: User identifier for which local user information needs to be deleted.
+func (managementClient *ManagementClient) DeleteManagementUser(id string) error {
+	msg := C.RCString{}
+	cId := intoRCString(id)
+
+	_, errFn := C.management_client_delete_management_user(managementClient.managementClient, cId, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// Gets all configured local management users.
+func (managementClient *ManagementClient) ListManagementUsers() ([]ManagementUser, error) {
+	msg := C.RCString{}
+
+	cManagementUsersFn, errFn := C.management_client_list_management_users(managementClient.managementClient, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	managementUsersYamlFn := fromRCString(cManagementUsersFn)
+	var managementUsersFn []ManagementUser
+	errUnmarshal := yaml.Unmarshal([]byte(managementUsersYamlFn), &managementUsersFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return managementUsersFn, nil
+}
+
+// Creates a user for a specified namespace.
+//
+// user: ObjectUser to create
+func (managementClient *ManagementClient) CreateObjectUser(user *ObjectUser) (*ObjectUser, error) {
+	msg := C.RCString{}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		return nil, err
+	}
+	cUser := intoRCString(string(userJson))
+
+	cObjectUserFn, errFn := C.management_client_create_object_user(managementClient.managementClient, cUser, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	objectUserYamlFn := fromRCString(cObjectUserFn)
+	var objectUserFn ObjectUser
+	errUnmarshal := yaml.Unmarshal([]byte(objectUserYamlFn), &objectUserFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &objectUserFn, nil
+}
+
+// Gets user details for the specified user belong to the specified namespace.
+//
+// name: Valid user identifier
+// namespace: The namespace to which user belong
+func (managementClient *ManagementClient) GetObjectUser(name string, namespace string) (*ObjectUser, error) {
+	msg := C.RCString{}
+	cName := intoRCString(name)
+	cNamespace := intoRCString(namespace)
+
+	cObjectUserFn, errFn := C.management_client_get_object_user(managementClient.managementClient, cName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	objectUserYamlFn := fromRCString(cObjectUserFn)
+	var objectUserFn ObjectUser
+	errUnmarshal := yaml.Unmarshal([]byte(objectUserYamlFn), &objectUserFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &objectUserFn, nil
+}
+
+// Updates user details for the specified object user.
+//
+// user: ObjectUser to be updated
+func (managementClient *ManagementClient) UpdateObjectUser(user *ObjectUser) (bool, error) {
+	msg := C.RCString{}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		return false, err
+	}
+	cUser := intoRCString(string(userJson))
+
+	state, errFn := C.management_client_update_object_user(managementClient.managementClient, cUser, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Deletes the specified user and its secret keys.
+//
+// name: User to be deleted.
+// namespace: Namespace identifier to associate with the user
+func (managementClient *ManagementClient) DeleteObjectUser(name string, namespace string) error {
+	msg := C.RCString{}
+	cName := intoRCString(name)
+	cNamespace := intoRCString(namespace)
+
+	_, errFn := C.management_client_delete_object_user(managementClient.managementClient, cName, cNamespace, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// Gets identifiers for all configured users.
+func (managementClient *ManagementClient) ListObjectUsers() ([]ObjectUser, error) {
+	msg := C.RCString{}
+
+	cObjectUsersFn, errFn := C.management_client_list_object_users(managementClient.managementClient, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	objectUsersYamlFn := fromRCString(cObjectUsersFn)
+	var objectUsersFn []ObjectUser
+	errUnmarshal := yaml.Unmarshal([]byte(objectUsersYamlFn), &objectUsersFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return objectUsersFn, nil
+}
+
+// Get the certificate chain being used by ECS
+func (managementClient *ManagementClient) GetVdcKeystore() (*VdcKeystore, error) {
+	msg := C.RCString{}
+
+	cVdcKeystoreFn, errFn := C.management_client_get_vdc_keystore(managementClient.managementClient, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	vdcKeystoreYamlFn := fromRCString(cVdcKeystoreFn)
+	var vdcKeystoreFn VdcKeystore
+	errUnmarshal := yaml.Unmarshal([]byte(vdcKeystoreYamlFn), &vdcKeystoreFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &vdcKeystoreFn, nil
+}
+
+// Set the certificate chain being used by ECS.
+//
+// keystore: VdcKeystore to be updated
+func (managementClient *ManagementClient) UpdateVdcKeystore(keystore *VdcKeystore) (bool, error) {
+	msg := C.RCString{}
+	keystoreJson, err := json.Marshal(keystore)
+	if err != nil {
+		return false, err
+	}
+	cKeystore := intoRCString(string(keystoreJson))
+
+	state, errFn := C.management_client_update_vdc_keystore(managementClient.managementClient, cKeystore, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Gets the details for a VDC the identify of which is specified by its name.
+//
+// name: VDC name for which VDC Information is to be retrieved
+func (managementClient *ManagementClient) GetVdc(name string) (*Vdc, error) {
+	msg := C.RCString{}
+	cName := intoRCString(name)
+
+	cVdcFn, errFn := C.management_client_get_vdc(managementClient.managementClient, cName, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	vdcYamlFn := fromRCString(cVdcFn)
+	var vdcFn Vdc
+	errUnmarshal := yaml.Unmarshal([]byte(vdcYamlFn), &vdcFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &vdcFn, nil
+}
+
+// Deactivates and deletes a VDC.
+//
+// id: VDC identifier for which VDC Information needs to be deleted
+func (managementClient *ManagementClient) DeleteVdc(id string) error {
+	msg := C.RCString{}
+	cId := intoRCString(id)
+
+	_, errFn := C.management_client_delete_vdc(managementClient.managementClient, cId, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// Gets all details of all configured VDCs.
+func (managementClient *ManagementClient) ListVdcs() ([]Vdc, error) {
+	msg := C.RCString{}
+
+	cVdcsFn, errFn := C.management_client_list_vdcs(managementClient.managementClient, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	vdcsYamlFn := fromRCString(cVdcsFn)
+	var vdcsFn []Vdc
+	errUnmarshal := yaml.Unmarshal([]byte(vdcsYamlFn), &vdcsFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return vdcsFn, nil
+}
+
+// Gets the details for the specified storage pool.
+//
+// id: Storage pool identifier to be retrieved
+func (managementClient *ManagementClient) GetStoragePool(id string) (*StoragePool, error) {
+	msg := C.RCString{}
+	cId := intoRCString(id)
+
+	cStoragePoolFn, errFn := C.management_client_get_storage_pool(managementClient.managementClient, cId, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	storagePoolYamlFn := fromRCString(cStoragePoolFn)
+	var storagePoolFn StoragePool
+	errUnmarshal := yaml.Unmarshal([]byte(storagePoolYamlFn), &storagePoolFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &storagePoolFn, nil
+}
+
+// Updates storage pool for the specified identifier..
+//
+// sp: Storage pool to be updated
+func (managementClient *ManagementClient) UpdateStoragePool(sp *StoragePool) (bool, error) {
+	msg := C.RCString{}
+	spJson, err := json.Marshal(sp)
+	if err != nil {
+		return false, err
+	}
+	cSp := intoRCString(string(spJson))
+
+	state, errFn := C.management_client_update_storage_pool(managementClient.managementClient, cSp, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Gets a list of storage pools from the local VDC.
+func (managementClient *ManagementClient) ListStoragePools() ([]StoragePool, error) {
+	msg := C.RCString{}
+
+	cStoragePoolsFn, errFn := C.management_client_list_storage_pools(managementClient.managementClient, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	storagePoolsYamlFn := fromRCString(cStoragePoolsFn)
+	var storagePoolsFn []StoragePool
+	errUnmarshal := yaml.Unmarshal([]byte(storagePoolsYamlFn), &storagePoolsFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return storagePoolsFn, nil
+}
+
+// Creates a replication group that includes the specified storage pools
+//
+// rg: ReplicationGroup to create
+func (managementClient *ManagementClient) CreateReplicationGroup(rg *ReplicationGroup) (*ReplicationGroup, error) {
+	msg := C.RCString{}
+	rgJson, err := json.Marshal(rg)
+	if err != nil {
+		return nil, err
+	}
+	cRg := intoRCString(string(rgJson))
+
+	cReplicationGroupFn, errFn := C.management_client_create_replication_group(managementClient.managementClient, cRg, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	replicationGroupYamlFn := fromRCString(cReplicationGroupFn)
+	var replicationGroupFn ReplicationGroup
+	errUnmarshal := yaml.Unmarshal([]byte(replicationGroupYamlFn), &replicationGroupFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &replicationGroupFn, nil
+}
+
+// Gets the details for the specified replication group.
+//
+// id: Replication group identifier for which details needs to be retrieved
+func (managementClient *ManagementClient) GetReplicationGroup(id string) (*ReplicationGroup, error) {
+	msg := C.RCString{}
+	cId := intoRCString(id)
+
+	cReplicationGroupFn, errFn := C.management_client_get_replication_group(managementClient.managementClient, cId, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	replicationGroupYamlFn := fromRCString(cReplicationGroupFn)
+	var replicationGroupFn ReplicationGroup
+	errUnmarshal := yaml.Unmarshal([]byte(replicationGroupYamlFn), &replicationGroupFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &replicationGroupFn, nil
+}
+
+// Updates the name and description for a replication group.
+//
+// rg: Replication group which details needs to be updated
+func (managementClient *ManagementClient) UpdateReplicationGroup(rg *ReplicationGroup) (bool, error) {
+	msg := C.RCString{}
+	rgJson, err := json.Marshal(rg)
+	if err != nil {
+		return false, err
+	}
+	cRg := intoRCString(string(rgJson))
+
+	state, errFn := C.management_client_update_replication_group(managementClient.managementClient, cRg, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Lists all configured replication groups.
+func (managementClient *ManagementClient) ListReplicationGroups() ([]ReplicationGroup, error) {
+	msg := C.RCString{}
+
+	cReplicationGroupsFn, errFn := C.management_client_list_replication_groups(managementClient.managementClient, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	replicationGroupsYamlFn := fromRCString(cReplicationGroupsFn)
+	var replicationGroupsFn []ReplicationGroup
+	errUnmarshal := yaml.Unmarshal([]byte(replicationGroupsYamlFn), &replicationGroupsFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return replicationGroupsFn, nil
 }

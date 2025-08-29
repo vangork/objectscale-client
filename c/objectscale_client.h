@@ -17,11 +17,6 @@
  */
 typedef struct ManagementClient ManagementClient;
 
-/**
- * ObjectstoreClient manages ObjectScale resources on ObjectStore with the ObjectScale ObjectStore REST APIs.
- */
-typedef struct ObjectstoreClient ObjectstoreClient;
-
 typedef struct RCString {
   uint8_t *ptr;
   uintptr_t len;
@@ -40,59 +35,6 @@ struct ManagementClient *new_management_client(struct RCString endpoint,
 
 void destroy_management_client(struct ManagementClient *management_client);
 
-struct ObjectstoreClient *management_client_new_objectstore_client(struct ManagementClient *management_client,
-                                                                   struct RCString endpoint,
-                                                                   struct RCString *err);
-
-void destroy_objectstore_client(struct ObjectstoreClient *objectstore_client);
-
-/**
- * Create an IAM account.
- *
- * account: Iam Account to create
- *
- */
-struct RCString management_client_create_account(struct ManagementClient *management_client,
-                                                 struct RCString account,
-                                                 struct RCString *err);
-
-/**
- * Get an IAM account.
- *
- * account_id: Id of the account
- *
- */
-struct RCString management_client_get_account(struct ManagementClient *management_client,
-                                              struct RCString account_id,
-                                              struct RCString *err);
-
-/**
- * Update an IAM account.
- *
- * account: Iam Account to update
- *
- */
-struct RCString management_client_update_account(struct ManagementClient *management_client,
-                                                 struct RCString account,
-                                                 struct RCString *err);
-
-/**
- * Delete an IAM account.
- *
- * account_id: Id of the account
- *
- */
-void management_client_delete_account(struct ManagementClient *management_client,
-                                      struct RCString account_id,
-                                      struct RCString *err);
-
-/**
- * List all IAM accounts.
- *
- */
-struct RCString management_client_list_accounts(struct ManagementClient *management_client,
-                                                struct RCString *err);
-
 /**
  * Creates a new IAM User.
  *
@@ -104,16 +46,26 @@ struct RCString management_client_create_user(struct ManagementClient *managemen
                                               struct RCString *err);
 
 /**
- * Returns the information about the specified IAM User.
+ * Retrieve IAM user.
  *
- * user_name: The name of the user to retrieve. Cannot be empty.
- * namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
+ * name: The name of the user to retrieve.
+ * namespace: ECS namespace IAM entity belongs to
  *
  */
 struct RCString management_client_get_user(struct ManagementClient *management_client,
-                                           struct RCString user_name,
+                                           struct RCString name,
                                            struct RCString namespace_,
                                            struct RCString *err);
+
+/**
+ * Updates an IAM user.
+ *
+ * user: IAM User to be updated
+ *
+ */
+bool management_client_update_user(struct ManagementClient *management_client,
+                                   struct RCString user,
+                                   struct RCString *err);
 
 /**
  * Delete specified IAM User.
@@ -131,10 +83,6 @@ void management_client_delete_user(struct ManagementClient *management_client,
  * Lists the IAM users.
  *
  * namespace: Namespace of users(id of the account the user belongs to). Cannot be empty.
- *
- * TODO:
- * list_user won't show tags, or permissions boundary if any
- * fix it or report bug
  *
  */
 struct RCString management_client_list_users(struct ManagementClient *management_client,
@@ -176,40 +124,6 @@ struct RCString management_client_list_user_policy_attachments(struct Management
                                                                struct RCString *err);
 
 /**
- * Creates a password for the specified IAM user.
- *
- * login_profile: LoginProfile to create
- *
- */
-struct RCString management_client_create_login_profile(struct ManagementClient *management_client,
-                                                       struct RCString login_profile,
-                                                       struct RCString *err);
-
-/**
- * Retrieves the password for the specified IAM user
- *
- * user_name: Name of the user to delete password. Cannot be empty.
- * namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
- *
- */
-struct RCString management_client_get_login_profile(struct ManagementClient *management_client,
-                                                    struct RCString user_name,
-                                                    struct RCString namespace_,
-                                                    struct RCString *err);
-
-/**
- * Deletes the password for the specified IAM user
- *
- * user_name: Name of the user to delete password. Cannot be empty.
- * namespace: Namespace of the user(id of the account the user belongs to). Cannot be empty.
- *
- */
-void management_client_delete_login_profile(struct ManagementClient *management_client,
-                                            struct RCString user_name,
-                                            struct RCString namespace_,
-                                            struct RCString *err);
-
-/**
  * Creates AccessKey for user.
  *
  * access_key: AccessKey to create
@@ -225,9 +139,9 @@ struct RCString management_client_create_access_key(struct ManagementClient *man
  * access_key: AccessKey to update
  *
  */
-struct RCString management_client_update_access_key(struct ManagementClient *management_client,
-                                                    struct RCString access_key,
-                                                    struct RCString *err);
+bool management_client_update_access_key(struct ManagementClient *management_client,
+                                         struct RCString access_key,
+                                         struct RCString *err);
 
 /**
  * Deletes the access key pair associated with the specified IAM user.
@@ -254,48 +168,6 @@ struct RCString management_client_list_access_keys(struct ManagementClient *mana
                                                    struct RCString user_name,
                                                    struct RCString namespace_,
                                                    struct RCString *err);
-
-/**
- * Creates account AccessKey.
- *
- * account_access_key: Account Access Key to create
- *
- */
-struct RCString management_client_create_account_access_key(struct ManagementClient *management_client,
-                                                            struct RCString account_access_key,
-                                                            struct RCString *err);
-
-/**
- * Updates account AccessKey.
- *
- * account_access_key: Account Access Key to update
- *
- */
-struct RCString management_client_update_account_access_key(struct ManagementClient *management_client,
-                                                            struct RCString account_access_key,
-                                                            struct RCString *err);
-
-/**
- * Deletes the access key pair associated with the specified IAM account.
- *
- * access_key_id: The ID of the access key. Cannot be empty.
- * account_id: The id of the account. Cannot be empty.
- *
- */
-void management_client_delete_account_access_key(struct ManagementClient *management_client,
-                                                 struct RCString access_key_id,
-                                                 struct RCString account_id,
-                                                 struct RCString *err);
-
-/**
- * Returns information about the access key IDs associated with the specified IAM account.
- *
- * account_id: The id of the account. Cannot be empty.
- *
- */
-struct RCString management_client_list_account_access_keys(struct ManagementClient *management_client,
-                                                           struct RCString account_id,
-                                                           struct RCString *err);
 
 /**
  * Create a new Managed Policy.
@@ -445,9 +317,9 @@ struct RCString management_client_get_role(struct ManagementClient *management_c
  * role: IAM Role to update
  *
  */
-struct RCString management_client_update_role(struct ManagementClient *management_client,
-                                              struct RCString role,
-                                              struct RCString *err);
+bool management_client_update_role(struct ManagementClient *management_client,
+                                   struct RCString role,
+                                   struct RCString *err);
 
 /**
  * Delete specified IAM Role.
@@ -552,6 +424,60 @@ struct RCString management_client_list_user_group_memberships_by_user(struct Man
                                                                       struct RCString *err);
 
 /**
+ * Create SAML Identity Provider
+ *
+ * provider: SAML provider to create
+ *
+ */
+struct RCString management_client_create_saml_provider(struct ManagementClient *management_client,
+                                                       struct RCString provider,
+                                                       struct RCString *err);
+
+/**
+ * Retrieve the SAML IdP document.
+ *
+ * arn: The name of the provider to retrieve.
+ * namespace: Namespace of the role(id of the account the role belongs to). Cannot be empty.
+ *
+ */
+struct RCString management_client_get_saml_provider(struct ManagementClient *management_client,
+                                                    struct RCString arn,
+                                                    struct RCString namespace_,
+                                                    struct RCString *err);
+
+/**
+ * Update the SAML Identity Provider.
+ *
+ * role: SAML Identity Provider to update
+ *
+ */
+bool management_client_update_saml_provider(struct ManagementClient *management_client,
+                                            struct RCString provider,
+                                            struct RCString *err);
+
+/**
+ * Delete the SAML Identity Provider.
+ *
+ * arn: The ARN of the provider to delete.
+ * namespace: ECS namespace IAM entity belongs to
+ *
+ */
+void management_client_delete_saml_provider(struct ManagementClient *management_client,
+                                            struct RCString arn,
+                                            struct RCString namespace_,
+                                            struct RCString *err);
+
+/**
+ * List the SAML Identity Providers.
+ *
+ * namespace: ECS namespace IAM entity belongs to
+ *
+ */
+struct RCString management_client_list_saml_providers(struct ManagementClient *management_client,
+                                                      struct RCString namespace_,
+                                                      struct RCString *err);
+
+/**
  * Lists the IAM users that the specified IAM group contains.
  *
  * group_name: The name of the group to list contained users for. Cannot be empty.
@@ -603,9 +529,9 @@ struct RCString management_client_get_bucket(struct ManagementClient *management
  * bucket: Bucket to update.
  *
  */
-struct RCString management_client_update_bucket(struct ManagementClient *management_client,
-                                                struct RCString bucket,
-                                                struct RCString *err);
+bool management_client_update_bucket(struct ManagementClient *management_client,
+                                     struct RCString bucket,
+                                     struct RCString *err);
 
 /**
  * Deletes the specified bucket.
@@ -622,54 +548,260 @@ void management_client_delete_bucket(struct ManagementClient *management_client,
                                      struct RCString *err);
 
 /**
- * Creates the tenant which will associate an IAM Account within an objectstore.
+ * Creates a namespace with the given details.
  *
- * tenant: Tenant to create
+ * namespace: Namespace to create
  *
  */
-struct RCString objectstore_client_create_tenant(struct ObjectstoreClient *objectstore_client,
-                                                 struct RCString tenant,
-                                                 struct RCString *err);
+struct RCString management_client_create_namespace(struct ManagementClient *management_client,
+                                                   struct RCString namespace_,
+                                                   struct RCString *err);
 
 /**
- * Get the tenant.
+ * Gets the details for the given namespace.
  *
- * name: The associated account id. Cannot be empty.
+ * id: Namespace identifier for which details needs to be retrieved.
  *
  */
-struct RCString objectstore_client_get_tenant(struct ObjectstoreClient *objectstore_client,
-                                              struct RCString name,
+struct RCString management_client_get_namespace(struct ManagementClient *management_client,
+                                                struct RCString id,
+                                                struct RCString *err);
+
+/**
+ * Update a namespace with the given details.
+ *
+ * namespace: Namespace to be updated
+ *
+ */
+bool management_client_update_namespace(struct ManagementClient *management_client,
+                                        struct RCString namespace_,
+                                        struct RCString *err);
+
+/**
+ * Deactivates and deletes the given namespace and all associated user mappings.
+ *
+ * id: An active namespace identifier which needs to be deactivated/deleted
+ *
+ */
+void management_client_delete_namespace(struct ManagementClient *management_client,
+                                        struct RCString id,
+                                        struct RCString *err);
+
+/**
+ * Gets the list of all configured namespaces.
+ *
+ * name_prefix: Case sensitive prefix of the Namespace name with a wild card(*) Ex : any_prefix_string*.
+ *
+ */
+struct RCString management_client_list_namespaces(struct ManagementClient *management_client,
+                                                  struct RCString name_prefix,
+                                                  struct RCString *err);
+
+/**
+ * Creates local users for the VDC.
+ *
+ * user: ManagementUser to create
+ *
+ */
+struct RCString management_client_create_management_user(struct ManagementClient *management_client,
+                                                         struct RCString user,
+                                                         struct RCString *err);
+
+/**
+ * Gets details for the specified local management user.
+ *
+ * id: User identifier for which local user information needs to be retrieved
+ *
+ */
+struct RCString management_client_get_management_user(struct ManagementClient *management_client,
+                                                      struct RCString id,
+                                                      struct RCString *err);
+
+/**
+ * Updates user details for the specified local management user.
+ *
+ * user: ManagementUser to be updated
+ *
+ */
+bool management_client_update_management_user(struct ManagementClient *management_client,
+                                              struct RCString user,
                                               struct RCString *err);
 
 /**
- * Updates Tenant details like default_bucket_size and alias.
+ * Deletes local management user information for the specified user identifier.
  *
- * tenant: Tenant to update
+ * id: User identifier for which local user information needs to be deleted.
  *
  */
-struct RCString objectstore_client_update_tenant(struct ObjectstoreClient *objectstore_client,
-                                                 struct RCString tenant,
-                                                 struct RCString *err);
+void management_client_delete_management_user(struct ManagementClient *management_client,
+                                              struct RCString id,
+                                              struct RCString *err);
 
 /**
- * Delete the tenant from an object store. Tenant must not own any buckets.
- *
- * name: The associated account id. Cannot be empty.
+ * Gets all configured local management users.
  *
  */
-void objectstore_client_delete_tenant(struct ObjectstoreClient *objectstore_client,
-                                      struct RCString name,
-                                      struct RCString *err);
+struct RCString management_client_list_management_users(struct ManagementClient *management_client,
+                                                        struct RCString *err);
 
 /**
- * Get the list of tenants.
+ * Creates a user for a specified namespace.
  *
- * name_prefix: Case sensitive prefix of the tenant name with a wild card(*). Can be empty or any_prefix_string*.
+ * user: ObjectUser to create
  *
  */
-struct RCString objectstore_client_list_tenants(struct ObjectstoreClient *objectstore_client,
-                                                struct RCString name_prefix,
+struct RCString management_client_create_object_user(struct ManagementClient *management_client,
+                                                     struct RCString user,
+                                                     struct RCString *err);
+
+/**
+ * Gets user details for the specified user belong to the specified namespace.
+ *
+ * name: Valid user identifier
+ * namespace: The namespace to which user belong
+ *
+ */
+struct RCString management_client_get_object_user(struct ManagementClient *management_client,
+                                                  struct RCString name,
+                                                  struct RCString namespace_,
+                                                  struct RCString *err);
+
+/**
+ * Updates user details for the specified object user.
+ *
+ * user: ObjectUser to be updated
+ *
+ */
+bool management_client_update_object_user(struct ManagementClient *management_client,
+                                          struct RCString user,
+                                          struct RCString *err);
+
+/**
+ * Deletes the specified user and its secret keys.
+ *
+ * name: User to be deleted.
+ * namespace: Namespace identifier to associate with the user
+ *
+ */
+void management_client_delete_object_user(struct ManagementClient *management_client,
+                                          struct RCString name,
+                                          struct RCString namespace_,
+                                          struct RCString *err);
+
+/**
+ * Gets identifiers for all configured users.
+ *
+ */
+struct RCString management_client_list_object_users(struct ManagementClient *management_client,
+                                                    struct RCString *err);
+
+/**
+ * Get the certificate chain being used by ECS
+ *
+ */
+struct RCString management_client_get_vdc_keystore(struct ManagementClient *management_client,
+                                                   struct RCString *err);
+
+/**
+ * Set the certificate chain being used by ECS.
+ *
+ * keystore: VdcKeystore to be updated
+ *
+ */
+bool management_client_update_vdc_keystore(struct ManagementClient *management_client,
+                                           struct RCString keystore,
+                                           struct RCString *err);
+
+/**
+ * Gets the details for a VDC the identify of which is specified by its name.
+ *
+ * name: VDC name for which VDC Information is to be retrieved
+ *
+ */
+struct RCString management_client_get_vdc(struct ManagementClient *management_client,
+                                          struct RCString name,
+                                          struct RCString *err);
+
+/**
+ * Deactivates and deletes a VDC.
+ *
+ * id: VDC identifier for which VDC Information needs to be deleted
+ *
+ */
+void management_client_delete_vdc(struct ManagementClient *management_client,
+                                  struct RCString id,
+                                  struct RCString *err);
+
+/**
+ * Gets all details of all configured VDCs.
+ *
+ */
+struct RCString management_client_list_vdcs(struct ManagementClient *management_client,
+                                            struct RCString *err);
+
+/**
+ * Gets the details for the specified storage pool.
+ *
+ * id: Storage pool identifier to be retrieved
+ *
+ */
+struct RCString management_client_get_storage_pool(struct ManagementClient *management_client,
+                                                   struct RCString id,
+                                                   struct RCString *err);
+
+/**
+ * Updates storage pool for the specified identifier..
+ *
+ * sp: Storage pool to be updated
+ *
+ */
+bool management_client_update_storage_pool(struct ManagementClient *management_client,
+                                           struct RCString sp,
+                                           struct RCString *err);
+
+/**
+ * Gets a list of storage pools from the local VDC.
+ *
+ */
+struct RCString management_client_list_storage_pools(struct ManagementClient *management_client,
+                                                     struct RCString *err);
+
+/**
+ * Creates a replication group that includes the specified storage pools
+ *
+ * rg: ReplicationGroup to create
+ *
+ */
+struct RCString management_client_create_replication_group(struct ManagementClient *management_client,
+                                                           struct RCString rg,
+                                                           struct RCString *err);
+
+/**
+ * Gets the details for the specified replication group.
+ *
+ * id: Replication group identifier for which details needs to be retrieved
+ *
+ */
+struct RCString management_client_get_replication_group(struct ManagementClient *management_client,
+                                                        struct RCString id,
+                                                        struct RCString *err);
+
+/**
+ * Updates the name and description for a replication group.
+ *
+ * rg: Replication group which details needs to be updated
+ *
+ */
+bool management_client_update_replication_group(struct ManagementClient *management_client,
+                                                struct RCString rg,
                                                 struct RCString *err);
+
+/**
+ * Lists all configured replication groups.
+ *
+ */
+struct RCString management_client_list_replication_groups(struct ManagementClient *management_client,
+                                                          struct RCString *err);
 
 void free_rcstring(struct RCString rcstring);
 

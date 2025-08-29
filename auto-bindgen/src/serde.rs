@@ -37,7 +37,7 @@ impl Parse for SerdeValue {
 impl Parse for SerdeItem {
     fn parse(input: ParseStream) -> Result<Self> {
         let name: Ident = input.parse()?;
-        let span = name.span().clone();
+        let span = name.span();
         if input.is_empty() {
             return Ok(Self {
                 name,
@@ -94,24 +94,19 @@ impl Parse for SerdeInfo {
         let mut serialize_case = None;
         let mut deserialize_case = None;
 
-        if let Some(rename) = items.iter().find(|&item| item.name.to_string() == "rename") {
-            if rename.value.len() > 0 {
+        if let Some(rename) = items.iter().find(|&item| item.name == "rename") {
+            if !rename.value.is_empty() {
                 let value = &rename.value[0];
-                if value.name.to_string() == "luis" {
+                if value.name == "luis" {
                     rename_serialize = Some(value.value.value());
                     rename_deserialize = Some(value.value.value());
                 } else {
-                    if let Some(value) = rename
-                        .value
-                        .iter()
-                        .find(|&item| item.name.to_string() == "serialize")
+                    if let Some(value) = rename.value.iter().find(|&item| item.name == "serialize")
                     {
                         rename_serialize = Some(value.value.value());
                     }
-                    if let Some(value) = rename
-                        .value
-                        .iter()
-                        .find(|&item| item.name.to_string() == "deserialize")
+                    if let Some(value) =
+                        rename.value.iter().find(|&item| item.name == "deserialize")
                     {
                         rename_deserialize = Some(value.value.value());
                     }
@@ -119,27 +114,19 @@ impl Parse for SerdeInfo {
             }
         }
 
-        if let Some(rename) = items
-            .iter()
-            .find(|&item| item.name.to_string() == "rename_all")
-        {
-            if rename.value.len() > 0 {
+        if let Some(rename) = items.iter().find(|&item| item.name == "rename_all") {
+            if !rename.value.is_empty() {
                 let value = &rename.value[0];
-                if value.name.to_string() == "luis" {
+                if value.name == "luis" {
                     deserialize_case = Some(parse_str_to_case(&value.value.value()));
                     serialize_case = Some(parse_str_to_case(&value.value.value()));
                 } else {
-                    if let Some(value) = rename
-                        .value
-                        .iter()
-                        .find(|&item| item.name.to_string() == "serialize")
+                    if let Some(value) = rename.value.iter().find(|&item| item.name == "serialize")
                     {
                         serialize_case = Some(parse_str_to_case(&value.value.value()));
                     }
-                    if let Some(value) = rename
-                        .value
-                        .iter()
-                        .find(|&item| item.name.to_string() == "deserialize")
+                    if let Some(value) =
+                        rename.value.iter().find(|&item| item.name == "deserialize")
                     {
                         deserialize_case = Some(parse_str_to_case(&value.value.value()));
                     }

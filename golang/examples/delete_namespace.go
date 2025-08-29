@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	endpoint := "https://10.225.108.189:443"
+	endpoint := "https://10.225.108.217:4443"
 	username := "root"
-	password := "Password123@"
+	password := "Password123!"
 	insecure := true
 
 	client, err := objectscale.NewManagementClient(endpoint, username, password, insecure)
@@ -18,11 +18,11 @@ func main() {
 	}
 	defer client.Close()
 
-	id := "osai697f6dd9f47ca078"
-	err = client.DeleteAccount(id)
+	id := "luis_namespace"
+	err = client.DeleteNamespace(id)
 	if err != nil {
-		log.Panicln("Fail to delete account:", err.Error())
+		log.Println(err)
 	} else {
-		log.Println("Deleted account:", id)
+		log.Printf("Deleted namespace: %s\n", id)
 	}
 }

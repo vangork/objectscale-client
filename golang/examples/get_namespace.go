@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	endpoint := "https://10.225.108.189:443"
+	endpoint := "https://10.225.108.217:4443"
 	username := "root"
-	password := "Password123@"
+	password := "Password123!"
 	insecure := true
 
 	client, err := objectscale.NewManagementClient(endpoint, username, password, insecure)
@@ -18,10 +18,11 @@ func main() {
 	}
 	defer client.Close()
 
-	accounts, err := client.ListAccounts()
+	id := "ns1"
+	namespace, err := client.GetNamespace(id)
 	if err != nil {
-		log.Panicln("Fail to list accounts:", err.Error())
+		log.Println(err)
 	} else {
-		log.Printf("List accounts: %v\n", accounts)
+		log.Printf("Got namespace: %v\n", namespace)
 	}
 }

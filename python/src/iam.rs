@@ -15,10 +15,10 @@ pub(crate) struct AccessKey {
     secret_access_key: String,
     // The status of the access key {Active | Inactive}. Updatable
     status: String,
-    // The name of the user that the access key is associated with.
+    // The name of the user that the access key is associated with. Required
     #[pyo3(set)]
     user_name: String,
-    //
+    // Namespace. Required
     #[pyo3(set)]
     namespace: String,
 }
@@ -120,10 +120,10 @@ pub(crate) struct Group {
     path: String,
     // Unique Id associated with the Group.
     group_id: String,
-    // Simple name identifying the Group.
+    // Simple name identifying the Group. Required.
     #[pyo3(set)]
     group_name: String,
-    //
+    // Namespace. Required.
     #[pyo3(set)]
     namespace: String,
 }
@@ -170,15 +170,15 @@ impl Group {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct GroupPolicyAttachment {
-    //
+    // Name of the group to attach the policy. Required
     #[pyo3(set)]
     group_name: String,
-    //
+    // Name of the policy to attach
     policy_name: String,
-    //
+    // Arn of the policy to attach. Required
     #[pyo3(set)]
     policy_arn: String,
-    //
+    // Namespace. Required
     #[pyo3(set)]
     namespace: String,
 }
@@ -324,15 +324,15 @@ pub(crate) struct Policy {
     permissions_boundary_usage_count: i64,
     // The stable and unique string identifying the policy.
     policy_id: String,
-    // The friendly name of the policy.
+    // The friendly name of the policy. Required.
     #[pyo3(set)]
     policy_name: String,
     // The date and time, in ISO 8601 date-time format, when the policy was created.
     update_date: String,
-    //
+    // The policy document in JSON format. Required.
     #[pyo3(set)]
     policy_document: String,
-    //
+    // Namespace. Required.
     #[pyo3(set)]
     namespace: String,
 }
@@ -395,12 +395,12 @@ impl Policy {
 pub(crate) struct Role {
     // Arn that identifies the role.
     arn: String,
-    // The trust relationship policy document that grants an entity permission to assume the role.
+    // The trust relationship policy document that grants an entity permission to assume the role. Required.
     #[pyo3(set)]
     assume_role_policy_document: String,
     // ISO 8601 DateTime when role was created.
     create_date: String,
-    // The description of the IAM role.
+    // The description of the IAM role. Updatable
     #[pyo3(set)]
     description: String,
     // The maximum session duration (in seconds) that you want to set for the specified role.
@@ -410,16 +410,16 @@ pub(crate) struct Role {
     path: String,
     // Unique Id associated with the role.
     role_id: String,
-    // Simple name identifying the role.
+    // Simple name identifying the role. Required
     #[pyo3(set)]
     role_name: String,
-    // The list of Tags associated with the role.
+    // The list of Tags associated with the role. Updatable
     #[pyo3(set)]
     tags: Vec<IamTag>,
-    // Permissions boundary
+    // Permissions boundary. Updatable
     #[pyo3(set)]
     permissions_boundary: PermissionsBoundary,
-    //
+    // Namespace. Required
     #[pyo3(set)]
     namespace: String,
 }
@@ -476,15 +476,15 @@ impl Role {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct RolePolicyAttachment {
-    //
+    // Simple name identifying the role. Required
     #[pyo3(set)]
     role_name: String,
     //
     policy_name: String,
-    //
+    // Arn that identifies the policy. Required
     #[pyo3(set)]
     policy_arn: String,
-    //
+    // Namespace. Required
     #[pyo3(set)]
     namespace: String,
 }
@@ -592,18 +592,18 @@ pub(crate) struct User {
     create_date: String,
     // The path to the IAM User.
     path: String,
-    // Permissions boundary
+    // Permissions boundary. Updatable
     #[pyo3(set)]
     permissions_boundary: PermissionsBoundary,
     // Unique Id associated with the User.
     user_id: String,
-    // Simple name identifying the User.
+    // Simple name identifying the User. Required
     #[pyo3(set)]
     user_name: String,
-    // List of Tags associated with the User.
+    // List of Tags associated with the User. Updatable
     #[pyo3(set)]
     tags: Vec<IamTag>,
-    //
+    // Namespace. Required
     #[pyo3(set)]
     namespace: String,
 }
@@ -701,15 +701,15 @@ impl UserGroupMembership {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct UserPolicyAttachment {
-    //
+    // Username of the user to attach the policy.. Required
     #[pyo3(set)]
     user_name: String,
-    //
+    // Name of the policy
     policy_name: String,
-    //
+    // Arn of the policy to attach.. Required
     #[pyo3(set)]
     policy_arn: String,
-    //
+    // Namespace. Required
     #[pyo3(set)]
     namespace: String,
 }

@@ -7,19 +7,19 @@ use std::convert::From;
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct ManagementUser {
-    // User Id
+    // User Id. Required
     #[pyo3(set)]
     user_id: String,
-    // User Password. Updatable
+    // User Password. Required. Updatable
     #[pyo3(set)]
     password: String,
-    // Flag indicating whether management user is System Admin. Updatable
+    // Flag indicating whether management user is System Admin. Default: false. Updatable
     #[pyo3(set)]
     is_system_admin: bool,
-    // Flag indicating whether management user is System Monitor. Updatable
+    // Flag indicating whether management user is System Monitor. Default: false. Updatable
     #[pyo3(set)]
     is_system_monitor: bool,
-    // Flag indicating whether management user is Security Admin. Updatable
+    // Flag indicating whether management user is Security Admin. Default: false. Updatable
     #[pyo3(set)]
     is_security_admin: bool,
     // If set to true, its a domain.
@@ -76,10 +76,10 @@ impl ManagementUser {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct ObjectUser {
-    // User name
+    // User name. Required
     #[pyo3(set)]
     name: String,
-    // Namespace that owns the user
+    // Namespace that owns the user. Required
     #[pyo3(set)]
     namespace: String,
     // Set true if user needs to be is to be locked, false otherwise. Updatable

@@ -20,10 +20,8 @@ cargo run --example list_buckets
 ```
 cd c && cargo build --release
 cd golang
-go build examples/create_account/main.go
-./main
-go build examples/delete_account/main.go
-./main
+go run examples/get_namespace.go
+go run examples/list_namespaces.go
 ```
 
 ### python

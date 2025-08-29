@@ -983,6 +983,18 @@ impl ManagementClient {
         }
     }
 
+    /// Deactivates and deletes a VDC.
+    ///
+    /// id: VDC identifier for which VDC Information needs to be deleted
+    ///
+    pub fn delete_vdc(&mut self, id: &str) -> PyResult<()> {
+        let result = self.management_client.delete_vdc(id);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
     /// Gets all details of all configured VDCs.
     ///
     pub fn list_vdcs(&mut self) -> PyResult<Vec<Vdc>> {
@@ -1005,12 +1017,41 @@ impl ManagementClient {
         }
     }
 
+    /// Updates storage pool for the specified identifier..
+    ///
+    /// sp: Storage pool to be updated
+    ///
+    pub fn update_storage_pool(&mut self, sp: &StoragePool) -> PyResult<bool> {
+        let sp = provisioning::StoragePool::from(sp.clone());
+        let result = self.management_client.update_storage_pool(sp);
+        match result {
+            Ok(state) => Ok(state),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
     /// Gets a list of storage pools from the local VDC.
     ///
     pub fn list_storage_pools(&mut self) -> PyResult<Vec<StoragePool>> {
         let result = self.management_client.list_storage_pools();
         match result {
             Ok(storage_pools) => Ok(storage_pools.into_iter().map(StoragePool::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Creates a replication group that includes the specified storage pools
+    ///
+    /// rg: ReplicationGroup to create
+    ///
+    pub fn create_replication_group(
+        &mut self,
+        rg: &ReplicationGroup,
+    ) -> PyResult<ReplicationGroup> {
+        let rg = replication::ReplicationGroup::from(rg.clone());
+        let result = self.management_client.create_replication_group(rg);
+        match result {
+            Ok(replication_group) => Ok(ReplicationGroup::from(replication_group)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -1023,6 +1064,19 @@ impl ManagementClient {
         let result = self.management_client.get_replication_group(id);
         match result {
             Ok(replication_group) => Ok(ReplicationGroup::from(replication_group)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Updates the name and description for a replication group.
+    ///
+    /// rg: Replication group which details needs to be updated
+    ///
+    pub fn update_replication_group(&mut self, rg: &ReplicationGroup) -> PyResult<bool> {
+        let rg = replication::ReplicationGroup::from(rg.clone());
+        let result = self.management_client.update_replication_group(rg);
+        match result {
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
