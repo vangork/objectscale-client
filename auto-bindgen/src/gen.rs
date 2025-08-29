@@ -658,6 +658,8 @@ impl Bindgen {
                         } else {
                             if Ty::Result("".to_string()) == method.return_ty {
                                 " ".to_string()
+                            } else if Ty::Result("bool".to_string()) == method.return_ty {
+                                " -> bool ".to_string()
                             } else if let Ty::Result(_) = method.return_ty {
                                 " -> RCString ".to_string()
                             } else if let Ty::ResultArray(_) = method.return_ty {
@@ -703,6 +705,8 @@ impl Bindgen {
                         } else {
                             if Ty::Result("".to_string()) == method.return_ty {
                                 ""
+                            } else if Ty::Result("bool".to_string()) == method.return_ty {
+                                "false"
                             } else {
                                 "RCString::null()"
                             }
@@ -726,6 +730,12 @@ impl Bindgen {
                             } else {
                                 if Ty::Result("".to_string()) == method.return_ty {
                                     ("".to_string(), "_".to_string(), "return".to_string())
+                                } else if Ty::Result("bool".to_string()) == method.return_ty {
+                                    (
+                                        "".to_string(),
+                                        "state".to_string(),
+                                        "return state".to_string(),
+                                    )
                                 } else if let Ty::Result(ty) = &method.return_ty {
                                     let serde_type = self.get_serde_type(ty);
                                     (
@@ -1182,6 +1192,24 @@ impl Bindgen {
                                             return errorWithMessage(errFn, msg)
                                         }}
                                         return nil
+                                    "#,
+                                        name.1.to_case(Case::Snake),
+                                        method.name,
+                                        name.1.to_case(Case::Camel),
+                                        name.1.to_case(Case::Camel),
+                                        cparams
+                                    ),
+                                )
+                            } else if method.return_ty == Ty::Result("bool".to_string()) {
+                                (
+                                    format!("(bool, error)"),
+                                    formatdoc!(
+                                        r#"
+                                    state, errFn := C.{}_{}({}.{}, {}&msg)
+                                        if errFn != nil {{
+                                            return errorWithMessage(errFn, msg)
+                                        }}
+                                        return state
                                     "#,
                                         name.1.to_case(Case::Snake),
                                         method.name,
@@ -1893,8 +1921,8 @@ impl Bindgen {
             std::fs::create_dir_all(&gen_dir).unwrap();
         }
 
-        //self.gen_c(gen_dir);
-        //self.gen_go_over_c(gen_dir);
+        self.gen_c(gen_dir);
+        self.gen_go_over_c(gen_dir);
         self.gen_python(gen_dir);
     }
 }

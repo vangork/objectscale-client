@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use serde_aux::field_attributes::{deserialize_bool_from_anything, deserialize_default_from_null};
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
-#[serde(rename_all(serialize = "snake_case", deserialize = "camelCase"))]
 pub struct ProvisioningLink {
     pub rel: String,
     pub href: String,
@@ -181,6 +180,7 @@ pub struct Bucket {
     pub is_empty_bucket_in_progress: bool,
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub versioning_status: String,
+    /// Searchable tags assigned to objects created within the bucket.
     #[builder(setter(skip = false), default)]
     pub search_metadata: SearchMetaData,
     /// Local object metadata reads bucket flag.

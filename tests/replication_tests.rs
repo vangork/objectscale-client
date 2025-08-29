@@ -13,12 +13,15 @@ fn test_replication_group() {
 
     let new_name = "replication_test_replication_group".to_string();
     let new_description = "replication test replication group description".to_string();
+    let enable_rebalancing = !(rg.enable_rebalancing);
+    let is_allow_all_namespaces = !(rg.is_allow_all_namespaces);
+
     rg.name = new_name.clone();
     rg.description = new_description.clone();
-    rg.enable_rebalancing = !(rg.enable_rebalancing);
-    rg.is_allow_all_namespaces = !(rg.is_allow_all_namespaces);
+    rg.enable_rebalancing = enable_rebalancing;
+    rg.is_allow_all_namespaces = is_allow_all_namespaces;
     let state = client
-        .update_replication_group(&rg)
+        .update_replication_group(rg)
         .expect("update replication group");
     assert_eq!(state, true);
 
@@ -27,8 +30,8 @@ fn test_replication_group() {
         .expect("get replication group");
     assert_eq!(get_rg.name, new_name);
     assert_eq!(get_rg.description, new_description);
-    assert_eq!(get_rg.enable_rebalancing, rg.enable_rebalancing);
-    assert_eq!(get_rg.is_allow_all_namespaces, rg.is_allow_all_namespaces);
+    assert_eq!(get_rg.enable_rebalancing, enable_rebalancing);
+    assert_eq!(get_rg.is_allow_all_namespaces, is_allow_all_namespaces);
 
     let rgs = client
         .list_replication_groups()

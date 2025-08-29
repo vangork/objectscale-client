@@ -961,9 +961,9 @@ impl ManagementClient {
     ///
     /// rg: Replication group which details needs to be updated
     ///
-    pub fn update_replication_group(&mut self, rg: &ReplicationGroup) -> Result<bool> {
+    pub fn update_replication_group(&mut self, rg: ReplicationGroup) -> Result<bool> {
         self.auth()?;
-        ReplicationGroup::update(self, rg)
+        ReplicationGroup::update(self, &rg)
     }
 
     /// Lists all configured replication groups.
