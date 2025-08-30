@@ -18,24 +18,12 @@ func main() {
 	}
 	defer client.Close()
 
-	userName := "luis_user"
+	name := "luis_user"
 	namespace := "ns1"
-	arn := "urn:ecs:iam:::policy/ECSS3FullAccess"
-
-	user := &objectscale.User{
-		UserName:  userName,
-		Namespace: namespace,
-		PermissionsBoundary: objectscale.PermissionsBoundary{
-			PermissionsBoundaryArn: arn,
-			PermissionsBoundaryType: "",
-		},
-		Tags: []objectscale.IamTag{{Key: "key1", Value: "value1"}, {Key: "key2", Value: "value2"}},
-	}
-	user, err = client.CreateUser(user)
-
+	err = client.DeleteUser(name, namespace)
 	if err != nil {
 		log.Println(err)
 	} else {
-		log.Printf("Created user: %v\n", user)
+		log.Printf("Deleted user: %s\n", name)
 	}
 }
