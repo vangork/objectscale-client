@@ -5,6 +5,7 @@ This project provides a way to interact with [ObjectScale](https://www.dell.com/
 ## Build & Install
 Build the wheels package
 ```shell
+pip install maturin
 maturin build -b pyo3 -r
 ```
 
@@ -16,14 +17,14 @@ Users can also choose to builds the crate and installs it as a python module dir
 
 ## Example
 ```
-python ./examples/list_accounts.py
+python ./examples/list_namespaces.py
 ```
 
 ## Distribute
 
 To generate wheels using a docker approach
 ```
-docker run --rm -v $(pwd)/..:/io -w /io/python -e http_proxy=http://172.17.0.1:1090 -e https_proxy=http://172.17.0.1:1090  ghcr.io/pyo3/maturin build --release --strip -i python3.9
+docker run --rm -v $(pwd)/..:/io -w /io/python -e http_proxy=http://172.17.0.1:1090 -e https_proxy=http://172.17.0.1:1090 ghcr.io/pyo3/maturin build -b pyo3 --release --strip
 ```
 
 To publish the artifacts.

@@ -1,19 +1,19 @@
 import objectscale_client
 
 def main():
-    endpoint = "https://10.225.108.189:443"
+    endpoint = "https://10.225.108.217:4443"
     username = "root"
-    password = "Password123@"
+    password = "Password123!"
     insecure = True
 
-    account_id = "osai0a9250592a131336"
+    name = "luis_namespace"
 
     try:
         client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
-        account = client.get_account(account_id)
-        print("Get account:", account)
+        namespace = client.get_namespace(name)
+        print("Get namespace:", namespace)
     except Exception as e:
-        print("Failed to get account:", e)
+        print("Failed to get namespace:", e)
 
 
 if __name__ == '__main__':

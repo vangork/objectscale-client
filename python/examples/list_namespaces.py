@@ -1,18 +1,18 @@
 import objectscale_client
 
 def main():
-    endpoint = "https://10.225.108.189:443"
+    endpoint = "https://10.225.108.217:4443"
     username = "root"
-    password = "Password123@"
+    password = "Password123!"
     insecure = True
 
     try:
         client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
-        accounts = client.list_accounts()
-        for account in accounts:
-            print(account)
+        namespaces = client.list_namespaces("")
+        for namespace in namespaces:
+            print(namespace)
     except Exception as e:
-        print("Failed to list accounts:", e)
+        print("Failed to list namespaces:", e)
 
 
 if __name__ == '__main__':

@@ -1,19 +1,19 @@
 import objectscale_client
 
 def main():
-    endpoint = "https://10.225.108.189:443"
+    endpoint = "https://10.225.108.217:4443"
     username = "root"
-    password = "Password123@"
+    password = "Password123!"
     insecure = True
 
-    account_id = "osai8f36c29a17795572"
+    name = "luis_namespace"
 
     try:
         client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
-        client.delete_account(account_id)
-        print("Deleted account:", account_id)
+        client.delete_namespace(name)
+        print("Deleted namespace:", name)
     except Exception as e:
-        print("Failed to delete account:", e)
+        print("Failed to delete namespace:", e)
 
 
 if __name__ == '__main__':
