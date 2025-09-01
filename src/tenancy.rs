@@ -83,6 +83,7 @@ pub struct Namespace {
     pub disallowed_vpools_list: Vec<String>,
     /// Comma separated list of namespace admins. Default: "". Updatable
     #[builder(setter(into, skip = false), default)]
+    #[serde(deserialize_with = "deserialize_default_from_null")]
     pub namespace_admins: String,
     /// User Mapping. Default: []. Updatable
     #[builder(setter(skip = false), default)]
@@ -95,6 +96,7 @@ pub struct Namespace {
     #[builder(setter(skip = false), default = -1)]
     pub default_bucket_block_size: i64,
     /// List of groups from AD Server. Default: "". Updatable
+    #[builder(setter(into, skip = false), default)]
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub external_group_admins: String,
     /// Namespace isStaleAllowed flag. Default: false. Updatable.

@@ -86,6 +86,7 @@ pub(crate) struct Namespace {
     #[pyo3(set)]
     default_bucket_block_size: i64,
     // List of groups from AD Server. Default: "". Updatable
+    #[pyo3(set)]
     external_group_admins: String,
     // Namespace isStaleAllowed flag. Default: false. Updatable.
     #[pyo3(set)]
