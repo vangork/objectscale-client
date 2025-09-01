@@ -26,7 +26,7 @@ func main() {
 		UserName:  userName,
 		Namespace: namespace,
 		PermissionsBoundary: objectscale.PermissionsBoundary{
-			PermissionsBoundaryArn: arn,
+			PermissionsBoundaryArn:  arn,
 			PermissionsBoundaryType: "",
 		},
 		Tags: []objectscale.IamTag{{Key: "key1", Value: "value1"}, {Key: "key2", Value: "value2"}},

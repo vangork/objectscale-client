@@ -24,7 +24,7 @@ func main() {
 	namespace := &objectscale.Namespace{
 		Name:                     name,
 		DefaultDataServicesVpool: rp,
-		DefaultBucketBlockSize: -1,
+		DefaultBucketBlockSize:   -1,
 		BlockSize:                2,
 		NotificationSize:         2,
 		NotificationSizeInCount:  -1,

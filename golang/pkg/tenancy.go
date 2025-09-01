@@ -34,15 +34,15 @@ type Namespace struct {
 	AllowedVpoolsList []string `json:"allowed_vpools_list" yaml:"allowed_vpools_list"`
 	// List of replication group that are not allowed access to namespace.
 	DisallowedVpoolsList []string `json:"disallowed_vpools_list" yaml:"disallowed_vpools_list"`
-	// Comma separated list of namespace admins. Updatable
+	// Comma separated list of namespace admins. Default: "". Updatable
 	NamespaceAdmins string `json:"namespace_admins" yaml:"namespace_admins"`
-	// User Mapping. Updatable
+	// User Mapping. Default: []. Updatable
 	UserMapping []UserMapping `json:"user_mapping" yaml:"user_mapping"`
-	// encryption status of the namesapce
+	// encryption status of the namesapce. Default: false.
 	IsEncryptionEnabled bool `json:"is_encryption_enabled" yaml:"is_encryption_enabled"`
 	// Default bucket quota size. Default: -1. Updatable.
 	DefaultBucketBlockSize int64 `json:"default_bucket_block_size" yaml:"default_bucket_block_size"`
-	// List of groups from AD Server. Updatable
+	// List of groups from AD Server. Default: "". Updatable
 	ExternalGroupAdmins string `json:"external_group_admins" yaml:"external_group_admins"`
 	// Namespace isStaleAllowed flag. Default: false. Updatable.
 	IsStaleAllowed bool `json:"is_stale_allowed" yaml:"is_stale_allowed"`
@@ -60,23 +60,23 @@ type Namespace struct {
 	BlockSizeInCount int64 `json:"blockSizeInCount" yaml:"blockSizeInCount"`
 	// Default bucket audit delete expiration. Updatable
 	DefaultAuditDeleteExpiration int64 `json:"default_audit_delete_expiration" yaml:"default_audit_delete_expiration"`
-	// retention classes. Updatable
+	// retention classes. Default. Updatable
 	RetentionClasses RetionClasses `json:"retention_classes" yaml:"retention_classes"`
 	// root user name
 	RootUserName string `json:"root_user_name" yaml:"root_user_name"`
-	// root user password.
+	// root user password. Default: "".
 	RootUserPassword string `json:"root_user_password" yaml:"root_user_password"`
 }
 
 type RetionClass struct {
-	// Name of the retention class
+	// Name of the retention class. Required. Updatable
 	Name string `json:"name" yaml:"name"`
-	// Period of the retention class in seconds
+	// Period of the retention class in seconds. Required. Updatable
 	Period int64 `json:"period" yaml:"period"`
 }
 
 type RetionClasses struct {
-	// Retention class, add and update only
+	// Retention class, default: []. Updatable
 	RetentionClass []RetionClass `json:"retention_class" yaml:"retention_class"`
 }
 

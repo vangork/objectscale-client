@@ -16,15 +16,15 @@ pub struct TenancyLink {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct RetionClass {
-    /// Name of the retention class
+    /// Name of the retention class. Required. Updatable
     pub name: String,
-    /// Period of the retention class in seconds
+    /// Period of the retention class in seconds. Required. Updatable
     pub period: i64,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct RetionClasses {
-    /// Retention class, add and update only
+    /// Retention class, default: []. Updatable
     pub retention_class: Vec<RetionClass>,
 }
 
@@ -81,20 +81,20 @@ pub struct Namespace {
     pub allowed_vpools_list: Vec<String>,
     /// List of replication group that are not allowed access to namespace.
     pub disallowed_vpools_list: Vec<String>,
-    /// Comma separated list of namespace admins. Updatable
+    /// Comma separated list of namespace admins. Default: "". Updatable
     #[builder(setter(into, skip = false), default)]
     pub namespace_admins: String,
-    /// User Mapping. Updatable
+    /// User Mapping. Default: []. Updatable
     #[builder(setter(skip = false), default)]
     pub user_mapping: Vec<UserMapping>,
-    /// encryption status of the namesapce
+    /// encryption status of the namesapce. Default: false.
     #[builder(setter(skip = false), default = "false")]
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub is_encryption_enabled: bool,
     /// Default bucket quota size. Default: -1. Updatable.
     #[builder(setter(skip = false), default = -1)]
     pub default_bucket_block_size: i64,
-    /// List of groups from AD Server. Updatable
+    /// List of groups from AD Server. Default: "". Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub external_group_admins: String,
     /// Namespace isStaleAllowed flag. Default: false. Updatable.
@@ -125,12 +125,12 @@ pub struct Namespace {
     /// Default bucket audit delete expiration. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub default_audit_delete_expiration: i64,
-    /// retention classes. Updatable
+    /// retention classes. Default. Updatable
     #[builder(setter(skip = false), default)]
     pub retention_classes: RetionClasses,
     /// root user name
     pub root_user_name: String,
-    /// root user password.
+    /// root user password. Default: "".
     #[builder(setter(into, skip = false), default)]
     pub root_user_password: String,
 }

@@ -73,19 +73,19 @@ pub(crate) struct Namespace {
     allowed_vpools_list: Vec<String>,
     // List of replication group that are not allowed access to namespace.
     disallowed_vpools_list: Vec<String>,
-    // Comma separated list of namespace admins. Updatable
+    // Comma separated list of namespace admins. Default: "". Updatable
     #[pyo3(set)]
     namespace_admins: String,
-    // User Mapping. Updatable
+    // User Mapping. Default: []. Updatable
     #[pyo3(set)]
     user_mapping: Vec<UserMapping>,
-    // encryption status of the namesapce
+    // encryption status of the namesapce. Default: false.
     #[pyo3(set)]
     is_encryption_enabled: bool,
     // Default bucket quota size. Default: -1. Updatable.
     #[pyo3(set)]
     default_bucket_block_size: i64,
-    // List of groups from AD Server. Updatable
+    // List of groups from AD Server. Default: "". Updatable
     external_group_admins: String,
     // Namespace isStaleAllowed flag. Default: false. Updatable.
     #[pyo3(set)]
@@ -110,12 +110,12 @@ pub(crate) struct Namespace {
     block_size_in_count: i64,
     // Default bucket audit delete expiration. Updatable
     default_audit_delete_expiration: i64,
-    // retention classes. Updatable
+    // retention classes. Default. Updatable
     #[pyo3(set)]
     retention_classes: RetionClasses,
     // root user name
     root_user_name: String,
-    // root user password.
+    // root user password. Default: "".
     #[pyo3(set)]
     root_user_password: String,
 }
@@ -212,10 +212,10 @@ impl Namespace {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct RetionClass {
-    // Name of the retention class
+    // Name of the retention class. Required. Updatable
     #[pyo3(set)]
     name: String,
-    // Period of the retention class in seconds
+    // Period of the retention class in seconds. Required. Updatable
     #[pyo3(set)]
     period: i64,
 }
@@ -254,7 +254,7 @@ impl RetionClass {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct RetionClasses {
-    // Retention class, add and update only
+    // Retention class, default: []. Updatable
     #[pyo3(set)]
     retention_class: Vec<RetionClass>,
 }
