@@ -931,8 +931,8 @@ impl Bindgen {
                 };
 
                 let tag = format!(
-                    r#"`json:"{}" yaml:"{}"`"#,
-                    field_serialize, field_deserialize,
+                    r#"`json:"{}" yaml:"{}" tf:"{}"`"#,
+                    field_serialize, field_deserialize, field_name
                 );
                 writeln!(
                     &mut writer,
