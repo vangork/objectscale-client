@@ -24,7 +24,7 @@ pub(crate) struct ManagementUser {
     is_security_admin: bool,
     // If set to true, its a domain.
     is_external_group: bool,
-    // If set to true, the user is locked. Updatable, but can only set from `true` to `false`
+    // If set to true, the user is locked. No need to set value during creation, by default is false. Updatable, but can only set from `true` to `false`
     is_locked: bool,
     // Value of last time password changed
     last_time_password_changed: String,
@@ -82,12 +82,12 @@ pub(crate) struct ObjectUser {
     // Namespace that owns the user. Required
     #[pyo3(set)]
     namespace: String,
-    // Set true if user needs to be is to be locked, false otherwise. Updatable
+    // Set true if user needs to be is to be locked, false otherwise. Default: false. Updatable
     #[pyo3(set)]
     locked: bool,
     // Gets the user's creation date as an ISO-8601 timestamp.
     created: String,
-    // The tags associated with this user. Updatable
+    // The tags associated with this user. Default: []. Updatable
     #[pyo3(set)]
     tag: Vec<UserTag>,
     // Gets the user's centerapassword.

@@ -508,6 +508,8 @@ struct VdcList {
 }
 
 impl Vdc {
+    // TODO: create & update vdc
+
     pub(crate) fn get(client: &mut ManagementClient, name: &str) -> Result<Self> {
         let request_url = format!("{}object/vdcs/vdc/{}", client.endpoint, name);
         let resp = client
@@ -553,9 +555,9 @@ impl Vdc {
 /// Vdc Keystore is to manage the certificates of a virtual data center (VDC)
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 pub struct VdcKeystore {
-    /// Keystore certificate chain in PEM format
+    /// Keystore certificate chain in PEM format. Updatable
     pub chain: String,
-    /// The private key used to sign the certificate in PEM format.
+    /// The private key used to sign the certificate in PEM format. Updatable
     #[serde(default)]
     pub private_key: String,
 }
@@ -661,6 +663,8 @@ struct StoragePoolList {
 }
 
 impl StoragePool {
+    // TODO: create storage pool
+
     pub(crate) fn get(client: &mut ManagementClient, id: &str) -> Result<Self> {
         let request_url = format!("{}vdc/data-services/varrays/{}", client.endpoint, id);
         let resp = client

@@ -9,7 +9,7 @@ type ReplicationGroup struct {
 	Global bool `json:"global" yaml:"global" tf:"global"`
 	// Indicates whether the resource is remote.
 	Remote bool `json:"remote" yaml:"remote" tf:"remote"`
-	// Varray mappings
+	// Varray mappings. Required
 	VarrayMappings []VarrayMapping `json:"varrayMappings" yaml:"zone_mappings" tf:"varray_mappings"`
 	// Unique name identifying this classification of replication group. Required. Updatable
 	Name string `json:"name" yaml:"name" tf:"name"`
@@ -21,15 +21,15 @@ type ReplicationGroup struct {
 	Inactive bool `json:"inactive" yaml:"inactive" tf:"inactive"`
 	// Indicated whether the resource is an internal resource
 	Internal bool `json:"internal" yaml:"internal" tf:"internal"`
-	// Description of the replication group. Updatable
+	// Description of the replication group. Default: "". Updatable
 	Description string `json:"description" yaml:"description" tf:"description"`
-	// Parameter to check if the Vpool can access all Namespace. Updatable
+	// Parameter to check if the Vpool can access all Namespace. Default: true. Updatable
 	IsAllowAllNamespaces bool `json:"isAllowAllNamespaces" yaml:"isAllowAllNamespaces" tf:"is_allow_all_namespaces"`
-	// Parameter to check if the rebalancing is enabled. Updatable
+	// Parameter to check if the rebalancing is enabled. Default: false. Updatable
 	EnableRebalancing bool `json:"enable_rebalancing" yaml:"enable_rebalancing" tf:"enable_rebalancing"`
-	// Parameter to check if to use replication targets
+	// Parameter to check if to use replication targets. Default: false
 	UseReplicationTarget bool `json:"useReplicationTarget" yaml:"useReplicationTarget" tf:"use_replication_target"`
-	// set full replication flag. Non-updatable
+	// set full replication flag. Default: false
 	IsFullRep bool `json:"isFullRep" yaml:"isFullRep" tf:"is_full_rep"`
 }
 

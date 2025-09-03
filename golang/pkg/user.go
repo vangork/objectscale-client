@@ -17,7 +17,7 @@ type ManagementUser struct {
 	IsSecurityAdmin bool `json:"isSecurityAdmin" yaml:"isSecurityAdmin" tf:"is_security_admin"`
 	// If set to true, its a domain.
 	IsExternalGroup bool `json:"is_external_group" yaml:"is_external_group" tf:"is_external_group"`
-	// If set to true, the user is locked. Updatable, but can only set from `true` to `false`
+	// If set to true, the user is locked. No need to set value during creation, by default is false. Updatable, but can only set from `true` to `false`
 	IsLocked bool `json:"is_locked" yaml:"is_locked" tf:"is_locked"`
 	// Value of last time password changed
 	LastTimePasswordChanged string `json:"last_time_password_changed" yaml:"last_time_password_changed" tf:"last_time_password_changed"`
@@ -29,11 +29,11 @@ type ObjectUser struct {
 	Name string `json:"name" yaml:"user" tf:"name"`
 	// Namespace that owns the user. Required
 	Namespace string `json:"namespace" yaml:"namespace" tf:"namespace"`
-	// Set true if user needs to be is to be locked, false otherwise. Updatable
+	// Set true if user needs to be is to be locked, false otherwise. Default: false. Updatable
 	Locked bool `json:"locked" yaml:"locked" tf:"locked"`
 	// Gets the user's creation date as an ISO-8601 timestamp.
 	Created string `json:"created" yaml:"created" tf:"created"`
-	// The tags associated with this user. Updatable
+	// The tags associated with this user. Default: []. Updatable
 	Tag []UserTag `json:"tag" yaml:"tag" tf:"tag"`
 	// Gets the user's centerapassword.
 	Centerapassword string `json:"centerapassword" yaml:"centerapassword" tf:"centerapassword"`

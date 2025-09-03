@@ -35,7 +35,7 @@ pub struct ManagementUser {
     pub is_security_admin: bool,
     /// If set to true, its a domain.
     pub is_external_group: bool,
-    /// If set to true, the user is locked. Updatable, but can only set from `true` to `false`
+    /// If set to true, the user is locked. No need to set value during creation, by default is false. Updatable, but can only set from `true` to `false`
     pub is_locked: bool,
     /// Value of last time password changed
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -215,12 +215,12 @@ pub struct ObjectUser {
     /// Namespace that owns the user. Required
     #[builder(setter(into, skip = false))]
     pub namespace: String,
-    /// Set true if user needs to be is to be locked, false otherwise. Updatable
+    /// Set true if user needs to be is to be locked, false otherwise. Default: false. Updatable
     #[builder(setter(skip = false), default = "false")]
     pub locked: bool,
     /// Gets the user's creation date as an ISO-8601 timestamp.
     pub created: String,
-    /// The tags associated with this user. Updatable
+    /// The tags associated with this user. Default: []. Updatable
     #[builder(setter(skip = false), default)]
     pub tag: Vec<UserTag>,
     /// Gets the user's centerapassword.

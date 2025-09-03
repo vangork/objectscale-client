@@ -691,10 +691,10 @@ impl Vdc {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct VdcKeystore {
-    // Keystore certificate chain in PEM format
+    // Keystore certificate chain in PEM format. Updatable
     #[pyo3(set)]
     chain: String,
-    // The private key used to sign the certificate in PEM format.
+    // The private key used to sign the certificate in PEM format. Updatable
     #[pyo3(set)]
     private_key: String,
 }

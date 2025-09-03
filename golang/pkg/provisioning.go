@@ -213,8 +213,8 @@ type Vdc struct {
 
 // Vdc Keystore is to manage the certificates of a virtual data center (VDC)
 type VdcKeystore struct {
-	// Keystore certificate chain in PEM format
+	// Keystore certificate chain in PEM format. Updatable
 	Chain string `json:"chain" yaml:"chain" tf:"chain"`
-	// The private key used to sign the certificate in PEM format.
+	// The private key used to sign the certificate in PEM format. Updatable
 	PrivateKey string `json:"private_key" yaml:"private_key" tf:"private_key"`
 }

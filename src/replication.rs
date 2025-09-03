@@ -45,8 +45,8 @@ pub struct ReplicationGroup {
     // TODO:
     // #[serde(deserialize_with = "deserialize_default_from_null")]
     // pub vdc: String,
-    /// Varray mappings
-    #[builder(setter(skip = false), default)]
+    /// Varray mappings. Required
+    #[builder(setter(skip = false))]
     #[serde(rename(serialize = "zone_mappings", deserialize = "varrayMappings"))]
     pub varray_mappings: Vec<VarrayMapping>,
     /// Unique name identifying this classification of replication group. Required. Updatable
@@ -65,20 +65,20 @@ pub struct ReplicationGroup {
     /// Indicated whether the resource is an internal resource
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub internal: bool,
-    /// Description of the replication group. Updatable
+    /// Description of the replication group. Default: "". Updatable
     #[builder(setter(into), default)]
     pub description: String,
-    /// Parameter to check if the Vpool can access all Namespace. Updatable
+    /// Parameter to check if the Vpool can access all Namespace. Default: true. Updatable
     #[builder(setter(skip = false), default = true)]
     pub is_allow_all_namespaces: bool,
-    /// Parameter to check if the rebalancing is enabled. Updatable
+    /// Parameter to check if the rebalancing is enabled. Default: false. Updatable
     #[serde(rename = "enable_rebalancing")]
     #[builder(setter(skip = false), default = false)]
     pub enable_rebalancing: bool,
-    /// Parameter to check if to use replication targets
+    /// Parameter to check if to use replication targets. Default: false
     #[builder(setter(skip = false), default = false)]
     pub use_replication_target: bool,
-    /// set full replication flag. Non-updatable
+    /// set full replication flag. Default: false
     #[builder(setter(skip = false), default = false)]
     pub is_full_rep: bool,
 }
@@ -155,7 +155,8 @@ impl ReplicationGroup {
         Ok(())
     }
 
-    // TODO: addvarrays && removevarrays from replication group: removed array cannot be added back to the replication group
+    // TODO: addvarrays && removevarrays from replication group.
+    // A removed array cannot be added back to the replication group
     pub(crate) fn update(client: &mut ManagementClient, replication_group: &Self) -> Result<bool> {
         let current_replication_group = Self::get(client, &replication_group.id)?;
         let mut updated = false;

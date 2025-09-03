@@ -11,7 +11,7 @@ pub(crate) struct ReplicationGroup {
     global: bool,
     // Indicates whether the resource is remote.
     remote: bool,
-    // Varray mappings
+    // Varray mappings. Required
     #[pyo3(set)]
     varray_mappings: Vec<VarrayMapping>,
     // Unique name identifying this classification of replication group. Required. Updatable
@@ -25,19 +25,19 @@ pub(crate) struct ReplicationGroup {
     inactive: bool,
     // Indicated whether the resource is an internal resource
     internal: bool,
-    // Description of the replication group. Updatable
+    // Description of the replication group. Default: "". Updatable
     #[pyo3(set)]
     description: String,
-    // Parameter to check if the Vpool can access all Namespace. Updatable
+    // Parameter to check if the Vpool can access all Namespace. Default: true. Updatable
     #[pyo3(set)]
     is_allow_all_namespaces: bool,
-    // Parameter to check if the rebalancing is enabled. Updatable
+    // Parameter to check if the rebalancing is enabled. Default: false. Updatable
     #[pyo3(set)]
     enable_rebalancing: bool,
-    // Parameter to check if to use replication targets
+    // Parameter to check if to use replication targets. Default: false
     #[pyo3(set)]
     use_replication_target: bool,
-    // set full replication flag. Non-updatable
+    // set full replication flag. Default: false
     #[pyo3(set)]
     is_full_rep: bool,
 }
