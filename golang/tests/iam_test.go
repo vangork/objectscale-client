@@ -220,7 +220,7 @@ func TestPolicy(t *testing.T) {
 	client := CreateManagementClient(t)
 	defer client.Close()
 
-	namespaceName := "iam_test_access_key"
+	namespaceName := "iam_test_policy"
 	namespace := &objectscale.Namespace{
 		Name:                     namespaceName,
 		DefaultDataServicesVpool: REPLICATION_GROUP,
@@ -277,7 +277,7 @@ func TestGroup(t *testing.T) {
 	client := CreateManagementClient(t)
 	defer client.Close()
 
-	namespaceName := "iam_test_access_key"
+	namespaceName := "iam_test_group"
 	namespace := &objectscale.Namespace{
 		Name:                     namespaceName,
 		DefaultDataServicesVpool: REPLICATION_GROUP,
@@ -324,401 +324,423 @@ func TestGroup(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// func TestRole(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountName := "testroleaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	roleName := "testrole"
-// 	roleDescription := "testrole description"
-// 	duration := int32(9600)
-// 	assume_doc := `{"Version":"2024-07-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:osc:iam::osai0a9250592a131336:user/luis"]},"Action":"sts:AssumeRole"}]}`
-// 	arn := "urn:osc:iam:::policy/CRRFullAccess"
-// 	role := &objectscale.Role{
-// 		RoleName:                 roleName,
-// 		Description:              roleDescription,
-// 		MaxSessionDuration:       duration,
-// 		AssumeRolePolicyDocument: assume_doc,
-// 		Namespace:                namespaceName,
-// 		PermissionsBoundary: objectscale.PermissionsBoundary{
-// 			PermissionsBoundaryArn: arn,
-// 		},
-// 		Tags: []objectscale.Tag{{Key: "key1", Value: "value1"}, {Key: "key2", Value: "value2"}},
-// 	}
-// 	_, err = client.CreateRole(role)
-// 	assert.Nil(t, err)
-
-// 	role, err = client.GetRole(roleName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, roleName, role.RoleName)
-// 	assert.Equal(t, roleDescription, role.Description)
-// 	assert.Equal(t, duration, role.MaxSessionDuration)
-// 	assert.Equal(t, namespaceName, role.Namespace)
-// 	assert.Equal(t, arn, role.PermissionsBoundary.PermissionsBoundaryArn)
-// 	assert.Equal(t, 2, len(role.Tags))
-
-// 	newRoleDescription := "newtestrole description"
-// 	newDuration := int32(7200)
-// 	role.Description = newRoleDescription
-// 	role.MaxSessionDuration = newDuration
-// 	role, err = client.UpdateRole(role)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, roleName, role.RoleName)
-// 	assert.Equal(t, newRoleDescription, role.Description)
-// 	assert.Equal(t, newDuration, role.MaxSessionDuration)
-// 	assert.Equal(t, namespaceName, role.Namespace)
-// 	assert.Equal(t, arn, role.PermissionsBoundary.PermissionsBoundaryArn)
-// 	assert.Equal(t, 2, len(role.Tags))
-
-// 	roles, err := client.ListRoles(namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Less(t, 0, len(roles))
-
-// 	err = client.DeleteRole(roleName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
-
-// func TestUserGroupMembership(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountName := "testusergroupmembershipaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	groupName := "testgroup"
-// 	group := &objectscale.Group{
-// 		GroupName: groupName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateGroup(group)
-// 	assert.Nil(t, err)
-
-// 	userName := "testuser"
-// 	user := &objectscale.User{
-// 		UserName:  userName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateUser(user)
-// 	assert.Nil(t, err)
-
-// 	memberShip := &objectscale.UserGroupMembership{
-// 		UserName:  userName,
-// 		GroupName: groupName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateUserGroupMembership(memberShip)
-// 	assert.Nil(t, err)
-
-// 	memberShips, err := client.ListUserGroupMembershipsByUser(userName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 1, len(memberShips))
-// 	assert.Equal(t, groupName, memberShips[0].GroupName)
-// 	assert.Equal(t, userName, memberShips[0].UserName)
-// 	assert.Equal(t, namespaceName, memberShips[0].Namespace)
-
-// 	memberShips, err = client.ListUserGroupMembershipsByGroup(groupName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 1, len(memberShips))
-// 	assert.Equal(t, groupName, memberShips[0].GroupName)
-// 	assert.Equal(t, userName, memberShips[0].UserName)
-// 	assert.Equal(t, namespaceName, memberShips[0].Namespace)
-
-// 	err = client.DeleteUserGroupMembership(memberShip)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteUser(userName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteGroup(groupName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
-
-// func TestGroupPolicyAttachment(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountName := "testgrouppolicyattachmentaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	groupName := "testgroup"
-// 	group := &objectscale.Group{
-// 		GroupName: groupName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateGroup(group)
-// 	assert.Nil(t, err)
-
-// 	policyArn := "urn:osc:iam:::policy/CRRFullAccess"
-// 	groupPolicyAttachment := &objectscale.GroupPolicyAttachment{
-// 		GroupName: groupName,
-// 		PolicyArn: policyArn,
-// 		Namespace: namespaceName,
-// 	}
-
-// 	_, err = client.CreateGroupPolicyAttachment(groupPolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	attachments, err := client.ListGroupPolicyAttachments(groupName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 1, len(attachments))
-// 	assert.Equal(t, groupName, attachments[0].GroupName)
-// 	assert.Equal(t, policyArn, attachments[0].PolicyArn)
-// 	assert.Equal(t, namespaceName, attachments[0].Namespace)
-
-// 	err = client.DeleteGroupPolicyAttachment(groupPolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	attachments, err = client.ListGroupPolicyAttachments(groupName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 0, len(attachments))
-
-// 	err = client.DeleteGroup(groupName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
-
-// func TestRolePolicyAttachment(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountName := "testrolepolicyattachmentaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	roleName := "testrole"
-// 	assume_doc := `{"Version":"2024-07-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:osc:iam::osai0a9250592a131336:user/luis"]},"Action":"sts:AssumeRole"}]}`
-// 	role := &objectscale.Role{
-// 		RoleName:                 roleName,
-// 		AssumeRolePolicyDocument: assume_doc,
-// 		Namespace:                namespaceName,
-// 	}
-// 	_, err = client.CreateRole(role)
-// 	assert.Nil(t, err)
-
-// 	policyArn := "urn:osc:iam:::policy/CRRFullAccess"
-// 	rolePolicyAttachment := &objectscale.RolePolicyAttachment{
-// 		RoleName:  roleName,
-// 		PolicyArn: policyArn,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateRolePolicyAttachment(rolePolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	attachments, err := client.ListRolePolicyAttachments(roleName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 1, len(attachments))
-// 	assert.Equal(t, roleName, attachments[0].RoleName)
-// 	assert.Equal(t, policyArn, attachments[0].PolicyArn)
-// 	assert.Equal(t, namespaceName, attachments[0].Namespace)
-
-// 	err = client.DeleteRolePolicyAttachment(rolePolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	attachments, err = client.ListRolePolicyAttachments(roleName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 0, len(attachments))
-
-// 	err = client.DeleteRole(roleName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
-
-// func TestEntitiesForPolicy(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountName := "testentitiesforpolicyaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	groupName := "testgroup"
-// 	group := &objectscale.Group{
-// 		GroupName: groupName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateGroup(group)
-// 	assert.Nil(t, err)
-
-// 	userName := "testuser"
-// 	user := &objectscale.User{
-// 		UserName:  userName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateUser(user)
-// 	assert.Nil(t, err)
-
-// 	roleName := "testrole"
-// 	assume_doc := `{"Version":"2024-07-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:osc:iam::osai0a9250592a131336:user/luis"]},"Action":"sts:AssumeRole"}]}`
-// 	role := &objectscale.Role{
-// 		RoleName:                 roleName,
-// 		AssumeRolePolicyDocument: assume_doc,
-// 		Namespace:                namespaceName,
-// 	}
-// 	_, err = client.CreateRole(role)
-// 	assert.Nil(t, err)
-
-// 	document := "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Action%22%3A%5B%22s3%3AListBucket%22%2C%22s3%3AListAllMyBuckets%22%5D%2C%22Resource%22%3A%22*%22%2C%22Effect%22%3A%22Allow%22%2C%22Sid%22%3A%22VisualEditor0%22%7D%5D%7D"
-// 	policyName := "testpolicy"
-// 	policy := &objectscale.Policy{
-// 		PolicyName:     policyName,
-// 		PolicyDocument: document,
-// 		Namespace:      namespaceName,
-// 	}
-// 	policy, err = client.CreatePolicy(policy)
-// 	assert.Nil(t, err)
-
-// 	groupPolicyAttachment := &objectscale.GroupPolicyAttachment{
-// 		GroupName: groupName,
-// 		PolicyArn: policy.Arn,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateGroupPolicyAttachment(groupPolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	userPolicyAttachment := &objectscale.UserPolicyAttachment{
-// 		UserName:  userName,
-// 		PolicyArn: policy.Arn,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateUserPolicyAttachment(userPolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	rolePolicyAttachment := &objectscale.RolePolicyAttachment{
-// 		RoleName:  roleName,
-// 		PolicyArn: policy.Arn,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateRolePolicyAttachment(rolePolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	entitiesForPolicy, err := client.GetEntitiesForPolicy(policy.Arn, namespaceName, "", "")
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, 1, len(entitiesForPolicy.Groups))
-// 	assert.Equal(t, 1, len(entitiesForPolicy.Users))
-// 	assert.Equal(t, 1, len(entitiesForPolicy.Roles))
-// 	assert.Equal(t, groupName, entitiesForPolicy.Groups[0])
-// 	assert.Equal(t, userName, entitiesForPolicy.Users[0])
-// 	assert.Equal(t, roleName, entitiesForPolicy.Roles[0])
-
-// 	err = client.DeleteGroupPolicyAttachment(groupPolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteUserPolicyAttachment(userPolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteRolePolicyAttachment(rolePolicyAttachment)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteRole(roleName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteUser(userName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteGroup(groupName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeletePolicy(policy.Arn, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
-
-// func TestLoginProfile(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountname := "testloginprofile"
-// 	account := &objectscale.Account{
-// 		Alias:             accountname,
-// 		Description:       accountname,
-// 		EncryptionEnabled: false,
-// 	}
-
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	userName := "testuser"
-// 	user := &objectscale.User{
-// 		UserName:  userName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateUser(user)
-// 	assert.Nil(t, err)
-
-// 	userPassword := "testpassword"
-// 	resetRequired := false
-// 	loginProfile := &objectscale.LoginProfile{
-// 		UserName:              userName,
-// 		Password:              userPassword,
-// 		PasswordResetRequired: resetRequired,
-// 		Namespace:             namespaceName,
-// 	}
-
-// 	loginProfile, err = client.CreateLoginProfile(loginProfile)
-// 	assert.Nil(t, err)
-// 	assert.Empty(t, loginProfile.Password)
-// 	assert.Equal(t, userName, loginProfile.UserName)
-// 	assert.Equal(t, namespaceName, loginProfile.Namespace)
-// 	assert.Equal(t, resetRequired, loginProfile.PasswordResetRequired)
-
-// 	loginProfile, err = client.GetLoginProfile(userName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Empty(t, loginProfile.Password)
-// 	assert.Equal(t, userName, loginProfile.UserName)
-// 	assert.Equal(t, namespaceName, loginProfile.Namespace)
-// 	assert.Equal(t, resetRequired, loginProfile.PasswordResetRequired)
-
-// 	err = client.DeleteLoginProfile(userName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	_, err = client.GetLoginProfile(userName, namespaceName)
-// 	assert.NotNil(t, err)
-
-// 	err = client.DeleteUser(userName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
+func TestGroupPolicyAttachment(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_group_policy_attachment"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	groupName := "iam_test_group_policy_attachment"
+	group := &objectscale.Group{
+		GroupName: groupName,
+		Namespace: namespaceName,
+	}
+	_, err = client.CreateGroup(group)
+	assert.Nil(t, err)
+
+	policyArn := "urn:ecs:iam:::policy/ECSS3FullAccess"
+	groupPolicyAttachment := &objectscale.GroupPolicyAttachment{
+		GroupName: groupName,
+		PolicyArn: policyArn,
+		Namespace: namespaceName,
+	}
+
+	attachment, err := client.CreateGroupPolicyAttachment(groupPolicyAttachment)
+	assert.Nil(t, err)
+	assert.Equal(t, groupName, attachment.GroupName)
+	assert.Equal(t, policyArn, attachment.PolicyArn)
+	assert.Equal(t, namespaceName, attachment.Namespace)
+
+	attachments, err := client.ListGroupPolicyAttachments(groupName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(attachments))
+	assert.Equal(t, groupName, attachments[0].GroupName)
+	assert.Equal(t, policyArn, attachments[0].PolicyArn)
+	assert.Equal(t, namespaceName, attachments[0].Namespace)
+
+	err = client.DeleteGroupPolicyAttachment(groupPolicyAttachment)
+	assert.Nil(t, err)
+
+	attachments, err = client.ListGroupPolicyAttachments(groupName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(attachments))
+
+	err = client.DeleteGroup(groupName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
+
+func TestRole(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_role"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	roleName := "iam_test_role"
+	roleDescription := "iam test role description"
+	duration := int64(9600)
+	assume_doc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:root"]},"Action":"sts:AssumeRole"}]}`
+
+	role := &objectscale.Role{
+		RoleName:                 roleName,
+		Description:              roleDescription,
+		MaxSessionDuration:       duration,
+		AssumeRolePolicyDocument: assume_doc,
+		Namespace:                namespaceName,
+		Tags:                     []objectscale.IamTag{},
+	}
+	role, err = client.CreateRole(role)
+	assert.Nil(t, err)
+	assert.Equal(t, roleName, role.RoleName)
+	assert.Equal(t, roleDescription, role.Description)
+	assert.Equal(t, duration, role.MaxSessionDuration)
+	assert.Equal(t, namespaceName, role.Namespace)
+	assert.Equal(t, 0, len(role.Tags))
+
+	newRoleDescription := "new iam test role description"
+	newDuration := int64(7200)
+	arn := "urn:ecs:iam:::policy/IAMFullAccess"
+
+	role.Description = newRoleDescription
+	role.MaxSessionDuration = newDuration
+	role.PermissionsBoundary = objectscale.PermissionsBoundary{
+		PermissionsBoundaryArn:  arn,
+		PermissionsBoundaryType: "",
+	}
+	role.Tags = []objectscale.IamTag{
+		{Key: "key1", Value: "value1"},
+		{Key: "key2", Value: "value2"},
+	}
+	state, err := client.UpdateRole(role)
+	assert.Nil(t, err)
+	assert.Equal(t, true, state)
+
+	role, err = client.GetRole(roleName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, roleName, role.RoleName)
+	assert.Equal(t, newRoleDescription, role.Description)
+	assert.Equal(t, newDuration, role.MaxSessionDuration)
+	assert.Equal(t, namespaceName, role.Namespace)
+	assert.Equal(t, arn, role.PermissionsBoundary.PermissionsBoundaryArn)
+	assert.Equal(t, 2, len(role.Tags))
+
+	roles, err := client.ListRoles(namespaceName)
+	assert.Nil(t, err)
+	assert.Less(t, 0, len(roles))
+
+	err = client.DeleteRole(roleName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
+
+func TestRolePolicyAttachment(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_role_policy_attachment"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	roleName := "iam_test_role_policy_attachment"
+	assume_doc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:root"]},"Action":"sts:AssumeRole"}]}`
+	role := &objectscale.Role{
+		RoleName:                 roleName,
+		AssumeRolePolicyDocument: assume_doc,
+		Namespace:                namespaceName,
+		Tags:                     []objectscale.IamTag{},
+	}
+	_, err = client.CreateRole(role)
+	assert.Nil(t, err)
+
+	policyArn := "urn:ecs:iam:::policy/ECSS3FullAccess"
+	rolePolicyAttachment := &objectscale.RolePolicyAttachment{
+		RoleName:  roleName,
+		PolicyArn: policyArn,
+		Namespace: namespaceName,
+	}
+	attachment, err := client.CreateRolePolicyAttachment(rolePolicyAttachment)
+	assert.Nil(t, err)
+	assert.Equal(t, roleName, attachment.RoleName)
+	assert.Equal(t, policyArn, attachment.PolicyArn)
+	assert.Equal(t, namespaceName, attachment.Namespace)
+
+	attachments, err := client.ListRolePolicyAttachments(roleName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(attachments))
+	assert.Equal(t, roleName, attachments[0].RoleName)
+	assert.Equal(t, policyArn, attachments[0].PolicyArn)
+	assert.Equal(t, namespaceName, attachments[0].Namespace)
+
+	err = client.DeleteRolePolicyAttachment(rolePolicyAttachment)
+	assert.Nil(t, err)
+
+	attachments, err = client.ListRolePolicyAttachments(roleName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(attachments))
+
+	err = client.DeleteRole(roleName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
+
+func TestUserGroupMembership(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_user_group_membership"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	groupName := "iam_test_user_group_membership"
+	group := &objectscale.Group{
+		GroupName: groupName,
+		Namespace: namespaceName,
+	}
+	_, err = client.CreateGroup(group)
+	assert.Nil(t, err)
+
+	userName := "iam_test_user_group_membership"
+	user := &objectscale.User{
+		UserName:  userName,
+		Namespace: namespaceName,
+		Tags:      []objectscale.IamTag{},
+	}
+	_, err = client.CreateUser(user)
+	assert.Nil(t, err)
+
+	memberShip := &objectscale.UserGroupMembership{
+		UserName:  userName,
+		GroupName: groupName,
+		Namespace: namespaceName,
+	}
+	memberShip, err = client.CreateUserGroupMembership(memberShip)
+	assert.Nil(t, err)
+	assert.Equal(t, groupName, memberShip.GroupName)
+	assert.Equal(t, userName, memberShip.UserName)
+	assert.Equal(t, namespaceName, memberShip.Namespace)
+
+	memberShips, err := client.ListUserGroupMembershipsByUser(userName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(memberShips))
+	assert.Equal(t, groupName, memberShips[0].GroupName)
+	assert.Equal(t, userName, memberShips[0].UserName)
+	assert.Equal(t, namespaceName, memberShips[0].Namespace)
+
+	memberShips, err = client.ListUserGroupMembershipsByGroup(groupName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(memberShips))
+	assert.Equal(t, groupName, memberShips[0].GroupName)
+	assert.Equal(t, userName, memberShips[0].UserName)
+	assert.Equal(t, namespaceName, memberShips[0].Namespace)
+
+	err = client.DeleteUserGroupMembership(memberShip)
+	assert.Nil(t, err)
+
+	err = client.DeleteUser(userName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteGroup(groupName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
+
+func TestEntitiesForPolicy(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_entities_for_policy"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	groupName := "iam_test_entities_for_policy"
+	group := &objectscale.Group{
+		GroupName: groupName,
+		Namespace: namespaceName,
+	}
+	_, err = client.CreateGroup(group)
+	assert.Nil(t, err)
+
+	userName := "iam_test_entities_for_policy"
+	user := &objectscale.User{
+		UserName:  userName,
+		Namespace: namespaceName,
+		Tags:      []objectscale.IamTag{},
+	}
+	_, err = client.CreateUser(user)
+	assert.Nil(t, err)
+
+	roleName := "iam_test_entities_for_policy"
+	assume_doc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:root"]},"Action":"sts:AssumeRole"}]}`
+	role := &objectscale.Role{
+		RoleName:                 roleName,
+		AssumeRolePolicyDocument: assume_doc,
+		Namespace:                namespaceName,
+		Tags:                     []objectscale.IamTag{},
+	}
+	_, err = client.CreateRole(role)
+	assert.Nil(t, err)
+
+	document := "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Action%22%3A%5B%22s3%3AListBucket%22%2C%22s3%3AListAllMyBuckets%22%5D%2C%22Resource%22%3A%22*%22%2C%22Effect%22%3A%22Allow%22%2C%22Sid%22%3A%22VisualEditor0%22%7D%5D%7D"
+	policyName := "iam_test_entities_for_policy"
+	policy := &objectscale.Policy{
+		PolicyName:     policyName,
+		PolicyDocument: document,
+		Namespace:      namespaceName,
+	}
+	policy, err = client.CreatePolicy(policy)
+	assert.Nil(t, err)
+
+	groupPolicyAttachment := &objectscale.GroupPolicyAttachment{
+		GroupName: groupName,
+		PolicyArn: policy.Arn,
+		Namespace: namespaceName,
+	}
+	_, err = client.CreateGroupPolicyAttachment(groupPolicyAttachment)
+	assert.Nil(t, err)
+
+	userPolicyAttachment := &objectscale.UserPolicyAttachment{
+		UserName:  userName,
+		PolicyArn: policy.Arn,
+		Namespace: namespaceName,
+	}
+	_, err = client.CreateUserPolicyAttachment(userPolicyAttachment)
+	assert.Nil(t, err)
+
+	rolePolicyAttachment := &objectscale.RolePolicyAttachment{
+		RoleName:  roleName,
+		PolicyArn: policy.Arn,
+		Namespace: namespaceName,
+	}
+	_, err = client.CreateRolePolicyAttachment(rolePolicyAttachment)
+	assert.Nil(t, err)
+
+	entitiesForPolicy, err := client.GetEntitiesForPolicy(policy.Arn, namespaceName, "", "")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(entitiesForPolicy.Groups))
+	assert.Equal(t, 1, len(entitiesForPolicy.Users))
+	assert.Equal(t, 1, len(entitiesForPolicy.Roles))
+	assert.Equal(t, groupName, entitiesForPolicy.Groups[0])
+	assert.Equal(t, userName, entitiesForPolicy.Users[0])
+	assert.Equal(t, roleName, entitiesForPolicy.Roles[0])
+
+	err = client.DeleteGroupPolicyAttachment(groupPolicyAttachment)
+	assert.Nil(t, err)
+
+	err = client.DeleteUserPolicyAttachment(userPolicyAttachment)
+	assert.Nil(t, err)
+
+	err = client.DeleteRolePolicyAttachment(rolePolicyAttachment)
+	assert.Nil(t, err)
+
+	err = client.DeleteRole(roleName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteUser(userName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteGroup(groupName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeletePolicy(policy.Arn, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
