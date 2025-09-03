@@ -1,6 +1,6 @@
 use objectscale_client::client::ManagementClient;
 use objectscale_client::tenancy::{
-    Attribute, NamespaceBuilder, RetionClass, RetionClasses, UserMapping,
+    Attribute, NamespaceBuilder, RetentionClass, RetentionClasses, UserMapping,
 };
 
 fn main() {
@@ -21,8 +21,8 @@ fn main() {
         .default_data_services_vpool(replication_group)
         .block_size(2)
         .notification_size(2)
-        .retention_classes(RetionClasses {
-            retention_class: vec![RetionClass {
+        .retention_classes(RetentionClasses {
+            retention_class: vec![RetentionClass {
                 name: "r1".to_string(),
                 period: 1,
             }],

@@ -16,7 +16,7 @@ use provisioning::{
     Vdc, VdcKeystore,
 };
 use replication::{ReplicationGroup, VarrayMapping};
-use tenancy::{Attribute, Namespace, RetionClass, RetionClasses, TenancyLink, UserMapping};
+use tenancy::{Attribute, Namespace, RetentionClass, RetentionClasses, TenancyLink, UserMapping};
 use user::{ManagementUser, ObjectUser, UserTag};
 
 use pyo3::prelude::*;
@@ -63,8 +63,8 @@ fn objectscale_client(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     let module = PyModule::new(py, "tenancy")?;
     module.add_class::<Attribute>()?;
     module.add_class::<Namespace>()?;
-    module.add_class::<RetionClass>()?;
-    module.add_class::<RetionClasses>()?;
+    module.add_class::<RetentionClass>()?;
+    module.add_class::<RetentionClasses>()?;
     module.add_class::<TenancyLink>()?;
     module.add_class::<UserMapping>()?;
     m.add_submodule(&module)?;

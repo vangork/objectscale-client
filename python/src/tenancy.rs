@@ -113,7 +113,7 @@ pub(crate) struct Namespace {
     default_audit_delete_expiration: i64,
     // retention classes. Default. Updatable
     #[pyo3(set)]
-    retention_classes: RetionClasses,
+    retention_classes: RetentionClasses,
     // root user name
     root_user_name: String,
     // root user password. Default: "".
@@ -152,7 +152,7 @@ impl From<tenancy::Namespace> for Namespace {
             notification_size_in_count: namespace.notification_size_in_count,
             block_size_in_count: namespace.block_size_in_count,
             default_audit_delete_expiration: namespace.default_audit_delete_expiration,
-            retention_classes: RetionClasses::from(namespace.retention_classes),
+            retention_classes: RetentionClasses::from(namespace.retention_classes),
             root_user_name: namespace.root_user_name,
             root_user_password: namespace.root_user_password,
         }
@@ -190,7 +190,7 @@ impl From<Namespace> for tenancy::Namespace {
             notification_size_in_count: namespace.notification_size_in_count,
             block_size_in_count: namespace.block_size_in_count,
             default_audit_delete_expiration: namespace.default_audit_delete_expiration,
-            retention_classes: tenancy::RetionClasses::from(namespace.retention_classes),
+            retention_classes: tenancy::RetentionClasses::from(namespace.retention_classes),
             root_user_name: namespace.root_user_name,
             root_user_password: namespace.root_user_password,
         }
@@ -212,7 +212,7 @@ impl Namespace {
 //
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
-pub(crate) struct RetionClass {
+pub(crate) struct RetentionClass {
     // Name of the retention class. Required. Updatable
     #[pyo3(set)]
     name: String,
@@ -221,26 +221,26 @@ pub(crate) struct RetionClass {
     period: i64,
 }
 
-impl From<tenancy::RetionClass> for RetionClass {
-    fn from(retion_class: tenancy::RetionClass) -> Self {
+impl From<tenancy::RetentionClass> for RetentionClass {
+    fn from(retention_class: tenancy::RetentionClass) -> Self {
         Self {
-            name: retion_class.name,
-            period: retion_class.period,
+            name: retention_class.name,
+            period: retention_class.period,
         }
     }
 }
 
-impl From<RetionClass> for tenancy::RetionClass {
-    fn from(retion_class: RetionClass) -> Self {
+impl From<RetentionClass> for tenancy::RetentionClass {
+    fn from(retention_class: RetentionClass) -> Self {
         Self {
-            name: retion_class.name,
-            period: retion_class.period,
+            name: retention_class.name,
+            period: retention_class.period,
         }
     }
 }
 
 #[pymethods]
-impl RetionClass {
+impl RetentionClass {
     #[new]
     fn new() -> Self {
         Self::default()
@@ -254,38 +254,38 @@ impl RetionClass {
 //
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
-pub(crate) struct RetionClasses {
+pub(crate) struct RetentionClasses {
     // Retention class, default: []. Updatable
     #[pyo3(set)]
-    retention_class: Vec<RetionClass>,
+    retention_class: Vec<RetentionClass>,
 }
 
-impl From<tenancy::RetionClasses> for RetionClasses {
-    fn from(retion_classes: tenancy::RetionClasses) -> Self {
+impl From<tenancy::RetentionClasses> for RetentionClasses {
+    fn from(retention_classes: tenancy::RetentionClasses) -> Self {
         Self {
-            retention_class: retion_classes
+            retention_class: retention_classes
                 .retention_class
                 .into_iter()
-                .map(RetionClass::from)
+                .map(RetentionClass::from)
                 .collect(),
         }
     }
 }
 
-impl From<RetionClasses> for tenancy::RetionClasses {
-    fn from(retion_classes: RetionClasses) -> Self {
+impl From<RetentionClasses> for tenancy::RetentionClasses {
+    fn from(retention_classes: RetentionClasses) -> Self {
         Self {
-            retention_class: retion_classes
+            retention_class: retention_classes
                 .retention_class
                 .into_iter()
-                .map(tenancy::RetionClass::from)
+                .map(tenancy::RetentionClass::from)
                 .collect(),
         }
     }
 }
 
 #[pymethods]
-impl RetionClasses {
+impl RetentionClasses {
     #[new]
     fn new() -> Self {
         Self::default()

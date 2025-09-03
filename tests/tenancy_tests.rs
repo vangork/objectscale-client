@@ -1,6 +1,6 @@
 mod common;
 use objectscale_client::tenancy::{
-    Attribute, NamespaceBuilder, RetionClass, RetionClasses, UserMapping,
+    Attribute, NamespaceBuilder, RetentionClass, RetentionClasses, UserMapping,
 };
 
 const REPLICATION_GROUP: &str =
@@ -35,8 +35,8 @@ fn test_namespace() {
         domain: "aa".to_string(),
         groups: vec!["aa".to_string()],
     }];
-    let retention_classes = RetionClasses {
-        retention_class: vec![RetionClass {
+    let retention_classes = RetentionClasses {
+        retention_class: vec![RetentionClass {
             name: "r1".to_string(),
             period: 1,
         }],

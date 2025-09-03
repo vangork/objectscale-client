@@ -29,8 +29,8 @@ func main() {
 		NotificationSize:         2,
 		NotificationSizeInCount:  -1,
 		BlockSizeInCount:         -1,
-		RetentionClasses: objectscale.RetionClasses{
-			RetentionClass: []objectscale.RetionClass{
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{
 				{
 					Name:   "r1",
 					Period: 1,

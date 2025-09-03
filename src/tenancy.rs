@@ -15,7 +15,7 @@ pub struct TenancyLink {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
-pub struct RetionClass {
+pub struct RetentionClass {
     /// Name of the retention class. Required. Updatable
     pub name: String,
     /// Period of the retention class in seconds. Required. Updatable
@@ -23,9 +23,9 @@ pub struct RetionClass {
 }
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
-pub struct RetionClasses {
+pub struct RetentionClasses {
     /// Retention class, default: []. Updatable
-    pub retention_class: Vec<RetionClass>,
+    pub retention_class: Vec<RetentionClass>,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -129,7 +129,7 @@ pub struct Namespace {
     pub default_audit_delete_expiration: i64,
     /// retention classes. Default. Updatable
     #[builder(setter(skip = false), default)]
-    pub retention_classes: RetionClasses,
+    pub retention_classes: RetentionClasses,
     /// root user name
     pub root_user_name: String,
     /// root user password. Default: "".
@@ -346,7 +346,7 @@ impl Namespace {
             "{}object/namespaces/namespace/{}/retention",
             client.endpoint, id
         );
-        let retention_class = RetionClass { name, period };
+        let retention_class = RetentionClass { name, period };
         let body = serde_json::to_string(&retention_class)?;
         let resp = client
             .http_client

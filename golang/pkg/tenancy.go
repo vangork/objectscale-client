@@ -61,23 +61,23 @@ type Namespace struct {
 	// Default bucket audit delete expiration. Updatable
 	DefaultAuditDeleteExpiration int64 `json:"default_audit_delete_expiration" yaml:"default_audit_delete_expiration" tf:"default_audit_delete_expiration"`
 	// retention classes. Default. Updatable
-	RetentionClasses RetionClasses `json:"retention_classes" yaml:"retention_classes" tf:"retention_classes"`
+	RetentionClasses RetentionClasses `json:"retention_classes" yaml:"retention_classes" tf:"retention_classes"`
 	// root user name
 	RootUserName string `json:"root_user_name" yaml:"root_user_name" tf:"root_user_name"`
 	// root user password. Default: "".
 	RootUserPassword string `json:"root_user_password" yaml:"root_user_password" tf:"root_user_password"`
 }
 
-type RetionClass struct {
+type RetentionClass struct {
 	// Name of the retention class. Required. Updatable
 	Name string `json:"name" yaml:"name" tf:"name"`
 	// Period of the retention class in seconds. Required. Updatable
 	Period int64 `json:"period" yaml:"period" tf:"period"`
 }
 
-type RetionClasses struct {
+type RetentionClasses struct {
 	// Retention class, default: []. Updatable
-	RetentionClass []RetionClass `json:"retention_class" yaml:"retention_class" tf:"retention_class"`
+	RetentionClass []RetentionClass `json:"retention_class" yaml:"retention_class" tf:"retention_class"`
 }
 
 type TenancyLink struct {
