@@ -216,42 +216,113 @@ func TestAccessKey(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// func TestGroup(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
+func TestPolicy(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
 
-// 	accountName := "testgroupaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
+	namespaceName := "iam_test_access_key"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
 
-// 	groupName := "testgroup"
-// 	group := &objectscale.Group{
-// 		GroupName: groupName,
-// 		Namespace: namespaceName,
-// 	}
-// 	_, err = client.CreateGroup(group)
-// 	assert.Nil(t, err)
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
 
-// 	group, err = client.GetGroup(groupName, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, groupName, group.GroupName)
-// 	assert.Equal(t, namespaceName, group.Namespace)
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
 
-// 	groups, err := client.ListGroups(namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Less(t, 0, len(groups))
+	document := "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Action%22%3A%5B%22s3%3AListBucket%22%2C%22s3%3AListAllMyBuckets%22%5D%2C%22Resource%22%3A%22*%22%2C%22Effect%22%3A%22Allow%22%2C%22Sid%22%3A%22VisualEditor0%22%7D%5D%7D"
+	policyName := "iam_test_policy"
+	policyDescription := "testpolicy description"
+	policy := &objectscale.Policy{
+		PolicyName:     policyName,
+		Description:    policyDescription,
+		PolicyDocument: document,
+		Namespace:      namespaceName,
+	}
+	policy, err = client.CreatePolicy(policy)
+	assert.Nil(t, err)
+	assert.Equal(t, policyName, policy.PolicyName)
+	assert.Equal(t, policyDescription, policy.Description)
+	assert.Equal(t, namespaceName, policy.Namespace)
 
-// 	err = client.DeleteGroup(groupName, namespaceName)
-// 	assert.Nil(t, err)
+	policy, err = client.GetPolicy(policy.Arn, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, policyName, policy.PolicyName)
+	assert.Equal(t, policyDescription, policy.Description)
+	assert.Equal(t, namespaceName, policy.Namespace)
 
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
+	policies, err := client.ListPolicies(namespaceName)
+	assert.Nil(t, err)
+	assert.Less(t, 0, len(policies))
+
+	err = client.DeletePolicy(policy.Arn, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
+
+func TestGroup(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_access_key"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	groupName := "iam_test_group"
+	group := &objectscale.Group{
+		GroupName: groupName,
+		Namespace: namespaceName,
+	}
+	group, err = client.CreateGroup(group)
+	assert.Nil(t, err)
+	assert.Equal(t, groupName, group.GroupName)
+	assert.Equal(t, namespaceName, group.Namespace)
+
+	group, err = client.GetGroup(groupName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, groupName, group.GroupName)
+	assert.Equal(t, namespaceName, group.Namespace)
+
+	groups, err := client.ListGroups(namespaceName)
+	assert.Nil(t, err)
+	assert.Less(t, 0, len(groups))
+
+	err = client.DeleteGroup(groupName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}
 
 // func TestRole(t *testing.T) {
 // 	client := CreateManagementClient(t)
@@ -312,48 +383,6 @@ func TestAccessKey(t *testing.T) {
 // 	assert.Less(t, 0, len(roles))
 
 // 	err = client.DeleteRole(roleName, namespaceName)
-// 	assert.Nil(t, err)
-
-// 	err = client.DeleteAccount(namespaceName)
-// 	assert.Nil(t, err)
-// }
-
-// func TestPolicy(t *testing.T) {
-// 	client := CreateManagementClient(t)
-// 	defer client.Close()
-
-// 	accountName := "testpolicyaccount"
-// 	account := &objectscale.Account{
-// 		Alias:             accountName,
-// 		Description:       accountName,
-// 		EncryptionEnabled: false,
-// 	}
-// 	account, err := client.CreateAccount(account)
-// 	assert.Nil(t, err)
-
-// 	document := "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Action%22%3A%5B%22s3%3AListBucket%22%2C%22s3%3AListAllMyBuckets%22%5D%2C%22Resource%22%3A%22*%22%2C%22Effect%22%3A%22Allow%22%2C%22Sid%22%3A%22VisualEditor0%22%7D%5D%7D"
-// 	policyName := "testpolicy"
-// 	policyDescription := "testpolicy description"
-// 	policy := &objectscale.Policy{
-// 		PolicyName:     policyName,
-// 		Description:    policyDescription,
-// 		PolicyDocument: document,
-// 		Namespace:      namespaceName,
-// 	}
-// 	policy, err = client.CreatePolicy(policy)
-// 	assert.Nil(t, err)
-
-// 	policy, err = client.GetPolicy(policy.Arn, namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, policyName, policy.PolicyName)
-// 	assert.Equal(t, policyDescription, policy.Description)
-// 	assert.Equal(t, namespaceName, policy.Namespace)
-
-// 	policies, err := client.ListPolicies(namespaceName)
-// 	assert.Nil(t, err)
-// 	assert.Less(t, 0, len(policies))
-
-// 	err = client.DeletePolicy(policy.Arn, namespaceName)
 // 	assert.Nil(t, err)
 
 // 	err = client.DeleteAccount(namespaceName)
