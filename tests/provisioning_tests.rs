@@ -87,7 +87,7 @@ fn test_vdc_keystore() {
 }
 
 #[test]
-fn storage_pool() {
+fn test_storage_pool() {
     let mut management_client = common::create_management_client();
 
     let sp_id = "urn:storageos:VirtualArray:2a36f1a7-4281-453d-8927-788f8033416b";
