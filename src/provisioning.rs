@@ -130,11 +130,11 @@ pub struct Bucket {
     pub auto_commit_period: i64,
     /// Notification size in GB
     pub notification_size: i64,
-    /// Block size in count
+    /// Block size in count. Default: -1
     #[serde(rename = "blockSizeInCount")]
     #[builder(setter(skip = false), default = -1)]
     pub block_size_in_count: i64,
-    /// Notification size in count
+    /// Notification size in count. Default: -1
     #[serde(rename = "notificationSizeInCount")]
     #[builder(setter(skip = false), default = -1)]
     pub notification_size_in_count: i64,
@@ -160,7 +160,7 @@ pub struct Bucket {
     /// Flag indicating the directory execute permission for default group. This is only applicable to folders created within the Filesystem-Enabled bucket. It is not applicable to files/objects
     pub default_group_dir_execute_permission: bool,
     pub min_max_governor: MinMaxGovernor,
-    /// Bucket audit delete expiration in seconds
+    /// Bucket audit delete expiration in seconds. Default: -2
     #[builder(setter(skip = false), default = "-2")]
     pub audit_delete_expiration: i64,
     /// Enable advanced metadata search
@@ -187,10 +187,10 @@ pub struct Bucket {
     pub local_object_metadata_reads: bool,
     /// API type
     pub api_type: String,
-    /// Bucket owner. Updatable
+    /// Bucket owner. Default: "". Updatable
     #[builder(setter(skip = false), default)]
     pub owner: String,
-    /// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Updatable
+    /// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Default: []. Updatable
     #[builder(setter(skip = false), default)]
     #[serde(rename = "TagSet", deserialize_with = "deserialize_default_from_null")]
     pub tags: Vec<BucketTag>,

@@ -49,10 +49,10 @@ pub(crate) struct Bucket {
     auto_commit_period: i64,
     // Notification size in GB
     notification_size: i64,
-    // Block size in count
+    // Block size in count. Default: -1
     #[pyo3(set)]
     block_size_in_count: i64,
-    // Notification size in count
+    // Notification size in count. Default: -1
     #[pyo3(set)]
     notification_size_in_count: i64,
     // Bucket isEncryptionEnabled flag
@@ -76,7 +76,7 @@ pub(crate) struct Bucket {
     default_group_dir_execute_permission: bool,
     //
     min_max_governor: MinMaxGovernor,
-    // Bucket audit delete expiration in seconds
+    // Bucket audit delete expiration in seconds. Default: -2
     #[pyo3(set)]
     audit_delete_expiration: i64,
     // Enable advanced metadata search
@@ -96,10 +96,10 @@ pub(crate) struct Bucket {
     local_object_metadata_reads: bool,
     // API type
     api_type: String,
-    // Bucket owner. Updatable
+    // Bucket owner. Default: "". Updatable
     #[pyo3(set)]
     owner: String,
-    // Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Updatable
+    // Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Default: []. Updatable
     #[pyo3(set)]
     tags: Vec<BucketTag>,
 }

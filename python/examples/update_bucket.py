@@ -13,8 +13,8 @@ def main():
         client = objectscale_client.client.ManagementClient(endpoint, username, password, insecure)
         bucket = client.get_bucket(bucket_name, namespace)
         bucket.owner = "object_admin1"
-        bucket = client.update_bucket(bucket)
-        print("Update bucket:", bucket)
+        state = client.update_bucket(bucket)
+        print("Update bucket:", state)
     except Exception as e:
         print("Failed to update bucket:", e)
 

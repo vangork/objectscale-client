@@ -9,11 +9,14 @@ pip install maturin
 maturin build -b pyo3 -r
 ```
 
-The client library can be installed using pip.
+The client library can be installed via `pip` or `maturin`.
 ```shell
+# via pip
 pip install .
+
+# via maturin
+maturin develop
 ```
-Users can also choose to builds the crate and installs it as a python module directly using the commands specified at [README.md](https://github.com/vangork/objectscale-client?tab=readme-ov-file#python) .
 
 ## Example
 ```
@@ -24,7 +27,7 @@ python ./examples/list_namespaces.py
 
 To generate wheels using a docker approach
 ```
-docker run --rm -v $(pwd)/..:/io -w /io/python -e http_proxy=http://172.17.0.1:1090 -e https_proxy=http://172.17.0.1:1090 ghcr.io/pyo3/maturin build -b pyo3 --release --strip
+docker run --rm -v $(pwd)/..:/io -w /io/python ghcr.io/pyo3/maturin build -b pyo3 --release --strip
 ```
 
 To publish the artifacts.

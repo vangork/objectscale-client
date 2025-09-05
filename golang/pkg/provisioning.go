@@ -45,9 +45,9 @@ type Bucket struct {
 	AutoCommitPeriod int64 `json:"auto_commit_period" yaml:"auto_commit_period" tf:"auto_commit_period"`
 	// Notification size in GB
 	NotificationSize int64 `json:"notification_size" yaml:"notification_size" tf:"notification_size"`
-	// Block size in count
+	// Block size in count. Default: -1
 	BlockSizeInCount int64 `json:"blockSizeInCount" yaml:"blockSizeInCount" tf:"block_size_in_count"`
-	// Notification size in count
+	// Notification size in count. Default: -1
 	NotificationSizeInCount int64 `json:"notificationSizeInCount" yaml:"notificationSizeInCount" tf:"notification_size_in_count"`
 	// Bucket isEncryptionEnabled flag
 	IsEncryptionEnabled bool `json:"is_encryption_enabled" yaml:"is_encryption_enabled" tf:"is_encryption_enabled"`
@@ -69,7 +69,7 @@ type Bucket struct {
 	DefaultGroupDirExecutePermission bool `json:"default_group_dir_execute_permission" yaml:"default_group_dir_execute_permission" tf:"default_group_dir_execute_permission"`
 	//
 	MinMaxGovernor MinMaxGovernor `json:"min_max_governor" yaml:"min_max_governor" tf:"min_max_governor"`
-	// Bucket audit delete expiration in seconds
+	// Bucket audit delete expiration in seconds. Default: -2
 	AuditDeleteExpiration int64 `json:"audit_delete_expiration" yaml:"audit_delete_expiration" tf:"audit_delete_expiration"`
 	// Enable advanced metadata search
 	EnableAdvancedMetadataSearch bool `json:"enableAdvancedMetadataSearch" yaml:"enableAdvancedMetadataSearch" tf:"enable_advanced_metadata_search"`
@@ -87,9 +87,9 @@ type Bucket struct {
 	LocalObjectMetadataReads bool `json:"local_object_metadata_reads" yaml:"local_object_metadata_reads" tf:"local_object_metadata_reads"`
 	// API type
 	ApiType string `json:"api_type" yaml:"api_type" tf:"api_type"`
-	// Bucket owner. Updatable
+	// Bucket owner. Default: "". Updatable
 	Owner string `json:"owner" yaml:"owner" tf:"owner"`
-	// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Updatable
+	// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Default: []. Updatable
 	Tags []BucketTag `json:"TagSet" yaml:"TagSet" tf:"tags"`
 }
 
