@@ -887,7 +887,7 @@ impl ManagementClient {
     pub fn create_vdc(&mut self, vdc: Vdc) -> Result<Vdc> {
         self.auth()?;
         Vdc::create(self, &vdc)?;
-        Vdc::get(self, &vdc.name)
+        Vdc::get(self, &vdc.vdc_name)
     }
 
     /// Gets the details for a VDC the identify of which is specified by its name.

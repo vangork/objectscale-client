@@ -143,30 +143,30 @@ type SearchMetaData struct {
 
 // Storage pool is a logical construct that contains physical nodes.
 type StoragePool struct {
-	// Storage pool name. Updatable
+	// Storage pool name. Required. Updatable
 	Name string `json:"name" yaml:"name" tf:"name"`
 	// Storage pool id
 	Id string `json:"id" yaml:"id" tf:"id"`
-	// Description. Updatable
+	// Description. Default: "". Updatable
 	Description string `json:"description" yaml:"description" tf:"description"`
-	// Flag indicating that storage pool is protected
-	IsProtected bool `json:"isProtected" yaml:"isProtected" tf:"is_protected"`
-	// Flag indicating that cold storage encoding is enabled
-	IsColdStorageEnabled bool `json:"isColdStorageEnabled" yaml:"isColdStorageEnabled" tf:"is_cold_storage_enabled"`
+	// Flag indicating that storage pool is protected. Default: false
+	IsProtected bool `json:"is_protected" yaml:"is_protected" tf:"is_protected"`
+	// Flag indicating that cold storage encoding is enabled. Default: false
+	IsColdStorageEnabled bool `json:"is_cold_storage_enabled" yaml:"is_cold_storage_enabled" tf:"is_cold_storage_enabled"`
 	// Number of Data Blocks in EC Scheme
-	NumberOfDataBlocks int64 `json:"numberOfDataBlocks" yaml:"numberOfDataBlocks" tf:"number_of_data_blocks"`
+	NumberOfDataBlocks int64 `json:"number_of_data_blocks" yaml:"number_of_data_blocks" tf:"number_of_data_blocks"`
 	// Number of Code Blocks in EC Scheme
-	NumberOfCodeBlocks int64 `json:"numberOfCodeBlocks" yaml:"numberOfCodeBlocks" tf:"number_of_code_blocks"`
-	// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
-	WarningAlertAt int64 `json:"warningAlertAt" yaml:"warningAlertAt" tf:"warning_alert_at"`
-	// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
-	ErrorAlertAt int64 `json:"errorAlertAt" yaml:"errorAlertAt" tf:"error_alert_at"`
-	// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
-	CriticalAlertAt int64 `json:"criticalAlertAt" yaml:"criticalAlertAt" tf:"critical_alert_at"`
-	// Drive technology of VArray
+	NumberOfCodeBlocks int64 `json:"number_of_code_blocks" yaml:"number_of_code_blocks" tf:"number_of_code_blocks"`
+	// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 30. Updatable
+	WarningAlertAt int64 `json:"warning_alert_at" yaml:"warning_alert_at" tf:"warning_alert_at"`
+	// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 20. Updatable
+	ErrorAlertAt int64 `json:"error_alert_at" yaml:"error_alert_at" tf:"error_alert_at"`
+	// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 15. Updatable
+	CriticalAlertAt int64 `json:"critical_alert_at" yaml:"critical_alert_at" tf:"critical_alert_at"`
+	// Drive technology of VArray. Can be DRIVE_TECH_HDD. Required.
 	Label string `json:"label" yaml:"label" tf:"label"`
-	// Drive technology of VArray
-	DriveTechnology string `json:"driveTechnology" yaml:"driveTechnology" tf:"drive_technology"`
+	// Drive technology of VArray. Can be HDD or NVMe. Required.
+	DriveTechnology string `json:"drive_technology" yaml:"drive_technology" tf:"drive_technology"`
 	// flag for status, -1 for null, 0 ~ 6 for value
 	Status int64 `json:"status" yaml:"status" tf:"status"`
 }
@@ -191,15 +191,15 @@ type Vdc struct {
 	Internal bool `json:"internal" yaml:"internal" tf:"internal"`
 	// VDC id
 	VdcId string `json:"vdcId" yaml:"vdcId" tf:"vdc_id"`
-	// VDC name
+	// VDC name. Required. Updatable
 	VdcName string `json:"vdcName" yaml:"vdcName" tf:"vdc_name"`
-	// VDC end points
+	// VDC end points. Required. Updatable
 	InterVdcEndpoints string `json:"interVdcEndPoints" yaml:"interVdcEndPoints" tf:"inter_vdc_endpoints"`
-	// VDC cmd end points
+	// VDC cmd end points. Required. Updatable
 	InterVdcCmdEndpoints string `json:"interVdcCmdEndPoints" yaml:"interVdcCmdEndPoints" tf:"inter_vdc_cmd_endpoints"`
-	// The management end points for the VDC
+	// The management end points for the VDC. Required. Updatable
 	ManagementEndpoints string `json:"managementEndPoints" yaml:"managementEndPoints" tf:"management_endpoints"`
-	// Secret key for this VDC
+	// Secret key for this VDC. Required. Updatable
 	SecretKeys string `json:"secretKeys" yaml:"secretKeys" tf:"secret_keys"`
 	// True of vdc is permanently failed, false otherwise.
 	PermanentlyFailed bool `json:"permanentlyFailed" yaml:"permanentlyFailed" tf:"permanently_failed"`

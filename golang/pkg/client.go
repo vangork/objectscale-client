@@ -1335,6 +1335,30 @@ func (managementClient *ManagementClient) UpdateVdcKeystore(keystore *VdcKeystor
 
 }
 
+// Create a VDC with the specified details.
+//
+// vdc: VDC to be created
+func (managementClient *ManagementClient) CreateVdc(vdc *Vdc) (*Vdc, error) {
+	msg := C.RCString{}
+	vdcJson, err := json.Marshal(vdc)
+	if err != nil {
+		return nil, err
+	}
+	cVdc := intoRCString(string(vdcJson))
+
+	cVdcFn, errFn := C.management_client_create_vdc(managementClient.managementClient, cVdc, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	vdcYamlFn := fromRCString(cVdcFn)
+	var vdcFn Vdc
+	errUnmarshal := yaml.Unmarshal([]byte(vdcYamlFn), &vdcFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &vdcFn, nil
+}
+
 // Gets the details for a VDC the identify of which is specified by its name.
 //
 // name: VDC name for which VDC Information is to be retrieved
@@ -1353,6 +1377,25 @@ func (managementClient *ManagementClient) GetVdc(name string) (*Vdc, error) {
 		return nil, errUnmarshal
 	}
 	return &vdcFn, nil
+}
+
+// Update VDC info
+//
+// vdc: VDC to be updated
+func (managementClient *ManagementClient) UpdateVdc(vdc *Vdc) (bool, error) {
+	msg := C.RCString{}
+	vdcJson, err := json.Marshal(vdc)
+	if err != nil {
+		return false, err
+	}
+	cVdc := intoRCString(string(vdcJson))
+
+	state, errFn := C.management_client_update_vdc(managementClient.managementClient, cVdc, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
 }
 
 // Deactivates and deletes a VDC.
@@ -1385,6 +1428,30 @@ func (managementClient *ManagementClient) ListVdcs() ([]Vdc, error) {
 		return nil, errUnmarshal
 	}
 	return vdcsFn, nil
+}
+
+// Create a storage pool with the specified details.
+//
+// sp: Storage pool to be created
+func (managementClient *ManagementClient) CreateStoragePool(sp *StoragePool) (*StoragePool, error) {
+	msg := C.RCString{}
+	spJson, err := json.Marshal(sp)
+	if err != nil {
+		return nil, err
+	}
+	cSp := intoRCString(string(spJson))
+
+	cStoragePoolFn, errFn := C.management_client_create_storage_pool(managementClient.managementClient, cSp, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	storagePoolYamlFn := fromRCString(cStoragePoolFn)
+	var storagePoolFn StoragePool
+	errUnmarshal := yaml.Unmarshal([]byte(storagePoolYamlFn), &storagePoolFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &storagePoolFn, nil
 }
 
 // Gets the details for the specified storage pool.

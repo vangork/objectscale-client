@@ -2438,6 +2438,42 @@ pub unsafe extern "C" fn management_client_update_vdc_keystore(
     }
 }
 
+/// Create a VDC with the specified details.
+///
+/// vdc: VDC to be created
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_create_vdc(
+    management_client: *mut ManagementClient,
+    vdc: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let vdc = vdc.to_string();
+        let vdc: objectscale_client::provisioning::Vdc =
+            serde_json::from_str(&vdc).expect("deserialize vdc");
+
+        management_client.management_client.create_vdc(vdc)
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|vdc| serde_yaml::to_string(&vdc).map_err(|e| anyhow!(e)));
+            clear_error();
+            match result {
+                Ok(vdc) => RCString::from_str(vdc.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during create vdc", err);
+            RCString::null()
+        }
+    }
+}
+
 /// Gets the details for a VDC the identify of which is specified by its name.
 ///
 /// name: VDC name for which VDC Information is to be retrieved
@@ -2468,6 +2504,41 @@ pub unsafe extern "C" fn management_client_get_vdc(
         Err(_) => {
             set_error("caught panic during get vdc", err);
             RCString::null()
+        }
+    }
+}
+
+/// Update VDC info
+///
+/// vdc: VDC to be updated
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_update_vdc(
+    management_client: *mut ManagementClient,
+    vdc: RCString,
+    err: Option<&mut RCString>,
+) -> bool {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let vdc = vdc.to_string();
+        let vdc: objectscale_client::provisioning::Vdc =
+            serde_json::from_str(&vdc).expect("deserialize vdc");
+
+        management_client.management_client.update_vdc(vdc)
+    })) {
+        Ok(result) => {
+            clear_error();
+            match result {
+                Ok(state) => return state,
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    false
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during update vdc", err);
+            false
         }
     }
 }
@@ -2528,6 +2599,44 @@ pub unsafe extern "C" fn management_client_list_vdcs(
         }
         Err(_) => {
             set_error("caught panic during list vdcs", err);
+            RCString::null()
+        }
+    }
+}
+
+/// Create a storage pool with the specified details.
+///
+/// sp: Storage pool to be created
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_create_storage_pool(
+    management_client: *mut ManagementClient,
+    sp: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let sp = sp.to_string();
+        let sp: objectscale_client::provisioning::StoragePool =
+            serde_json::from_str(&sp).expect("deserialize sp");
+
+        management_client.management_client.create_storage_pool(sp)
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|storage_pool| {
+                serde_yaml::to_string(&storage_pool).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(storage_pool) => RCString::from_str(storage_pool.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during create storage pool", err);
             RCString::null()
         }
     }

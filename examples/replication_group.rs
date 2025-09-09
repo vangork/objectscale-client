@@ -2,20 +2,20 @@ use objectscale_client::client::ManagementClient;
 use objectscale_client::replication::{ReplicationGroupBuilder, VarrayMapping};
 
 fn main() {
-    //let endpoint = "https://10.225.108.217:4443";
-    //let password = "Password123!";
+    let endpoint = "https://10.225.108.151:4443";
+    let password = "Password123!";
     //let endpoint = "https://10.236.125.200:4443";
-    let endpoint = "https://10.245.131.122:4443";
-    let password = "ChangeMe";
+    // let endpoint = "https://10.245.131.122:4443";
+    // let password = "ChangeMe";
     let username = "root";
     let insecure = true;
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
 
-    let rg_name = "test";
-    let vdc_name = "vdc1";
-    let sp_name = "sp1";
+    let rg_name = "rg1";
+    let vdc_name = "vdc2";
+    let sp_name = "sp2";
 
     let vdc = client.get_vdc(vdc_name).expect("get vdc");
     let sps = client.list_storage_pools().expect("list storage pools");
@@ -25,7 +25,7 @@ fn main() {
         .expect("get storage pool");
 
     let rg = ReplicationGroupBuilder::default()
-        .description("test rg")
+        .description(rg_name)
         .name(rg_name)
         .varray_mappings(vec![VarrayMapping {
             name: vdc.id.clone(),

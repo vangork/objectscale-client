@@ -2,14 +2,14 @@ use objectscale_client::client::ManagementClient;
 // use objectscale_client::provisioning::VdcBuilder;
 
 fn main() {
-    let endpoint = "https://10.225.108.217:4443";
+    let endpoint = "https://10.225.108.151:4443";
     let password = "Password123!";
     // let endpoint = "https://10.245.131.122:4443";
     // let password = "ChangeMe";
     let username = "root";
     let insecure = true;
 
-    // let name = "vdc1";
+    // let name = "vdc2";
 
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");

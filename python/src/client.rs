@@ -973,6 +973,19 @@ impl ManagementClient {
         }
     }
 
+    /// Create a VDC with the specified details.
+    ///
+    /// vdc: VDC to be created
+    ///
+    pub fn create_vdc(&mut self, vdc: &Vdc) -> PyResult<Vdc> {
+        let vdc = provisioning::Vdc::from(vdc.clone());
+        let result = self.management_client.create_vdc(vdc);
+        match result {
+            Ok(vdc) => Ok(Vdc::from(vdc)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
     /// Gets the details for a VDC the identify of which is specified by its name.
     ///
     /// name: VDC name for which VDC Information is to be retrieved
@@ -981,6 +994,19 @@ impl ManagementClient {
         let result = self.management_client.get_vdc(name);
         match result {
             Ok(vdc) => Ok(Vdc::from(vdc)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Update VDC info
+    ///
+    /// vdc: VDC to be updated
+    ///
+    pub fn update_vdc(&mut self, vdc: &Vdc) -> PyResult<bool> {
+        let vdc = provisioning::Vdc::from(vdc.clone());
+        let result = self.management_client.update_vdc(vdc);
+        match result {
+            Ok(state) => Ok(state),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
@@ -1003,6 +1029,19 @@ impl ManagementClient {
         let result = self.management_client.list_vdcs();
         match result {
             Ok(vdcs) => Ok(vdcs.into_iter().map(Vdc::from).collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Create a storage pool with the specified details.
+    ///
+    /// sp: Storage pool to be created
+    ///
+    pub fn create_storage_pool(&mut self, sp: &StoragePool) -> PyResult<StoragePool> {
+        let sp = provisioning::StoragePool::from(sp.clone());
+        let result = self.management_client.create_storage_pool(sp);
+        match result {
+            Ok(storage_pool) => Ok(StoragePool::from(storage_pool)),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }
     }
