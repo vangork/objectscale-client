@@ -880,6 +880,16 @@ impl ManagementClient {
         }
     }
 
+    /// Create a VDC with the specified details.
+    ///
+    /// vdc: VDC to be created
+    ///
+    pub fn create_vdc(&mut self, vdc: Vdc) -> Result<Vdc> {
+        self.auth()?;
+        Vdc::create(self, &vdc)?;
+        Vdc::get(self, &vdc.name)
+    }
+
     /// Gets the details for a VDC the identify of which is specified by its name.
     ///
     /// name: VDC name for which VDC Information is to be retrieved
@@ -887,6 +897,15 @@ impl ManagementClient {
     pub fn get_vdc(&mut self, name: &str) -> Result<Vdc> {
         self.auth()?;
         Vdc::get(self, name)
+    }
+
+    /// Update VDC info
+    ///
+    /// vdc: VDC to be updated
+    ///
+    pub fn update_vdc(&mut self, vdc: Vdc) -> Result<bool> {
+        self.auth()?;
+        Vdc::update(self, &vdc)
     }
 
     /// Deactivates and deletes a VDC.
@@ -903,6 +922,15 @@ impl ManagementClient {
     pub fn list_vdcs(&mut self) -> Result<Vec<Vdc>> {
         self.auth()?;
         Vdc::list(self)
+    }
+
+    /// Create a storage pool with the specified details.
+    ///
+    /// sp: Storage pool to be created
+    ///
+    pub fn create_storage_pool(&mut self, sp: StoragePool) -> Result<StoragePool> {
+        self.auth()?;
+        StoragePool::create(self, &sp)
     }
 
     /// Gets the details for the specified storage pool.

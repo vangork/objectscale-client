@@ -449,6 +449,7 @@ impl Bucket {
 /// A VDC identifies the nodes that are participating in an ObjectScale instance.
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(skip))]
 pub struct Vdc {
     /// Indicates whether the resource is global.
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -478,18 +479,23 @@ pub struct Vdc {
     pub internal: bool,
     /// VDC id
     pub vdc_id: String,
-    /// VDC name
+    /// VDC name. Required. Updatable
+    #[builder(setter(into, skip = false))]
     pub vdc_name: String,
-    /// VDC end points
+    /// VDC end points. Required. Updatable
+    #[builder(setter(into, skip = false))]
     #[serde(rename = "interVdcEndPoints")]
     pub inter_vdc_endpoints: String,
-    /// VDC cmd end points
+    /// VDC cmd end points. Required. Updatable
+    #[builder(setter(into, skip = false))]
     #[serde(rename = "interVdcCmdEndPoints")]
     pub inter_vdc_cmd_endpoints: String,
-    /// The management end points for the VDC
+    /// The management end points for the VDC. Required. Updatable
+    #[builder(setter(into, skip = false))]
     #[serde(rename = "managementEndPoints")]
     pub management_endpoints: String,
-    /// Secret key for this VDC
+    /// Secret key for this VDC. Required. Updatable
+    #[builder(setter(into, skip = false))]
     pub secret_keys: String,
     /// True of vdc is permanently failed, false otherwise.
     pub permanently_failed: bool,
@@ -508,7 +514,29 @@ struct VdcList {
 }
 
 impl Vdc {
-    // TODO: create & update vdc
+    pub(crate) fn create(client: &mut ManagementClient, vdc: &Self) -> Result<()> {
+        let request_url = format!("{}object/vdcs/vdc/{}", client.endpoint, vdc.vdc_name);
+        let body = format!(
+            r#"{{"vdcName":"{}","interVdcEndPoints":"{}","interVdcCmdEndPoints":"{}", "managementEndPoints":"{}", "secretKeys":"{}"}}"#,
+            vdc.vdc_name,
+            vdc.inter_vdc_endpoints,
+            vdc.inter_vdc_cmd_endpoints,
+            vdc.management_endpoints,
+            vdc.secret_keys
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Create vdc failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
 
     pub(crate) fn get(client: &mut ManagementClient, name: &str) -> Result<Self> {
         let request_url = format!("{}object/vdcs/vdc/{}", client.endpoint, name);
@@ -519,9 +547,71 @@ impl Vdc {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to get vdc")?;
-        let resp: Self = serde_json::from_str(&text)
-            .with_context(|| format!("Unable to deserialise Vdc. Body was: \"{}\"", text))?;
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise Vdc from get response. Body was: \"{}\"",
+                text
+            )
+        })?;
         Ok(resp)
+    }
+
+    pub(crate) fn get_by_id(client: &mut ManagementClient, id: &str) -> Result<Self> {
+        let request_url = format!("{}object/vdcs/vdcid/{}", client.endpoint, id);
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get vdc")?;
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise Vdc from get by id response. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(resp)
+    }
+
+    pub(crate) fn update_vdc(client: &mut ManagementClient, vdc: &Self) -> Result<()> {
+        let request_url = format!("{}object/vdcs/multivdc", client.endpoint);
+        let body = format!(
+            r#"{{"vdcs": [{{"vdcId":"{}","vdcName":"{}","interVdcEndPoints":"{}","interVdcCmdEndPoints":"{}", "managementEndPoints":"{}", "secretKeys":"{}"}}]}}"#,
+            vdc.id,
+            vdc.name,
+            vdc.inter_vdc_endpoints,
+            vdc.inter_vdc_cmd_endpoints,
+            vdc.management_endpoints,
+            vdc.secret_keys
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Update vdc failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, vdc: &Self) -> Result<bool> {
+        let current_vdc = Self::get_by_id(client, &vdc.id)?;
+        let mut state = false;
+        if vdc.name != current_vdc.name
+            || vdc.inter_vdc_endpoints != current_vdc.inter_vdc_endpoints
+            || vdc.inter_vdc_cmd_endpoints != current_vdc.inter_vdc_cmd_endpoints
+            || vdc.management_endpoints != current_vdc.management_endpoints
+            || vdc.secret_keys != current_vdc.secret_keys
+        {
+            Self::update_vdc(client, vdc)?;
+            state = true;
+        }
+        Ok(state)
     }
 
     // A deleted VDC cannot be added back
@@ -601,31 +691,43 @@ impl VdcKeystore {
 
 /// Storage pool is a logical construct that contains physical nodes.
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[builder(setter(skip))]
 #[serde(rename_all = "camelCase")]
+#[serde(rename(serialize = "virtual_array_create"))]
 pub struct StoragePool {
-    /// Storage pool name. Updatable
+    /// Storage pool name. Required. Updatable
+    #[builder(setter(into, skip = false))]
     pub name: String,
     /// Storage pool id
     pub id: String,
-    /// Description. Updatable
+    /// Description. Default: "". Updatable
+    #[builder(setter(into, skip = false), default)]
     pub description: String,
-    /// Flag indicating that storage pool is protected
+    /// Flag indicating that storage pool is protected. Default: false
+    #[builder(setter(skip = false), default = false)]
     pub is_protected: bool,
-    /// Flag indicating that cold storage encoding is enabled
+    /// Flag indicating that cold storage encoding is enabled. Default: false
+    #[builder(setter(skip = false), default = false)]
     pub is_cold_storage_enabled: bool,
     /// Number of Data Blocks in EC Scheme
     pub number_of_data_blocks: i64,
     /// Number of Code Blocks in EC Scheme
     pub number_of_code_blocks: i64,
-    /// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
+    /// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 30. Updatable
+    #[builder(setter(skip = false), default = 30)]
     pub warning_alert_at: i64,
-    /// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
+    /// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 20. Updatable
+    #[builder(setter(skip = false), default = 20)]
     pub error_alert_at: i64,
-    /// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Updatable
+    /// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 15. Updatable
+    #[builder(setter(skip = false), default = 15)]
     pub critical_alert_at: i64,
-    /// Drive technology of VArray
+    /// Drive technology of VArray. Can be DRIVE_TECH_HDD. Required.
+    // TODO: confirm the enum value for nvme
+    #[builder(setter(into, skip = false))]
     pub label: String,
-    /// Drive technology of VArray
+    /// Drive technology of VArray. Can be HDD or NVMe. Required.
+    #[builder(setter(into, skip = false))]
     pub drive_technology: String,
     /// flag for status, -1 for null, 0 ~ 6 for value
     pub status: i64,
@@ -663,7 +765,27 @@ struct StoragePoolList {
 }
 
 impl StoragePool {
-    // TODO: create storage pool
+    pub(crate) fn create(client: &mut ManagementClient, storage_pool: &Self) -> Result<Self> {
+        let request_url = format!("{}vdc/data-services/varrays", client.endpoint);
+        let body = quick_xml::se::to_string(&storage_pool)?;
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/xml")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to create storage pool")?;
+        println!("Create storage pool: {}", text);
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise StoragePool from create response. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(resp)
+    }
 
     pub(crate) fn get(client: &mut ManagementClient, id: &str) -> Result<Self> {
         let request_url = format!("{}vdc/data-services/varrays/{}", client.endpoint, id);
@@ -675,7 +797,10 @@ impl StoragePool {
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to get storage pool")?;
         let resp: Self = serde_json::from_str(&text).with_context(|| {
-            format!("Unable to deserialise StoragePool. Body was: \"{}\"", text)
+            format!(
+                "Unable to deserialise StoragePool from get response. Body was: \"{}\"",
+                text
+            )
         })?;
         Ok(resp)
     }
@@ -689,7 +814,7 @@ impl StoragePool {
             client.endpoint, storage_pool.id
         );
         let update_storage_pool = UpdateStoragePool::from(storage_pool.to_owned());
-        let body = serde_json::to_string(&update_storage_pool).unwrap();
+        let body = serde_json::to_string(&update_storage_pool)?;
         let resp = client
             .http_client
             .put(request_url)

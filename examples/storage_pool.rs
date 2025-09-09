@@ -14,16 +14,16 @@ fn main() {
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
 
-    let mut sp = client.get_storage_pool(id).expect("get storage pool");
+    let sp = client.get_storage_pool(id).expect("get storage pool");
     println!("Get storage pool: {:?}", sp);
 
-    sp.name = "sp2".to_string();
-    sp.description = "sp2 description".to_string();
-    sp.warning_alert_at = 35;
-    sp.error_alert_at = 20;
-    sp.critical_alert_at = 15;
-    let state = client.update_storage_pool(sp).expect("update storage pool");
-    println!("Updated storage pool: {:?}", state);
+    // sp.name = "sp2".to_string();
+    // sp.description = "sp2 description".to_string();
+    // sp.warning_alert_at = 35;
+    // sp.error_alert_at = 20;
+    // sp.critical_alert_at = 15;
+    // let state = client.update_storage_pool(sp).expect("update storage pool");
+    // println!("Updated storage pool: {:?}", state);
 
     let sps = client.list_storage_pools().expect("list storage pools");
     println!("List storage pools: {:?}", sps);
