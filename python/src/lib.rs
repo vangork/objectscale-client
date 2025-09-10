@@ -17,7 +17,7 @@ use provisioning::{
 };
 use replication::{ReplicationGroup, VarrayMapping};
 use tenancy::{Attribute, Namespace, RetentionClass, RetentionClasses, TenancyLink, UserMapping};
-use user::{ManagementUser, ObjectUser, UserTag};
+use user::{ManagementUser, ObjectUser, SecretKey, SwiftGroup, UserTag};
 
 use pyo3::prelude::*;
 
@@ -72,6 +72,8 @@ fn objectscale_client(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     let module = PyModule::new(py, "user")?;
     module.add_class::<ManagementUser>()?;
     module.add_class::<ObjectUser>()?;
+    module.add_class::<SecretKey>()?;
+    module.add_class::<SwiftGroup>()?;
     module.add_class::<UserTag>()?;
     m.add_submodule(&module)?;
 

@@ -13,7 +13,7 @@ use crate::replication::{ReplicationGroup, VarrayMapping};
 use crate::tenancy::{
     Attribute, Namespace, RetentionClass, RetentionClasses, TenancyLink, UserMapping,
 };
-use crate::user::{ManagementUser, ObjectUser, UserTag};
+use crate::user::{ManagementUser, ObjectUser, SecretKey, SwiftGroup, UserTag};
 use objectscale_client::{client, iam, provisioning, replication, tenancy, user};
 use pyo3::prelude::*;
 use pyo3::{exceptions, PyResult};

@@ -203,6 +203,34 @@ pub struct UserTag {
     pub value: String,
 }
 
+/// Managing Swift passwords and assigning Swift users to groups.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct SwiftGroup {
+    /// Password for the user. Empty for no password and group. Default: "". Updatable
+    #[serde(default)]
+    pub password: String,
+    /// List of ADMIN groups for the user. Empty for no password and group. Default: []. Updatable
+    pub groups_list: Vec<String>,
+    /// Swift password configured.
+    pub swift_password_configured: bool,
+}
+
+/// User can access the object store with a secret key.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct SecretKey {
+    /// Secret key associated with this user.
+    pub secret_key: String,
+    /// Expiry time in minutes for the secret key. Empty for no expiry. Default: "".
+    #[serde(default)]
+    pub existing_key_expiry_time_mins: String,
+    /// Secret key creation timestamp in ISO-8601 format
+    pub key_timestamp: String,
+    /// Secret key expiry timestamp in ISO-8601 format
+    pub key_expiry_timestamp: String,
+    /// SHA-256 hash of Secret key
+    pub secret_key_id: String,
+}
+
 /// Object users can be assigned to management and object user roles for the namespace.
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[builder(setter(skip))]
@@ -229,6 +257,14 @@ pub struct ObjectUser {
     /// Gets the user's swiftpassword.
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub swiftpassword: String,
+    /// Managing Swift passwords and assigning Swift users to groups. Default: see SwiftGroup. Updatable
+    #[builder(setter(skip = false), default)]
+    #[serde(default)]
+    pub swift_group: SwiftGroup,
+    /// User can access the object store with a secret key. At most two secret keys can be created. Default: []. Updatable
+    #[builder(setter(skip = false), default)]
+    #[serde(default)]
+    pub secret_keys: Vec<SecretKey>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -282,8 +318,13 @@ impl ObjectUser {
             .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
             .send()?;
         let text = get_content_text(resp).with_context(|| "Failed to get object user")?;
-        let resp: Self = serde_json::from_str(&text)
+        let mut resp: Self = serde_json::from_str(&text)
             .with_context(|| format!("Unable to deserialise ObjectUser. Body was: \"{}\"", text))?;
+
+        let secret_keys = SecretKey::get(client, name, namespace)?;
+        resp.secret_keys = secret_keys;
+        let swift_group = SwiftGroup::get(client, name, namespace)?;
+        resp.swift_group = swift_group;
         Ok(resp)
     }
 
@@ -383,6 +424,37 @@ impl ObjectUser {
             }
         }
 
+        if user.secret_keys != current_user.secret_keys {
+            updated = true;
+            for current_key in current_user.secret_keys.iter() {
+                // TODO: verify the logic
+                if !user.secret_keys.contains(current_key) {
+                    SecretKey::delete(client, &user.name, &user.namespace, current_key)?;
+                }
+            }
+
+            for key in user.secret_keys.iter() {
+                // TODO: verify the logic
+                if !current_user.secret_keys.contains(key) {
+                    SecretKey::create(client, &user.name, &user.namespace, key)?;
+                }
+            }
+        }
+
+        if !current_user.swift_group.swift_password_configured {
+            if !user.swift_group.password.is_empty() && !user.swift_group.groups_list.is_empty() {
+                updated = true;
+                SwiftGroup::create(client, &user.name, &user.namespace, &user.swift_group)?;
+            }
+        } else if user.swift_group.password.is_empty() || user.swift_group.groups_list.is_empty() {
+            updated = true;
+            SwiftGroup::delete(client, &user.name, &user.namespace)?;
+        } else {
+            // TODO: to verify if password changes
+            updated = true;
+            SwiftGroup::update(client, &user.name, &user.namespace, &user.swift_group)?;
+        }
+
         Ok(updated)
     }
 
@@ -449,5 +521,239 @@ impl ObjectUser {
             }
         }
         Ok(users)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct SecretKeyReponse {
+    pub secret_key_1: String,
+    pub secret_key_1_exist: bool,
+    pub key_timestamp_1: String,
+    pub key_expiry_timestamp_1: String,
+    pub secret_key_2: String,
+    pub secret_key_2_exist: bool,
+    pub key_timestamp_2: String,
+    pub key_expiry_timestamp_2: String,
+    pub secret_key_1_id: Option<String>,
+    pub secret_key_2_id: Option<String>,
+}
+
+impl SecretKey {
+    pub(crate) fn create(
+        client: &mut ManagementClient,
+        user: &str,
+        namespace: &str,
+        secret_key: &Self,
+    ) -> Result<Self> {
+        let request_url = format!("{}object/user-secret-keys/{}", client.endpoint, user);
+        let expiry = if secret_key.existing_key_expiry_time_mins.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                r#","existing_key_expiry_time_mins":"{}""#,
+                secret_key.existing_key_expiry_time_mins
+            )
+        };
+        let body = format!(r#"{{"namespace":"{}"{}}}"#, namespace, expiry);
+        let resp = client
+            .http_client
+            .post(&request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to create secret key")?;
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise SecretKey from get response. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(resp)
+    }
+
+    pub(crate) fn get(
+        client: &mut ManagementClient,
+        user: &str,
+        namespace: &str,
+    ) -> Result<Vec<Self>> {
+        let request_url = format!(
+            "{}object/user-secret-keys/{}/{}",
+            client.endpoint, user, namespace
+        );
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get secret key")?;
+        let resp: SecretKeyReponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise SecretKeyReponse from get response. Body was: \"{}\"",
+                text
+            )
+        })?;
+        let mut secret_keys = Vec::new();
+        if let Some(id) = resp.secret_key_1_id {
+            let secret_key = SecretKey {
+                secret_key: resp.secret_key_1,
+                key_timestamp: resp.key_timestamp_1,
+                key_expiry_timestamp: resp.key_expiry_timestamp_1,
+                existing_key_expiry_time_mins: "".to_string(),
+                secret_key_id: id,
+            };
+            secret_keys.push(secret_key);
+        }
+        if let Some(id) = resp.secret_key_2_id {
+            let secret_key = SecretKey {
+                secret_key: resp.secret_key_2,
+                key_timestamp: resp.key_timestamp_2,
+                key_expiry_timestamp: resp.key_expiry_timestamp_2,
+                existing_key_expiry_time_mins: "".to_string(),
+                secret_key_id: id,
+            };
+            secret_keys.push(secret_key);
+        }
+        Ok(secret_keys)
+    }
+
+    pub(crate) fn delete(
+        client: &mut ManagementClient,
+        user: &str,
+        namespace: &str,
+        secret_key: &Self,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/user-secret-keys/{}/deactivate",
+            client.endpoint, user
+        );
+        let body = format!(
+            r#"{{"namespace":"{}","secret_key":"{}","secret_key_id":"{}"}}"#,
+            namespace, secret_key.secret_key, secret_key.secret_key_id
+        );
+        let resp = client
+            .http_client
+            .post(&request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Delete secret key failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct SwiftGroupRequest {
+    pub password: String,
+    pub groups_list: Vec<String>,
+    pub namespace: String,
+}
+
+impl SwiftGroup {
+    pub(crate) fn create(
+        client: &mut ManagementClient,
+        user: &str,
+        namespace: &str,
+        swift_group: &Self,
+    ) -> Result<()> {
+        let request_url = format!("{}object/user-password/{}", client.endpoint, user);
+        let body = serde_json::to_string(&SwiftGroupRequest {
+            password: swift_group.password.clone(),
+            groups_list: swift_group.groups_list.clone(),
+            namespace: namespace.to_string(),
+        })?;
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Create swift group failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn get(client: &mut ManagementClient, user: &str, namespace: &str) -> Result<Self> {
+        let request_url = format!(
+            "{}object/user-password/{}/{}",
+            client.endpoint, user, namespace
+        );
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let status = resp.status();
+        let text = resp.text()?;
+        if status.is_client_error() || status.is_server_error() {
+            if text.contains("Unable to find entity specified in URL with the given id") {
+                return Ok(Self::default());
+            } else {
+                bail!("Failed to get swift group: {}", text);
+            }
+        };
+        let resp: Self = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise SwiftGroup from get response. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(resp)
+    }
+
+    pub(crate) fn update(
+        client: &mut ManagementClient,
+        user: &str,
+        namespace: &str,
+        swift_group: &Self,
+    ) -> Result<()> {
+        let request_url = format!("{}object/user-password/{}", client.endpoint, user);
+        let body = serde_json::to_string(&SwiftGroupRequest {
+            password: swift_group.password.clone(),
+            groups_list: swift_group.groups_list.clone(),
+            namespace: namespace.to_string(),
+        })?;
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Create swift group failed: {}", resp.text()?);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn delete(client: &mut ManagementClient, user: &str, namespace: &str) -> Result<()> {
+        let request_url = format!(
+            "{}object/user-password/{}/deactivate",
+            client.endpoint, user
+        );
+        let body = format!(r#"{{"namespace":"{}"}}"#, namespace);
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        if !resp.status().is_success() {
+            bail!("Remove swift group failed: {}", resp.text()?);
+        }
+        Ok(())
     }
 }

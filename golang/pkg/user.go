@@ -39,6 +39,34 @@ type ObjectUser struct {
 	Centerapassword string `json:"centerapassword" yaml:"centerapassword" tf:"centerapassword"`
 	// Gets the user's swiftpassword.
 	Swiftpassword string `json:"swiftpassword" yaml:"swiftpassword" tf:"swiftpassword"`
+	// Managing Swift passwords and assigning Swift users to groups. Default: see SwiftGroup. Updatable
+	SwiftGroup SwiftGroup `json:"swift_group" yaml:"swift_group" tf:"swift_group"`
+	// User can access the object store with a secret key. At most two secret keys can be created. Default: []. Updatable
+	SecretKeys []SecretKey `json:"secret_keys" yaml:"secret_keys" tf:"secret_keys"`
+}
+
+// User can access the object store with a secret key.
+type SecretKey struct {
+	// Secret key associated with this user.
+	SecretKey string `json:"secret_key" yaml:"secret_key" tf:"secret_key"`
+	// Expiry time in minutes for the secret key. Empty for no expiry. Default: "".
+	ExistingKeyExpiryTimeMins string `json:"existing_key_expiry_time_mins" yaml:"existing_key_expiry_time_mins" tf:"existing_key_expiry_time_mins"`
+	// Secret key creation timestamp in ISO-8601 format
+	KeyTimestamp string `json:"key_timestamp" yaml:"key_timestamp" tf:"key_timestamp"`
+	// Secret key expiry timestamp in ISO-8601 format
+	KeyExpiryTimestamp string `json:"key_expiry_timestamp" yaml:"key_expiry_timestamp" tf:"key_expiry_timestamp"`
+	// SHA-256 hash of Secret key
+	SecretKeyId string `json:"secret_key_id" yaml:"secret_key_id" tf:"secret_key_id"`
+}
+
+// Managing Swift passwords and assigning Swift users to groups.
+type SwiftGroup struct {
+	// Password for the user. Empty for no password and group. Default: "". Updatable
+	Password string `json:"password" yaml:"password" tf:"password"`
+	// List of ADMIN groups for the user. Empty for no password and group. Default: []. Updatable
+	GroupsList []string `json:"groups_list" yaml:"groups_list" tf:"groups_list"`
+	// Swift password configured.
+	SwiftPasswordConfigured bool `json:"swift_password_configured" yaml:"swift_password_configured" tf:"swift_password_configured"`
 }
 
 // Lables for Object User.

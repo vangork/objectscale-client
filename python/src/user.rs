@@ -94,6 +94,12 @@ pub(crate) struct ObjectUser {
     centerapassword: String,
     // Gets the user's swiftpassword.
     swiftpassword: String,
+    // Managing Swift passwords and assigning Swift users to groups. Default: see SwiftGroup. Updatable
+    #[pyo3(set)]
+    swift_group: SwiftGroup,
+    // User can access the object store with a secret key. At most two secret keys can be created. Default: []. Updatable
+    #[pyo3(set)]
+    secret_keys: Vec<SecretKey>,
 }
 
 impl From<user::ObjectUser> for ObjectUser {
@@ -106,6 +112,12 @@ impl From<user::ObjectUser> for ObjectUser {
             tag: object_user.tag.into_iter().map(UserTag::from).collect(),
             centerapassword: object_user.centerapassword,
             swiftpassword: object_user.swiftpassword,
+            swift_group: SwiftGroup::from(object_user.swift_group),
+            secret_keys: object_user
+                .secret_keys
+                .into_iter()
+                .map(SecretKey::from)
+                .collect(),
         }
     }
 }
@@ -124,12 +136,122 @@ impl From<ObjectUser> for user::ObjectUser {
                 .collect(),
             centerapassword: object_user.centerapassword,
             swiftpassword: object_user.swiftpassword,
+            swift_group: user::SwiftGroup::from(object_user.swift_group),
+            secret_keys: object_user
+                .secret_keys
+                .into_iter()
+                .map(user::SecretKey::from)
+                .collect(),
         }
     }
 }
 
 #[pymethods]
 impl ObjectUser {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", serde_json::to_string(self).unwrap())
+    }
+}
+
+// User can access the object store with a secret key.
+#[derive(Clone, Debug, Default, Serialize)]
+#[pyclass(get_all)]
+pub(crate) struct SecretKey {
+    // Secret key associated with this user.
+    #[pyo3(set)]
+    secret_key: String,
+    // Expiry time in minutes for the secret key. Empty for no expiry. Default: "".
+    #[pyo3(set)]
+    existing_key_expiry_time_mins: String,
+    // Secret key creation timestamp in ISO-8601 format
+    #[pyo3(set)]
+    key_timestamp: String,
+    // Secret key expiry timestamp in ISO-8601 format
+    #[pyo3(set)]
+    key_expiry_timestamp: String,
+    // SHA-256 hash of Secret key
+    #[pyo3(set)]
+    secret_key_id: String,
+}
+
+impl From<user::SecretKey> for SecretKey {
+    fn from(secret_key: user::SecretKey) -> Self {
+        Self {
+            secret_key: secret_key.secret_key,
+            existing_key_expiry_time_mins: secret_key.existing_key_expiry_time_mins,
+            key_timestamp: secret_key.key_timestamp,
+            key_expiry_timestamp: secret_key.key_expiry_timestamp,
+            secret_key_id: secret_key.secret_key_id,
+        }
+    }
+}
+
+impl From<SecretKey> for user::SecretKey {
+    fn from(secret_key: SecretKey) -> Self {
+        Self {
+            secret_key: secret_key.secret_key,
+            existing_key_expiry_time_mins: secret_key.existing_key_expiry_time_mins,
+            key_timestamp: secret_key.key_timestamp,
+            key_expiry_timestamp: secret_key.key_expiry_timestamp,
+            secret_key_id: secret_key.secret_key_id,
+        }
+    }
+}
+
+#[pymethods]
+impl SecretKey {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", serde_json::to_string(self).unwrap())
+    }
+}
+
+// Managing Swift passwords and assigning Swift users to groups.
+#[derive(Clone, Debug, Default, Serialize)]
+#[pyclass(get_all)]
+pub(crate) struct SwiftGroup {
+    // Password for the user. Empty for no password and group. Default: "". Updatable
+    #[pyo3(set)]
+    password: String,
+    // List of ADMIN groups for the user. Empty for no password and group. Default: []. Updatable
+    #[pyo3(set)]
+    groups_list: Vec<String>,
+    // Swift password configured.
+    #[pyo3(set)]
+    swift_password_configured: bool,
+}
+
+impl From<user::SwiftGroup> for SwiftGroup {
+    fn from(swift_group: user::SwiftGroup) -> Self {
+        Self {
+            password: swift_group.password,
+            groups_list: swift_group.groups_list,
+            swift_password_configured: swift_group.swift_password_configured,
+        }
+    }
+}
+
+impl From<SwiftGroup> for user::SwiftGroup {
+    fn from(swift_group: SwiftGroup) -> Self {
+        Self {
+            password: swift_group.password,
+            groups_list: swift_group.groups_list,
+            swift_password_configured: swift_group.swift_password_configured,
+        }
+    }
+}
+
+#[pymethods]
+impl SwiftGroup {
     #[new]
     fn new() -> Self {
         Self::default()

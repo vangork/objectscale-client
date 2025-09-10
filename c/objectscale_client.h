@@ -713,6 +713,16 @@ bool management_client_update_vdc_keystore(struct ManagementClient *management_c
                                            struct RCString *err);
 
 /**
+ * Create a VDC with the specified details.
+ *
+ * vdc: VDC to be created
+ *
+ */
+struct RCString management_client_create_vdc(struct ManagementClient *management_client,
+                                             struct RCString vdc,
+                                             struct RCString *err);
+
+/**
  * Gets the details for a VDC the identify of which is specified by its name.
  *
  * name: VDC name for which VDC Information is to be retrieved
@@ -721,6 +731,16 @@ bool management_client_update_vdc_keystore(struct ManagementClient *management_c
 struct RCString management_client_get_vdc(struct ManagementClient *management_client,
                                           struct RCString name,
                                           struct RCString *err);
+
+/**
+ * Update VDC info
+ *
+ * vdc: VDC to be updated
+ *
+ */
+bool management_client_update_vdc(struct ManagementClient *management_client,
+                                  struct RCString vdc,
+                                  struct RCString *err);
 
 /**
  * Deactivates and deletes a VDC.
@@ -738,6 +758,16 @@ void management_client_delete_vdc(struct ManagementClient *management_client,
  */
 struct RCString management_client_list_vdcs(struct ManagementClient *management_client,
                                             struct RCString *err);
+
+/**
+ * Create a storage pool with the specified details.
+ *
+ * sp: Storage pool to be created
+ *
+ */
+struct RCString management_client_create_storage_pool(struct ManagementClient *management_client,
+                                                      struct RCString sp,
+                                                      struct RCString *err);
 
 /**
  * Gets the details for the specified storage pool.

@@ -1,7 +1,7 @@
 use objectscale_client::client::ManagementClient;
 
 fn main() {
-    let endpoint = "https://10.225.108.217:4443";
+    let endpoint = "https://10.225.108.151:4443";
     let username = "root";
     let password = "Password123!";
     let insecure = true;

@@ -2,7 +2,7 @@ use objectscale_client::client::ManagementClient;
 use objectscale_client::user::UserTag;
 
 fn main() {
-    let endpoint = "https://10.225.108.217:4443";
+    let endpoint = "https://10.225.108.151:4443";
     let username = "root";
     let password = "Password123!";
     let insecure = true;
@@ -21,6 +21,9 @@ fn main() {
         name: "name2".to_string(),
         value: "value2".to_string(),
     }];
+    user.secret_keys.pop();
+    user.swift_group.password = "123456789".to_string();
+    user.swift_group.groups_list = vec!["admin".to_string()];
     let state = client.update_object_user(user).expect("update object user");
 
     println!("Update object user: {:?}", state);
