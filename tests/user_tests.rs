@@ -1,6 +1,8 @@
 mod common;
 use objectscale_client::tenancy::NamespaceBuilder;
-use objectscale_client::user::{ManagementUserBuilder, ObjectUserBuilder, UserTag};
+use objectscale_client::user::{
+    ManagementUserBuilder, ObjectUserBuilder, SecretKey, SwiftGroup, UserTag,
+};
 
 const REPLICATION_GROUP: &str =
     "urn:storageos:ReplicationGroupInfo:0e953ad1-94a5-4eb1-825a-d58d29e85434:global";
@@ -68,6 +70,12 @@ fn test_object_user() {
     let user = ObjectUserBuilder::default()
         .name(name)
         .namespace(namespace_name)
+        .secret_keys(vec![SecretKey::default()])
+        .swift_group(SwiftGroup {
+            password: "12345678".to_string(),
+            groups_list: vec!["admin".to_string()],
+            ..Default::default()
+        })
         .build()
         .expect("new object user");
     let mut user = client.create_object_user(user).expect("create object user");
@@ -75,6 +83,8 @@ fn test_object_user() {
     assert_eq!(user.namespace, namespace_name);
     assert_eq!(user.tag.len(), 0);
     assert_eq!(user.locked, false);
+    assert_eq!(user.secret_keys.len(), 1);
+    assert_eq!(user.swift_group.swift_password_configured, true);
 
     let tags = vec![UserTag {
         name: "name1".to_string(),

@@ -75,6 +75,10 @@ func TestObjectUser(t *testing.T) {
 		Name:      name,
 		Namespace: namespaceName,
 		Tag:       []objectscale.UserTag{},
+		SwiftGroup: objectscale.SwiftGroup{
+			GroupsList: []string{},
+		},
+		SecretKeys: []objectscale.SecretKey{},
 	}
 	user, err = manamgentclient.CreateObjectUser(user)
 	assert.Nil(t, err)
@@ -82,10 +86,19 @@ func TestObjectUser(t *testing.T) {
 	assert.Equal(t, namespaceName, user.Namespace)
 	assert.Equal(t, false, user.Locked)
 	assert.Equal(t, 0, len(user.Tag))
+	assert.Equal(t, 0, len(user.SecretKeys))
+	assert.Equal(t, false, user.SwiftGroup.SwiftPasswordConfigured)
 
 	user.Tag = []objectscale.UserTag{
 		{Name: "key1", Value: "value1"},
 	}
+	user.SwiftGroup.GroupsList = []string{"admin"}
+	user.SwiftGroup.Password = "12345678"
+	user.SecretKeys = []objectscale.SecretKey{
+		{},
+		{ExistingKeyExpiryTimeMins: "30"},
+	}
+
 	state, err := manamgentclient.UpdateObjectUser(user)
 	assert.Nil(t, err)
 	assert.Equal(t, true, state)
@@ -93,6 +106,8 @@ func TestObjectUser(t *testing.T) {
 	user, err = manamgentclient.GetObjectUser(name, namespaceName)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(user.Tag))
+	assert.Equal(t, 2, len(user.SecretKeys))
+	assert.Equal(t, true, user.SwiftGroup.SwiftPasswordConfigured)
 
 	users, err := manamgentclient.ListObjectUsers()
 	assert.Nil(t, err)

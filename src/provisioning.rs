@@ -692,8 +692,7 @@ impl VdcKeystore {
 /// Storage pool is a logical construct that contains physical nodes.
 #[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[builder(setter(skip))]
-#[serde(rename_all = "camelCase")]
-#[serde(rename(serialize = "virtual_array_create"))]
+#[serde(rename_all = "camelCase", rename(serialize = "virtual_array_create"))]
 pub struct StoragePool {
     /// Storage pool name. Required. Updatable
     #[builder(setter(into, skip = false))]

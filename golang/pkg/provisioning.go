@@ -150,23 +150,23 @@ type StoragePool struct {
 	// Description. Default: "". Updatable
 	Description string `json:"description" yaml:"description" tf:"description"`
 	// Flag indicating that storage pool is protected. Default: false
-	IsProtected bool `json:"is_protected" yaml:"is_protected" tf:"is_protected"`
+	IsProtected bool `json:"isProtected" yaml:"isProtected" tf:"is_protected"`
 	// Flag indicating that cold storage encoding is enabled. Default: false
-	IsColdStorageEnabled bool `json:"is_cold_storage_enabled" yaml:"is_cold_storage_enabled" tf:"is_cold_storage_enabled"`
+	IsColdStorageEnabled bool `json:"isColdStorageEnabled" yaml:"isColdStorageEnabled" tf:"is_cold_storage_enabled"`
 	// Number of Data Blocks in EC Scheme
-	NumberOfDataBlocks int64 `json:"number_of_data_blocks" yaml:"number_of_data_blocks" tf:"number_of_data_blocks"`
+	NumberOfDataBlocks int64 `json:"numberOfDataBlocks" yaml:"numberOfDataBlocks" tf:"number_of_data_blocks"`
 	// Number of Code Blocks in EC Scheme
-	NumberOfCodeBlocks int64 `json:"number_of_code_blocks" yaml:"number_of_code_blocks" tf:"number_of_code_blocks"`
+	NumberOfCodeBlocks int64 `json:"numberOfCodeBlocks" yaml:"numberOfCodeBlocks" tf:"number_of_code_blocks"`
 	// Threshold percent at which warning alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 30. Updatable
-	WarningAlertAt int64 `json:"warning_alert_at" yaml:"warning_alert_at" tf:"warning_alert_at"`
+	WarningAlertAt int64 `json:"warningAlertAt" yaml:"warningAlertAt" tf:"warning_alert_at"`
 	// Threshold percent at which error alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 20. Updatable
-	ErrorAlertAt int64 `json:"error_alert_at" yaml:"error_alert_at" tf:"error_alert_at"`
+	ErrorAlertAt int64 `json:"errorAlertAt" yaml:"errorAlertAt" tf:"error_alert_at"`
 	// Threshold percent at which critical alert is raised. Valid values are from -1 to 100. Value of -1 means do not alert. Default: 15. Updatable
-	CriticalAlertAt int64 `json:"critical_alert_at" yaml:"critical_alert_at" tf:"critical_alert_at"`
+	CriticalAlertAt int64 `json:"criticalAlertAt" yaml:"criticalAlertAt" tf:"critical_alert_at"`
 	// Drive technology of VArray. Can be DRIVE_TECH_HDD. Required.
 	Label string `json:"label" yaml:"label" tf:"label"`
 	// Drive technology of VArray. Can be HDD or NVMe. Required.
-	DriveTechnology string `json:"drive_technology" yaml:"drive_technology" tf:"drive_technology"`
+	DriveTechnology string `json:"driveTechnology" yaml:"driveTechnology" tf:"drive_technology"`
 	// flag for status, -1 for null, 0 ~ 6 for value
 	Status int64 `json:"status" yaml:"status" tf:"status"`
 }
