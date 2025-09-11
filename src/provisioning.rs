@@ -26,14 +26,18 @@ pub struct ProvisioningLink {
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MinMaxGovernor {
+    /// enforce retention: Default: false. Updatable
     pub enforce_retention: bool,
+    /// minimum fixed retention: Default: 0. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub minimum_fixed_retention: i64,
-    // TODO: need to understand the default value
+    /// maximum fixed retention: Default: 0. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub maximum_fixed_retention: i64,
+    /// minimum variable retention: Default: 0. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub minimum_variable_retention: i64,
+    /// maximum variable retention: Default: 0. Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub maximum_variable_retention: i64,
 }
@@ -99,7 +103,9 @@ pub struct Bucket {
     pub vpool: String,
     /// "Locked" status of a bucket
     pub locked: bool,
-    /// Bucket "file system access enabled" status
+    /// flag indicating whether file-system is enabled for this bucket. Default: false.
+    #[serde(rename(serialize = "filesystem_enabled"))]
+    #[builder(setter(skip = false), default)]
     pub fs_access_enabled: bool,
     /// Bucket soft quota
     #[serde(rename = "softquota")]
@@ -126,7 +132,9 @@ pub struct Bucket {
     pub default_retention: i64,
     /// Block size in GB
     pub block_size: i64,
-    /// auto-commit interval
+    /// Default autocommit period in seconds. If fs_access_enabled is false, this value can't be updated. Default: 0. Updatable
+    #[serde(rename(serialize = "autocommit_period"))]
+    #[builder(setter(skip = false), default)]
     pub auto_commit_period: i64,
     /// Notification size in GB
     pub notification_size: i64,
@@ -139,10 +147,11 @@ pub struct Bucket {
     #[builder(setter(skip = false), default = -1)]
     pub notification_size_in_count: i64,
     /// Bucket isEncryptionEnabled flag
-    #[builder(setter(skip = false), default = "false")]
+    #[builder(setter(skip = false), default)]
     #[serde(deserialize_with = "deserialize_bool_from_anything")]
     pub is_encryption_enabled: bool,
-    /// Default retention value for the bucket.
+    /// Default retention period in seconds. Should be less than maximum_fixed_retention. Default: 0. Updatable
+    #[builder(setter(skip = false), default)]
     pub retention: i64,
     /// Bucket's default group
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -159,6 +168,8 @@ pub struct Bucket {
     pub default_group_dir_write_permission: bool,
     /// Flag indicating the directory execute permission for default group. This is only applicable to folders created within the Filesystem-Enabled bucket. It is not applicable to files/objects
     pub default_group_dir_execute_permission: bool,
+    /// default retention period setting. Default: see MinMaxGovernor. Updatable
+    #[builder(setter(skip = false), default)]
     pub min_max_governor: MinMaxGovernor,
     /// Bucket audit delete expiration in seconds. Default: -2
     #[builder(setter(skip = false), default = "-2")]
@@ -187,7 +198,7 @@ pub struct Bucket {
     pub local_object_metadata_reads: bool,
     /// API type
     pub api_type: String,
-    /// Bucket owner. Default: "". Updatable
+    /// Bucket owner. If empty, it would be current user. Default: "". Updatable
     #[builder(setter(skip = false), default)]
     pub owner: String,
     /// Keywords and labels that can be added by a user to a resource to make it easy to find when doing a search. Default: []. Updatable
@@ -261,6 +272,30 @@ impl Bucket {
         Ok(resp)
     }
 
+    // pub(crate) fn get_copy_policy(
+    //     client: &mut ManagementClient,
+    //     name: &str,
+    //     namespace: &str,
+    // ) -> Result<()> {
+    //     let request_url = format!(
+    //         "{}object/bucket/{}/copypolicy?account={}",
+    //         client.endpoint, name, namespace,
+    //     );
+    //     let resp = client
+    //         .http_client
+    //         .get(request_url)
+    //         .header(ACCEPT, "application/json")
+    //         .header(CONTENT_TYPE, "application/json")
+    //         .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+    //         .send()?;
+    //     let text = get_content_text(resp).with_context(|| "Failed to get bucket copy policy")?;
+    //     // let resp: Bucket = serde_json::from_str(&text)
+    //     //     .with_context(|| format!("Unable to deserialise GetBucket. Body was: \"{}\"", text))?;
+    //     // Ok(resp)
+    //     println!("Get bucket copy policy: {}", text);
+    //     Ok(())
+    // }
+
     pub(crate) fn add_tag(
         client: &mut ManagementClient,
         bucket_name: &str,
@@ -313,18 +348,61 @@ impl Bucket {
         Ok(())
     }
 
+    pub(crate) fn set_auto_commit_period(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        period: i64,
+    ) -> Result<()> {
+        let request_url = format!("{}object/bucket/{}/autocommit", client.endpoint, name,);
+        let body = format!(
+            r#"{{"autocommit": "{}","namespace": "{}"}}"#,
+            period, namespace
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to set auto commit period")?;
+        Ok(())
+    }
+
+    pub(crate) fn set_bucket_retention(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        retention: i64,
+        min_max_governor: &MinMaxGovernor,
+    ) -> Result<()> {
+        let request_url = format!("{}object/bucket/{}/retention", client.endpoint, name,);
+        let body = format!(
+            r#"{{"period": "{}","namespace": "{}", "min_max_governor": {}}}"#,
+            retention,
+            namespace,
+            serde_json::to_string(min_max_governor)?,
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to set bucket retention")?;
+        Ok(())
+    }
+
     pub(crate) fn update_owner(
         client: &mut ManagementClient,
         name: &str,
         namespace: &str,
         owner: &str,
     ) -> Result<()> {
-        // // Set Bucket Audit Delete Expiration
-        // let request_url = format!(
-        //     "{}object/bucket/{}/auditDeleteExpiration?expiration={}&namespace={}",
-        //     client.endpoint, bucket.name, bucket.audit_delete_expiration, bucket.namespace,
-        // );
-        // Update Bucket Owner
         let request_url = format!("{}object/bucket/{}/owner", client.endpoint, name,);
         let body = format!(
             r#"<object_bucket_update_owner><new_owner>{}</new_owner><namespace>{}</namespace><reset_previous_owners>true</reset_previous_owners></object_bucket_update_owner>"#,
@@ -361,6 +439,29 @@ impl Bucket {
             if !bucket.tags.is_empty() {
                 Self::add_tag(client, &bucket.name, &bucket.namespace, bucket.tags.clone())?;
             }
+        }
+
+        if bucket.auto_commit_period != current_bucket.auto_commit_period {
+            updated = true;
+            Self::set_auto_commit_period(
+                client,
+                &bucket.name,
+                &bucket.namespace,
+                bucket.auto_commit_period,
+            )?;
+        }
+
+        if bucket.min_max_governor != current_bucket.min_max_governor
+            || bucket.retention != current_bucket.retention
+        {
+            updated = true;
+            Self::set_bucket_retention(
+                client,
+                &bucket.name,
+                &bucket.namespace,
+                bucket.retention,
+                &bucket.min_max_governor,
+            )?;
         }
 
         Ok(updated)

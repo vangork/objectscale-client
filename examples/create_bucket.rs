@@ -1,5 +1,7 @@
 use objectscale_client::client::ManagementClient;
-use objectscale_client::provisioning::{BucketBuilder, BucketTag, MetaData, SearchMetaData};
+use objectscale_client::provisioning::{
+    BucketBuilder, BucketTag, MetaData, MinMaxGovernor, SearchMetaData,
+};
 
 fn main() {
     let endpoint = "https://10.225.108.217:4443";
@@ -33,6 +35,13 @@ fn main() {
             key: "key1".to_string(),
             value: "value1".to_string(),
         }])
+        .auto_commit_period(100)
+        .fs_access_enabled(true)
+        .retention(200)
+        .min_max_governor(MinMaxGovernor {
+            maximum_fixed_retention: 300,
+            ..Default::default()
+        })
         .search_metadata(search_metadata)
         .build()
         .expect("new bucket");

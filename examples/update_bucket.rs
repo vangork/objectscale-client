@@ -18,6 +18,10 @@ fn main() {
         key: "key2".to_string(),
         value: "value2".to_string(),
     }];
+    bucket.auto_commit_period = 200;
+    bucket.retention = 250;
+    bucket.min_max_governor.enforce_retention = true;
+    bucket.min_max_governor.maximum_fixed_retention = 300;
     let state = client.update_bucket(bucket).expect("update bucket");
 
     println!("Update bucket: {:?}", state);

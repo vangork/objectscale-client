@@ -6,7 +6,7 @@ fn main() {
     let password = "Password123!";
     let insecure = true;
 
-    let name = "bucket1";
+    let name = "luis_bucket";
     let namespace = "ns1";
 
     let mut client =
