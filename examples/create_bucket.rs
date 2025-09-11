@@ -36,15 +36,18 @@ fn main() {
             value: "value1".to_string(),
         }])
         .auto_commit_period(100)
-        .fs_access_enabled(true)
+        //.fs_access_enabled(true)
         .retention(200)
         .min_max_governor(MinMaxGovernor {
             maximum_fixed_retention: 300,
             ..Default::default()
         })
+        .is_object_lock_enabled(true)
+        .default_object_lock_retention_mode("GOVERNANCE")
+        .default_object_lock_retention_years(1)
         .search_metadata(search_metadata)
         .build()
-        .expect("new bucket");
+        .expect("build bucket");
     let bucket = client.create_bucket(bucket).expect("create bucket");
 
     println!("Created bucket: {:?}", bucket);

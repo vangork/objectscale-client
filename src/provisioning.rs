@@ -103,7 +103,7 @@ pub struct Bucket {
     pub vpool: String,
     /// "Locked" status of a bucket
     pub locked: bool,
-    /// flag indicating whether file-system is enabled for this bucket. Default: false.
+    /// flag indicating whether file-system is enabled for this bucket. is_object_lock_enabled and fs_access_enabled cannot be true at the same time. Default: false.
     #[serde(rename(serialize = "filesystem_enabled"))]
     #[builder(setter(skip = false), default)]
     pub fs_access_enabled: bool,
@@ -116,18 +116,23 @@ pub struct Bucket {
     pub is_stale_allowed: bool,
     /// If true Object Lock and ADO can be enabled together. See the Admin Guide for more information.
     pub is_object_lock_with_ado_allowed: bool,
+    /// Indicates the Retention mode for the specified object. is_object_lock_enabled and fs_access_enabled cannot be true at the same time. Can only set from false to true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub is_object_lock_enabled: bool,
     /// Bucket isStaleAllowed flag
     pub is_tso_read_only: bool,
-    /// Default object lock retention mode
+    /// Default object lock retention mode. Can be: GOVERNANCE or COMPLIANCE. Default: "". Updatable only when is_object_lock_enabled is true
     #[serde(deserialize_with = "deserialize_default_from_null")]
+    #[builder(setter(skip = false, into), default)]
     pub default_object_lock_retention_mode: String,
-    /// Default object lock retention years
+    /// Default object lock retention years. Either Days or Years must be specified, but not both. Default: 0. Updatable only when is_object_lock_enabled is true
     #[serde(deserialize_with = "deserialize_default_from_null")]
-    pub default_object_lock_retention_years: i32,
-    /// Default object lock retention days
+    #[builder(setter(skip = false), default)]
+    pub default_object_lock_retention_years: i64,
+    /// Default object lock retention days. Either Days or Years must be specified, but not both. Default: 0. Updatable only when is_object_lock_enabled is true
     #[serde(deserialize_with = "deserialize_default_from_null")]
-    pub default_object_lock_retention_days: i32,
+    #[builder(setter(skip = false), default)]
+    pub default_object_lock_retention_days: i64,
     /// Default bucket retention
     pub default_retention: i64,
     /// Block size in GB
@@ -217,6 +222,20 @@ struct CreateBucketResponse {
     pub id: String,
 }
 
+fn is_zero(s: &i64) -> bool {
+    *s == 0
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase", rename(serialize = "DefaultRetention"))]
+struct DefaultRetention {
+    pub mode: String,
+    #[serde(skip_serializing_if = "is_zero")]
+    pub years: i64,
+    #[serde(skip_serializing_if = "is_zero")]
+    pub days: i64,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct ListBucketsResponse {
@@ -230,9 +249,9 @@ struct ListBucketsResponse {
 }
 
 impl Bucket {
-    pub(crate) fn create(client: &mut ManagementClient, bucket: Bucket) -> Result<String> {
+    pub(crate) fn create(client: &mut ManagementClient, bucket: &Bucket) -> Result<String> {
         let request_url = format!("{}object/bucket.json", client.endpoint);
-        let body = quick_xml::se::to_string(&bucket)?;
+        let body = quick_xml::se::to_string(bucket)?;
         let resp = client
             .http_client
             .post(request_url)
@@ -397,6 +416,39 @@ impl Bucket {
         Ok(())
     }
 
+    pub(crate) fn set_default_lock_configuration(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        mode: &str,
+        years: i64,
+        days: i64,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/bucket/{}/object-lock-config?namespace={}",
+            client.endpoint, name, namespace
+        );
+        let body = format!(
+            r#"<ObjectLockConfiguration><ObjectLockEnabled>Enabled</ObjectLockEnabled><Rule>{}</Rule></ObjectLockConfiguration>"#,
+            quick_xml::se::to_string(&DefaultRetention {
+                mode: mode.to_string(),
+                years,
+                days
+            })?,
+        );
+        println!("Body: {}", body);
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/xml")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to set default lock configuration")?;
+        Ok(())
+    }
+
     pub(crate) fn update_owner(
         client: &mut ManagementClient,
         name: &str,
@@ -461,6 +513,25 @@ impl Bucket {
                 &bucket.namespace,
                 bucket.retention,
                 &bucket.min_max_governor,
+            )?;
+        }
+
+        if bucket.is_object_lock_enabled
+            && (bucket.default_object_lock_retention_mode
+                != current_bucket.default_object_lock_retention_mode
+                || bucket.default_object_lock_retention_years
+                    != current_bucket.default_object_lock_retention_years
+                || bucket.default_object_lock_retention_days
+                    != current_bucket.default_object_lock_retention_days)
+        {
+            updated = true;
+            Self::set_default_lock_configuration(
+                client,
+                &bucket.name,
+                &bucket.namespace,
+                &bucket.default_object_lock_retention_mode,
+                bucket.default_object_lock_retention_years,
+                bucket.default_object_lock_retention_days,
             )?;
         }
 
