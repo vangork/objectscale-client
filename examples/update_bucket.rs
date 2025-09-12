@@ -35,6 +35,8 @@ fn main() {
     // bucket.audit_delete_expiration = -2;
     // bucket.is_stale_allowed = true;
     // bucket.is_object_lock_with_ado_allowed = true;
+    // bucket.local_object_metadata_reads = true;
+    bucket.search_metadata.is_enabled = false;
 
     let state = client.update_bucket(bucket).expect("update bucket");
 

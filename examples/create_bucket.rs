@@ -15,18 +15,6 @@ fn main() {
     let name = "luis_bucket";
     let namespace = "ns1";
 
-    let mut search_metadata = SearchMetaData::default();
-    search_metadata.metadata.push(MetaData {
-        datatype: "datetime".to_string(),
-        name: "CreateTime".to_string(),
-        r#type: "System".to_string(),
-    });
-    search_metadata.metadata.push(MetaData {
-        datatype: "integer".to_string(),
-        name: "x-amz-meta-size".to_string(),
-        r#type: "User".to_string(),
-    });
-
     let bucket = BucketBuilder::default()
         .name(name)
         .namespace(namespace)
@@ -56,7 +44,23 @@ fn main() {
         // .audit_delete_expiration(100)
         // .is_stale_allowed(true)
         // .is_object_lock_with_ado_allowed(false)
-        .search_metadata(search_metadata)
+        // .is_tso_read_only(true)
+        .search_metadata(SearchMetaData {
+            metadata: vec![
+                MetaData {
+                    datatype: "integer".to_string(),
+                    name: "x-amz-meta-size".to_string(),
+                    r#type: "User".to_string(),
+                },
+                MetaData {
+                    datatype: "datetime".to_string(),
+                    name: "CreateTime".to_string(),
+                    r#type: "System".to_string(),
+                }
+            ],
+            is_enabled: true,
+            ..Default::default()
+        })
         .build()
         .expect("build bucket");
     let bucket = client.create_bucket(bucket).expect("create bucket");

@@ -45,19 +45,20 @@ pub struct MinMaxGovernor {
 #[derive(Clone, Default, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "camelCase"))]
 pub struct MetaData {
-    /// The meta key type
+    /// The meta key type. Required
     pub datatype: String,
-    /// The meta key name
+    /// The meta key name. Required
     pub name: String,
-    /// The meta key data type
+    /// The meta key data type. Required
     pub r#type: String,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "camelCase"))]
 pub struct SearchMetaData {
-    /// Getter for the enabled flag.
+    /// Getter for the enabled flag. It cannot be re-enabled once disabled. Updatable.
     pub is_enabled: bool,
+    /// Metadata list. Default: []
     #[serde(deserialize_with = "deserialize_default_from_null")]
     pub metadata: Vec<MetaData>,
     /// Getter for maxKeys.
@@ -121,7 +122,8 @@ pub struct Bucket {
     /// Indicates the Retention mode for the specified object. is_object_lock_enabled and fs_access_enabled cannot be true at the same time. Can only set from false to true. Default: false. Updatable
     #[builder(setter(skip = false), default)]
     pub is_object_lock_enabled: bool,
-    /// Bucket isStaleAllowed flag
+    /// Bucket is_tso_read_only flag. Can only be true if is_stale_allowed is true. Default: false.
+    #[builder(setter(skip = false), default)]
     pub is_tso_read_only: bool,
     /// Default object lock retention mode. Can be: GOVERNANCE or COMPLIANCE. Default: "". Updatable only when is_object_lock_enabled is true
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -211,10 +213,12 @@ pub struct Bucket {
     #[serde(deserialize_with = "deserialize_default_from_null")]
     #[builder(setter(skip = false, into), default)]
     pub versioning_status: String,
-    /// Searchable tags assigned to objects created within the bucket.
+    /// Searchable tags assigned to objects created within the bucket. Default: see SearchMetaData. Updatable
     #[builder(setter(skip = false), default)]
     pub search_metadata: SearchMetaData,
-    /// Local object metadata reads bucket flag.
+    /// Local object metadata reads bucket flag. Default: false. Updatable
+    // TODO: how to enable this value during creation
+    #[builder(setter(skip = false), default)]
     pub local_object_metadata_reads: bool,
     /// API type
     pub api_type: String,
@@ -697,6 +701,45 @@ impl Bucket {
         Ok(())
     }
 
+    pub(crate) fn set_local_object_metadata_reads(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        enabled: bool,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/bucket/{}/set-local-object-metadata-reads?namespace={}&enabled={}",
+            client.endpoint, name, namespace, enabled,
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to set local object metadata reads")?;
+        Ok(())
+    }
+
+    pub(crate) fn deactivate_meta_search(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/bucket/{}/searchmetadata?namespace={}",
+            client.endpoint, name, namespace,
+        );
+        let resp = client
+            .http_client
+            .delete(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to deactivate meta search")?;
+        Ok(())
+    }
+
     pub(crate) fn update(client: &mut ManagementClient, bucket: &Self) -> Result<bool> {
         let current_bucket = Self::get(client, &bucket.name, &bucket.namespace)?;
         let mut updated = false;
@@ -820,11 +863,24 @@ impl Bucket {
             )?;
         }
 
-        if bucket.is_object_lock_with_ado_allowed && !current_bucket.is_object_lock_with_ado_allowed
-        {
+        if bucket.is_object_lock_with_ado_allowed && !current_bucket.is_object_lock_with_ado_allowed {
             updated = true;
             Self::enable_object_lock_with_ado_allowd(client, &bucket.name, &bucket.namespace)?;
         }
+
+        if bucket.local_object_metadata_reads != current_bucket.local_object_metadata_reads {
+            updated = true;
+            Self::set_local_object_metadata_reads(
+                client,
+                &bucket.name,
+                &bucket.namespace,
+                bucket.local_object_metadata_reads,
+            )?;
+        }
+        if !bucket.search_metadata.is_enabled && current_bucket.search_metadata.is_enabled {
+            updated = true;
+            Self::deactivate_meta_search(client, &bucket.name, &bucket.namespace)?;
+        }      
 
         Ok(updated)
     }
