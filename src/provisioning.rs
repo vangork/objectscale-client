@@ -158,20 +158,27 @@ pub struct Bucket {
     /// Default retention period in seconds. Should be less than maximum_fixed_retention. Default: 0. Updatable
     #[builder(setter(skip = false), default)]
     pub retention: i64,
-    /// Bucket's default group
+    /// Bucket's default group. Default: "". Updatable
     #[serde(deserialize_with = "deserialize_default_from_null")]
+    #[builder(setter(skip = false, into), default)]
     pub default_group: String,
-    /// Flag indicating the Read permission for default group
+    /// Flag indicating the Read permission for default group. This is only applicable when fs_access_enabled is true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub default_group_file_read_permission: bool,
-    /// Flag indicating the file write permission for default group
+    /// Flag indicating the file write permission for default group. This is only applicable when fs_access_enabled is true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub default_group_file_write_permission: bool,
-    /// Flag indicating the file execute permission for default group
+    /// Flag indicating the file execute permission for default group. This is only applicable when fs_access_enabled is true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub default_group_file_execute_permission: bool,
-    /// Flag indicating the directory read permission for default group. This is only applicable to folders created within the Filesystem-Enabled bucket. It is not applicable to files/objects
+    /// Flag indicating the directory read permission for default group. This is only applicable when fs_access_enabled is true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub default_group_dir_read_permission: bool,
-    /// Flag indicating the directory write permission for default group. This is only applicable to folders created within the Filesystem-Enabled bucket. It is not applicable to files/objects
+    /// Flag indicating the directory write permission for default group. This is only applicable when fs_access_enabled is true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub default_group_dir_write_permission: bool,
-    /// Flag indicating the directory execute permission for default group. This is only applicable to folders created within the Filesystem-Enabled bucket. It is not applicable to files/objects
+    /// Flag indicating the directory execute permission for default group. This is only applicable when fs_access_enabled is true. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub default_group_dir_execute_permission: bool,
     /// default retention period setting. Default: see MinMaxGovernor. Updatable
     #[builder(setter(skip = false), default)]
@@ -234,6 +241,43 @@ struct DefaultRetention {
     pub years: i64,
     #[serde(skip_serializing_if = "is_zero")]
     pub days: i64,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+struct DefaultGroup {
+    pub default_group: String,
+    pub default_group_file_read_permission: String,
+    pub default_group_file_write_permission: String,
+    pub default_group_file_execute_permission: String,
+    pub default_group_dir_read_permission: String,
+    pub default_group_dir_write_permission: String,
+    pub default_group_dir_execute_permission: String,
+    pub namespace: String,
+}
+
+impl DefaultGroup {
+    fn from(bucket: &Bucket) -> Self {
+        Self {
+            default_group: bucket.default_group.to_string(),
+            default_group_file_read_permission: bucket
+                .default_group_file_read_permission
+                .to_string(),
+            default_group_file_write_permission: bucket
+                .default_group_file_write_permission
+                .to_string(),
+            default_group_file_execute_permission: bucket
+                .default_group_file_execute_permission
+                .to_string(),
+            default_group_dir_read_permission: bucket.default_group_dir_read_permission.to_string(),
+            default_group_dir_write_permission: bucket
+                .default_group_dir_write_permission
+                .to_string(),
+            default_group_dir_execute_permission: bucket
+                .default_group_dir_execute_permission
+                .to_string(),
+            namespace: bucket.namespace.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -314,6 +358,29 @@ impl Bucket {
     //     println!("Get bucket copy policy: {}", text);
     //     Ok(())
     // }
+
+    pub(crate) fn get_acl(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/bucket/{}/acl?namespace={}",
+            client.endpoint, name, namespace,
+        );
+        let resp = client
+            .http_client
+            .get(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get bucket acl")?;
+        // let resp: Bucket = serde_json::from_str(&text)
+        //     .with_context(|| format!("Unable to deserialise GetBucket. Body was: \"{}\"", text))?;
+        // Ok(resp)
+        println!("Get bucket acl: {}", text);
+        Ok(())
+    }
 
     pub(crate) fn add_tag(
         client: &mut ManagementClient,
@@ -416,6 +483,25 @@ impl Bucket {
         Ok(())
     }
 
+    pub(crate) fn enable_object_lock(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/bucket/{}/object-lock-enable?namespace={}",
+            client.endpoint, name, namespace
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to enable object lock")?;
+        Ok(())
+    }
+
     pub(crate) fn set_default_lock_configuration(
         client: &mut ManagementClient,
         name: &str,
@@ -436,7 +522,6 @@ impl Bucket {
                 days
             })?,
         );
-        println!("Body: {}", body);
         let resp = client
             .http_client
             .put(request_url)
@@ -474,6 +559,26 @@ impl Bucket {
         Ok(())
     }
 
+    pub(crate) fn set_default_group(
+        client: &mut ManagementClient,
+        name: &str,
+        bucket: &Bucket,
+    ) -> Result<()> {
+        let request_url = format!("{}object/bucket/{}/defaultGroup", client.endpoint, name);
+        let default_group = DefaultGroup::from(bucket);
+        let body = serde_json::to_string(&default_group)?;
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to set default group")?;
+        Ok(())
+    }
+
     pub(crate) fn update(client: &mut ManagementClient, bucket: &Self) -> Result<bool> {
         let current_bucket = Self::get(client, &bucket.name, &bucket.namespace)?;
         let mut updated = false;
@@ -486,7 +591,12 @@ impl Bucket {
         if bucket.tags != current_bucket.tags {
             updated = true;
             if !current_bucket.tags.is_empty() {
-                Self::delete_tag(client, &bucket.name, &bucket.namespace, current_bucket.tags)?;
+                Self::delete_tag(
+                    client,
+                    &bucket.name,
+                    &bucket.namespace,
+                    current_bucket.tags.clone(),
+                )?;
             }
             if !bucket.tags.is_empty() {
                 Self::add_tag(client, &bucket.name, &bucket.namespace, bucket.tags.clone())?;
@@ -516,6 +626,11 @@ impl Bucket {
             )?;
         }
 
+        if bucket.is_object_lock_enabled && !current_bucket.is_object_lock_enabled {
+            updated = true;
+            Self::enable_object_lock(client, &bucket.name, &bucket.namespace)?;
+        }
+
         if bucket.is_object_lock_enabled
             && (bucket.default_object_lock_retention_mode
                 != current_bucket.default_object_lock_retention_mode
@@ -533,6 +648,15 @@ impl Bucket {
                 bucket.default_object_lock_retention_years,
                 bucket.default_object_lock_retention_days,
             )?;
+        }
+
+        if current_bucket.fs_access_enabled && bucket.fs_access_enabled {
+            let default_group = DefaultGroup::from(bucket);
+            let current_default_group = DefaultGroup::from(&current_bucket);
+            if default_group != current_default_group {
+                updated = true;
+                Self::set_default_group(client, &bucket.name, bucket)?;
+            }
         }
 
         Ok(updated)

@@ -22,9 +22,14 @@ fn main() {
     bucket.retention = 250;
     bucket.min_max_governor.enforce_retention = true;
     bucket.min_max_governor.maximum_fixed_retention = 300;
-    bucket.default_object_lock_retention_mode = "COMPLIANCE".to_string();
-    bucket.default_object_lock_retention_years = 0;
-    bucket.default_object_lock_retention_days = 1;
+    // bucket.is_object_lock_enabled = true;
+    // bucket.default_object_lock_retention_mode = "COMPLIANCE".to_string();
+    // bucket.default_object_lock_retention_years = 0;
+    // bucket.default_object_lock_retention_days = 1;
+    // bucket.default_group = "yl".to_string();
+    // bucket.default_group_dir_read_permission = false;
+    // bucket.default_group_file_read_permission = false;
+
     let state = client.update_bucket(bucket).expect("update bucket");
 
     println!("Update bucket: {:?}", state);
