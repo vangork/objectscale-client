@@ -192,6 +192,17 @@ struct RCString management_client_get_policy(struct ManagementClient *management
                                              struct RCString *err);
 
 /**
+ * Create a new version of the specified managed policy.
+ *
+ * policy_arn: Arn of the policy to retrieve. Cannot be empty.
+ * namespace: Namespace of the policy(id of the account the policy belongs to). Cannot be empty.
+ *
+ */
+bool management_client_update_policy(struct ManagementClient *management_client,
+                                     struct RCString policy,
+                                     struct RCString *err);
+
+/**
  * Delete the specified Managed Policy.
  *
  * policy_arn: Arn of the policy to delete. Cannot be empty.

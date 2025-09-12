@@ -594,6 +594,42 @@ pub unsafe extern "C" fn management_client_get_policy(
     }
 }
 
+/// Create a new version of the specified managed policy.
+///
+/// policy_arn: Arn of the policy to retrieve. Cannot be empty.
+/// namespace: Namespace of the policy(id of the account the policy belongs to). Cannot be empty.
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_update_policy(
+    management_client: *mut ManagementClient,
+    policy: RCString,
+    err: Option<&mut RCString>,
+) -> bool {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let policy = policy.to_string();
+        let policy: objectscale_client::iam::Policy =
+            serde_json::from_str(&policy).expect("deserialize policy");
+
+        management_client.management_client.update_policy(policy)
+    })) {
+        Ok(result) => {
+            clear_error();
+            match result {
+                Ok(state) => return state,
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    false
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during update policy", err);
+            false
+        }
+    }
+}
+
 /// Delete the specified Managed Policy.
 ///
 /// policy_arn: Arn of the policy to delete. Cannot be empty.

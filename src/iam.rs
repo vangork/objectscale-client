@@ -762,7 +762,7 @@ pub struct Policy {
     pub policy_name: String,
     /// The date and time, in ISO 8601 date-time format, when the policy was created.
     pub update_date: String,
-    /// The policy document in JSON format. Required.
+    /// The policy document in JSON format. Required. Updatable.
     #[builder(setter(into))]
     #[serde(default)]
     pub policy_document: String,
@@ -796,6 +796,28 @@ struct GetPolicyResult {
 struct GetPolicyResponse {
     pub response_metadata: ResponseMetadata,
     pub get_policy_result: GetPolicyResult,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct PolicyVersion {
+    pub create_date: String,
+    pub document: String,
+    pub is_default_version: bool,
+    pub version_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct GetPolicyVersionResult {
+    pub policy_version: PolicyVersion,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct GetPolicyVersionResponse {
+    pub response_metadata: ResponseMetadata,
+    pub get_policy_version_result: GetPolicyVersionResult,
 }
 
 #[derive(Debug, Deserialize)]
@@ -871,7 +893,72 @@ impl Policy {
         })?;
         let mut policy = resp.get_policy_result.policy;
         policy.namespace = namespace.to_string();
+        policy.policy_document =
+            Self::get_version(client, policy_arn, &policy.default_version_id, namespace)?;
         Ok(policy)
+    }
+
+    pub(crate) fn get_version(
+        client: &mut ManagementClient,
+        policy_arn: &str,
+        version_id: &str,
+        namespace: &str,
+    ) -> Result<String> {
+        let request_url = format!(
+            "{}iam?Action=GetPolicyVersion&PolicyArn={}&VersionId={}",
+            client.endpoint, policy_arn, version_id,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get policy version")?;
+        let resp: GetPolicyVersionResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise GetPolicyVersionResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        Ok(resp.get_policy_version_result.policy_version.document)
+    }
+
+    pub(crate) fn create_version(
+        client: &mut ManagementClient,
+        policy_arn: &str,
+        policy_document: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=CreatePolicyVersion&PolicyArn={}&PolicyDocument={}&SetAsDefault=true",
+            client.endpoint, policy_arn, policy_document,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let _ = get_content_text(resp).with_context(|| "Failed to create policy version")?;
+        Ok(())
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, policy: Policy) -> Result<bool> {
+        let mut state = false;
+        let current_policy = Self::get(client, &policy.arn, &policy.namespace)?;
+        if policy.policy_document != current_policy.policy_document {
+            state = true;
+            Self::create_version(
+                client,
+                &policy.arn,
+                &policy.policy_document,
+                &policy.namespace,
+            )?;
+        }
+        Ok(state)
     }
 
     pub(crate) fn delete(
@@ -939,9 +1026,11 @@ impl Policy {
             })?;
             policies.extend(resp.list_policies_result.policies);
         }
-        policies
-            .iter_mut()
-            .for_each(|policy| policy.namespace = namespace.to_string());
+        for policy in policies.iter_mut() {
+            policy.namespace = namespace.to_string();
+            policy.policy_document =
+                Self::get_version(client, &policy.arn, &policy.default_version_id, namespace)?;
+        }
         Ok(policies)
     }
 }

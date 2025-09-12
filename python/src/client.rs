@@ -260,6 +260,20 @@ impl ManagementClient {
         }
     }
 
+    /// Create a new version of the specified managed policy.
+    ///
+    /// policy_arn: Arn of the policy to retrieve. Cannot be empty.
+    /// namespace: Namespace of the policy(id of the account the policy belongs to). Cannot be empty.
+    ///
+    pub fn update_policy(&mut self, policy: &Policy) -> PyResult<bool> {
+        let policy = iam::Policy::from(policy.clone());
+        let result = self.management_client.update_policy(policy);
+        match result {
+            Ok(state) => Ok(state),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
     /// Delete the specified Managed Policy.
     ///
     /// policy_arn: Arn of the policy to delete. Cannot be empty.

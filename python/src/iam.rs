@@ -329,7 +329,7 @@ pub(crate) struct Policy {
     policy_name: String,
     // The date and time, in ISO 8601 date-time format, when the policy was created.
     update_date: String,
-    // The policy document in JSON format. Required.
+    // The policy document in JSON format. Required. Updatable.
     #[pyo3(set)]
     policy_document: String,
     // Namespace. Required.

@@ -20,14 +20,18 @@ fn main() {
         .namespace(namespace)
         .build()
         .expect("new policy");
-    let policy = client.create_policy(policy).expect("create policy");
+    let mut policy = client.create_policy(policy).expect("create policy");
     println!("Created policy: {:?}", policy);
 
-    let policy = client
-        .get_policy(&policy.arn, namespace)
-        .expect("get policy");
-    println!("Get policy: {:?}", policy);
+    let arn = policy.arn.clone();
 
+    let new_document = "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Action%22%3A%5B%22s3%3APutBucketAcl%22%2C%22s3%3APutBucketPolicy%22%2C%22s3%3ADeleteBucketPolicy%22%2C%22s3%3APutObjectAcl%22%2C%22s3%3APutObjectVersionAcl%22%2C%22s3%3AObjectOwnerOverrideToBucketOwner%22%5D%2C%22Resource%22%3A%22*%22%2C%22Effect%22%3A%22Allow%22%2C%22Sid%22%3A%22VisualEditor0%22%7D%5D%7D";
+    policy.policy_document = new_document.to_string();
+    let state = client.update_policy(policy).expect("update policy");
+    println!("Updated policy: {}", state);
+
+    let policy = client.get_policy(&arn, namespace).expect("get policy");
+    println!("Get policy: {:?}", policy);
     client
         .delete_policy(&policy.arn, namespace)
         .expect("delete policy");

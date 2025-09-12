@@ -94,7 +94,7 @@ type Policy struct {
 	PolicyName string `json:"PolicyName" yaml:"PolicyName" tf:"policy_name"`
 	// The date and time, in ISO 8601 date-time format, when the policy was created.
 	UpdateDate string `json:"UpdateDate" yaml:"UpdateDate" tf:"update_date"`
-	// The policy document in JSON format. Required.
+	// The policy document in JSON format. Required. Updatable.
 	PolicyDocument string `json:"PolicyDocument" yaml:"PolicyDocument" tf:"policy_document"`
 	// Namespace. Required.
 	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`

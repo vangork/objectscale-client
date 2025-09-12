@@ -334,6 +334,26 @@ func (managementClient *ManagementClient) GetPolicy(policyArn string, namespace 
 	return &policyFn, nil
 }
 
+// Create a new version of the specified managed policy.
+//
+// policy_arn: Arn of the policy to retrieve. Cannot be empty.
+// namespace: Namespace of the policy(id of the account the policy belongs to). Cannot be empty.
+func (managementClient *ManagementClient) UpdatePolicy(policy *Policy) (bool, error) {
+	msg := C.RCString{}
+	policyJson, err := json.Marshal(policy)
+	if err != nil {
+		return false, err
+	}
+	cPolicy := intoRCString(string(policyJson))
+
+	state, errFn := C.management_client_update_policy(managementClient.managementClient, cPolicy, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
 // Delete the specified Managed Policy.
 //
 // policy_arn: Arn of the policy to delete. Cannot be empty.

@@ -327,7 +327,8 @@ impl ManagementClient {
     ///
     pub fn create_policy(&mut self, policy: Policy) -> Result<Policy> {
         self.auth()?;
-        Policy::create(self, policy)
+        let policy = Policy::create(self, policy)?;
+        Policy::get(self, &policy.arn, &policy.namespace)
     }
 
     /// Retrieve information about the specified Managed Policy.
@@ -338,6 +339,16 @@ impl ManagementClient {
     pub fn get_policy(&mut self, policy_arn: &str, namespace: &str) -> Result<Policy> {
         self.auth()?;
         Policy::get(self, policy_arn, namespace)
+    }
+
+    /// Create a new version of the specified managed policy.
+    ///
+    /// policy_arn: Arn of the policy to retrieve. Cannot be empty.
+    /// namespace: Namespace of the policy(id of the account the policy belongs to). Cannot be empty.
+    ///
+    pub fn update_policy(&mut self, policy: Policy) -> Result<bool> {
+        self.auth()?;
+        Policy::update(self, policy)
     }
 
     /// Delete the specified Managed Policy.
