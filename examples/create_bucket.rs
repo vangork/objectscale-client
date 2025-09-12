@@ -53,7 +53,9 @@ fn main() {
         // .notification_size(100)
         // .block_size_in_count(50)
         // .notification_size_in_count(10)
-        .audit_delete_expiration(100)
+        // .audit_delete_expiration(100)
+        // .is_stale_allowed(true)
+        // .is_object_lock_with_ado_allowed(false)
         .search_metadata(search_metadata)
         .build()
         .expect("build bucket");

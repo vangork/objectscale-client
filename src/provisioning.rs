@@ -112,9 +112,11 @@ pub struct Bucket {
     pub soft_quota: String,
     /// Bucket creation time
     pub created: String,
-    /// Bucket isStaleAllowed flag
+    /// Bucket isStaleAllowed flag. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub is_stale_allowed: bool,
-    /// If true Object Lock and ADO can be enabled together. See the Admin Guide for more information.
+    /// If true Object Lock and ADO can be enabled together. It cannot be changed once enabled. Default: false. Updatable
+    #[builder(setter(skip = false), default)]
     pub is_object_lock_with_ado_allowed: bool,
     /// Indicates the Retention mode for the specified object. is_object_lock_enabled and fs_access_enabled cannot be true at the same time. Can only set from false to true. Default: false. Updatable
     #[builder(setter(skip = false), default)]
@@ -653,6 +655,48 @@ impl Bucket {
         Ok(())
     }
 
+    pub(crate) fn set_is_stale_allowed(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+        is_stale_allowed: bool,
+    ) -> Result<()> {
+        let request_url = format!("{}object/bucket/{}/isstaleallowed", client.endpoint, name,);
+        let body = format!(
+            r#"{{"is_stale_allowed":"{}","namespace":"{}"}}"#,
+            is_stale_allowed, namespace
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(CONTENT_TYPE, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .body(body)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to set audit delete expiration")?;
+        Ok(())
+    }
+
+    pub(crate) fn enable_object_lock_with_ado_allowd(
+        client: &mut ManagementClient,
+        name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}object/bucket/{}/allow-object-lock-with-ado?namespace={}",
+            client.endpoint, name, namespace
+        );
+        let resp = client
+            .http_client
+            .put(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to enable object lock with ado allowd")?;
+        Ok(())
+    }
+
     pub(crate) fn update(client: &mut ManagementClient, bucket: &Self) -> Result<bool> {
         let current_bucket = Self::get(client, &bucket.name, &bucket.namespace)?;
         let mut updated = false;
@@ -700,30 +744,6 @@ impl Bucket {
             )?;
         }
 
-        if bucket.is_object_lock_enabled && !current_bucket.is_object_lock_enabled {
-            updated = true;
-            Self::enable_object_lock(client, &bucket.name, &bucket.namespace)?;
-        }
-
-        if bucket.is_object_lock_enabled
-            && (bucket.default_object_lock_retention_mode
-                != current_bucket.default_object_lock_retention_mode
-                || bucket.default_object_lock_retention_years
-                    != current_bucket.default_object_lock_retention_years
-                || bucket.default_object_lock_retention_days
-                    != current_bucket.default_object_lock_retention_days)
-        {
-            updated = true;
-            Self::set_default_lock_configuration(
-                client,
-                &bucket.name,
-                &bucket.namespace,
-                &bucket.default_object_lock_retention_mode,
-                bucket.default_object_lock_retention_years,
-                bucket.default_object_lock_retention_days,
-            )?;
-        }
-
         if current_bucket.fs_access_enabled {
             let default_group = DefaultGroup::from(bucket);
             let current_default_group = DefaultGroup::from(&current_bucket);
@@ -733,16 +753,40 @@ impl Bucket {
             }
         }
 
-        if !current_bucket.fs_access_enabled
-            && bucket.versioning_status != current_bucket.versioning_status
-        {
-            updated = true;
-            Self::set_versioning(
-                client,
-                &bucket.name,
-                &bucket.namespace,
-                &bucket.versioning_status,
-            )?;
+        if !current_bucket.fs_access_enabled {
+            if bucket.versioning_status != current_bucket.versioning_status {
+                updated = true;
+                Self::set_versioning(
+                    client,
+                    &bucket.name,
+                    &bucket.namespace,
+                    &bucket.versioning_status,
+                )?;
+            }
+
+            if bucket.is_object_lock_enabled && !current_bucket.is_object_lock_enabled {
+                updated = true;
+                Self::enable_object_lock(client, &bucket.name, &bucket.namespace)?;
+            }
+
+            if bucket.is_object_lock_enabled
+                && (bucket.default_object_lock_retention_mode
+                    != current_bucket.default_object_lock_retention_mode
+                    || bucket.default_object_lock_retention_years
+                        != current_bucket.default_object_lock_retention_years
+                    || bucket.default_object_lock_retention_days
+                        != current_bucket.default_object_lock_retention_days)
+            {
+                updated = true;
+                Self::set_default_lock_configuration(
+                    client,
+                    &bucket.name,
+                    &bucket.namespace,
+                    &bucket.default_object_lock_retention_mode,
+                    bucket.default_object_lock_retention_years,
+                    bucket.default_object_lock_retention_days,
+                )?;
+            }
         }
 
         let quota = Quota::from(bucket);
@@ -764,6 +808,22 @@ impl Bucket {
                 &bucket.namespace,
                 bucket.audit_delete_expiration,
             )?;
+        }
+
+        if bucket.is_stale_allowed != current_bucket.is_stale_allowed {
+            updated = true;
+            Self::set_is_stale_allowed(
+                client,
+                &bucket.name,
+                &bucket.namespace,
+                bucket.is_stale_allowed,
+            )?;
+        }
+
+        if bucket.is_object_lock_with_ado_allowed && !current_bucket.is_object_lock_with_ado_allowed
+        {
+            updated = true;
+            Self::enable_object_lock_with_ado_allowd(client, &bucket.name, &bucket.namespace)?;
         }
 
         Ok(updated)

@@ -32,7 +32,9 @@ fn main() {
     // bucket.versioning_status = "Suspended".to_string();
     // bucket.block_size = 300;
     // bucket.notification_size = 200;
-    bucket.audit_delete_expiration = -2;
+    // bucket.audit_delete_expiration = -2;
+    // bucket.is_stale_allowed = true;
+    // bucket.is_object_lock_with_ado_allowed = true;
 
     let state = client.update_bucket(bucket).expect("update bucket");
 
