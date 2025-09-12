@@ -29,6 +29,10 @@ fn main() {
     // bucket.default_group = "yl".to_string();
     // bucket.default_group_dir_read_permission = false;
     // bucket.default_group_file_read_permission = false;
+    // bucket.versioning_status = "Suspended".to_string();
+    // bucket.block_size = 300;
+    // bucket.notification_size = 200;
+    bucket.audit_delete_expiration = -2;
 
     let state = client.update_bucket(bucket).expect("update bucket");
 

@@ -48,6 +48,12 @@ fn main() {
         // .default_group("luis")
         // .default_group_file_read_permission(true)
         // .default_group_dir_read_permission(true)
+        // .versioning_status("")
+        // .block_size(200)
+        // .notification_size(100)
+        // .block_size_in_count(50)
+        // .notification_size_in_count(10)
+        .audit_delete_expiration(100)
         .search_metadata(search_metadata)
         .build()
         .expect("build bucket");

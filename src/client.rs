@@ -678,27 +678,9 @@ impl ManagementClient {
     ///
     pub fn create_bucket(&mut self, bucket: Bucket) -> Result<Bucket> {
         self.auth()?;
-        let namespace = bucket.namespace.clone();
-        let tags = bucket.tags.clone();
-        let name = Bucket::create(self, &bucket)?;
-        if !tags.is_empty() {
-            Bucket::add_tag(self, &name, &namespace, tags)?;
-        }
-        if bucket.is_object_lock_enabled
-            && (!bucket.default_object_lock_retention_mode.is_empty()
-                || bucket.default_object_lock_retention_years > 0
-                || bucket.default_object_lock_retention_days > 0)
-        {
-            Bucket::set_default_lock_configuration(
-                self,
-                &name,
-                &namespace,
-                &bucket.default_object_lock_retention_mode,
-                bucket.default_object_lock_retention_years,
-                bucket.default_object_lock_retention_days,
-            )?;
-        }
-        Bucket::get(self, &name, &namespace)
+        Bucket::create(self, &bucket)?;
+        Bucket::update(self, &bucket)?;
+        Bucket::get(self, &bucket.name, &bucket.namespace)
     }
 
     /// Gets bucket information for the specified bucket.
