@@ -56,7 +56,7 @@ fn main() {
                     datatype: "datetime".to_string(),
                     name: "CreateTime".to_string(),
                     r#type: "System".to_string(),
-                }
+                },
             ],
             is_enabled: true,
             ..Default::default()

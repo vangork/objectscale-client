@@ -56,7 +56,7 @@ pub struct MetaData {
 #[derive(Clone, Default, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all(serialize = "snake_case", deserialize = "camelCase"))]
 pub struct SearchMetaData {
-    /// Getter for the enabled flag. It cannot be re-enabled once disabled. Updatable.
+    /// Getter for the enabled flag. It cannot be re-enabled once disabled. Default: false. Updatable.
     pub is_enabled: bool,
     /// Metadata list. Default: []
     #[serde(deserialize_with = "deserialize_default_from_null")]
@@ -863,7 +863,8 @@ impl Bucket {
             )?;
         }
 
-        if bucket.is_object_lock_with_ado_allowed && !current_bucket.is_object_lock_with_ado_allowed {
+        if bucket.is_object_lock_with_ado_allowed && !current_bucket.is_object_lock_with_ado_allowed
+        {
             updated = true;
             Self::enable_object_lock_with_ado_allowd(client, &bucket.name, &bucket.namespace)?;
         }
@@ -880,7 +881,7 @@ impl Bucket {
         if !bucket.search_metadata.is_enabled && current_bucket.search_metadata.is_enabled {
             updated = true;
             Self::deactivate_meta_search(client, &bucket.name, &bucket.namespace)?;
-        }      
+        }
 
         Ok(updated)
     }

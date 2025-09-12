@@ -9,6 +9,8 @@ def main():
     bucket = objectscale_client.provisioning.Bucket()
     bucket.name = "luis_bucket"
     bucket.namespace = "ns1"
+    bucket.block_size = -1
+    bucket.notification_size = -1
     bucket.block_size_in_count = -1
     bucket.notification_size_in_count = -1
     bucket.audit_delete_expiration = -2
@@ -30,6 +32,7 @@ def main():
 
     search_metadata = objectscale_client.provisioning.SearchMetaData()
     search_metadata.metadata = [meta_data1, meta_data2]
+    search_metadata.is_enabled = True
     bucket.search_metadata = search_metadata
 
     try:

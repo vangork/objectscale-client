@@ -37,6 +37,8 @@ func TestBucket(t *testing.T) {
 	bucket := &objectscale.Bucket{
 		Name:                    bucketName,
 		Namespace:               namespaceName,
+		BlockSize:               -1,
+		NotificationSize:        -1,
 		BlockSizeInCount:        -1,
 		NotificationSizeInCount: -1,
 		AuditDeleteExpiration:   -2,
