@@ -2,8 +2,8 @@
 
 [ObjectScale](https://www.dell.com/en-sg/shop/storage-servers-and-networking-for-business/sf/objectscale) Golang client, binden from Rust interface.
 
-
-To use the golang client, make sure to checkout this repo and build locally as the golang client uses cgo and calls objectscale c lib which is not shipped separately.
+## Development & Test
+To use the golang client, make sure to build the C lib first as the Golang client wraps the C lib internally with cgo .
 
 ```
 cd c && cargo build --release
