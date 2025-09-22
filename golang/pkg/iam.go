@@ -54,6 +54,17 @@ type Group struct {
 	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
 }
 
+type GroupInlinePolicy struct {
+	// Simple name identifying the group. Required
+	GroupName string `json:"GroupName" yaml:"GroupName" tf:"group_name"`
+	// Simple name identifying the policy. Required
+	PolicyName string `json:"PolicyName" yaml:"PolicyName" tf:"policy_name"`
+	// The policy document in JSON format. Required
+	PolicyDocument string `json:"PolicyDocument" yaml:"PolicyDocument" tf:"policy_document"`
+	// Namespace. Required
+	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
+}
+
 type GroupPolicyAttachment struct {
 	// Name of the group to attach the policy. Required
 	GroupName string `json:"GroupName" yaml:"GroupName" tf:"group_name"`

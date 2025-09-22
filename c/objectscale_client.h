@@ -566,6 +566,63 @@ struct RCString management_client_list_user_inline_policies(struct ManagementCli
                                                             struct RCString *err);
 
 /**
+ * Add Inline Policy for IAM Group.
+ *
+ * group_inline_policy: GroupInlinePolicy to create
+ *
+ */
+struct RCString management_client_create_group_inline_policy(struct ManagementClient *management_client,
+                                                             struct RCString group_inline_policy,
+                                                             struct RCString *err);
+
+/**
+ * Get specific inlinePolicy for IAM Group.
+ *
+ * group_name: Name of the group
+ * policy_name: Name of the policy
+ * namespace: Namespace of the group
+ *
+ */
+struct RCString management_client_get_group_inline_policy(struct ManagementClient *management_client,
+                                                          struct RCString group_name,
+                                                          struct RCString policy_name,
+                                                          struct RCString namespace_,
+                                                          struct RCString *err);
+
+/**
+ * Update Inline Policy for IAM group.
+ *
+ * group_inline_policy: GroupInlinePolicy to update
+ *
+ */
+bool management_client_update_group_inline_policy(struct ManagementClient *management_client,
+                                                  struct RCString group_inline_policy,
+                                                  struct RCString *err);
+
+/**
+ * Delete specific inlinePolicy for IAM User.
+ *
+ * group_name: Name of the group
+ * policy_name: Name of the policy
+ * namespace: Namespace of the group
+ *
+ */
+void management_client_delete_group_inline_policy(struct ManagementClient *management_client,
+                                                  struct RCString group_name,
+                                                  struct RCString policy_name,
+                                                  struct RCString namespace_,
+                                                  struct RCString *err);
+
+/**
+ * Lists all group inline policies.
+ *
+ */
+struct RCString management_client_list_group_inline_policies(struct ManagementClient *management_client,
+                                                             struct RCString group_name,
+                                                             struct RCString namespace_,
+                                                             struct RCString *err);
+
+/**
  * Gets the list of buckets for the specified namespace.
  *
  * namespace: Namespace for which buckets should be listed. Cannot be empty.

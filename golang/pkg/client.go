@@ -1026,6 +1026,111 @@ func (managementClient *ManagementClient) ListUserInlinePolicies(userName string
 	return userInlinePolicysFn, nil
 }
 
+// Add Inline Policy for IAM Group.
+//
+// group_inline_policy: GroupInlinePolicy to create
+func (managementClient *ManagementClient) CreateGroupInlinePolicy(groupInlinePolicy *GroupInlinePolicy) (*GroupInlinePolicy, error) {
+	msg := C.RCString{}
+	groupInlinePolicyJson, err := json.Marshal(groupInlinePolicy)
+	if err != nil {
+		return nil, err
+	}
+	cGroupInlinePolicy := intoRCString(string(groupInlinePolicyJson))
+
+	cGroupInlinePolicyFn, errFn := C.management_client_create_group_inline_policy(managementClient.managementClient, cGroupInlinePolicy, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	groupInlinePolicyYamlFn := fromRCString(cGroupInlinePolicyFn)
+	var groupInlinePolicyFn GroupInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(groupInlinePolicyYamlFn), &groupInlinePolicyFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &groupInlinePolicyFn, nil
+}
+
+// Get specific inlinePolicy for IAM Group.
+//
+// group_name: Name of the group
+// policy_name: Name of the policy
+// namespace: Namespace of the group
+func (managementClient *ManagementClient) GetGroupInlinePolicy(groupName string, policyName string, namespace string) (*GroupInlinePolicy, error) {
+	msg := C.RCString{}
+	cGroupName := intoRCString(groupName)
+	cPolicyName := intoRCString(policyName)
+	cNamespace := intoRCString(namespace)
+
+	cGroupInlinePolicyFn, errFn := C.management_client_get_group_inline_policy(managementClient.managementClient, cGroupName, cPolicyName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	groupInlinePolicyYamlFn := fromRCString(cGroupInlinePolicyFn)
+	var groupInlinePolicyFn GroupInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(groupInlinePolicyYamlFn), &groupInlinePolicyFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &groupInlinePolicyFn, nil
+}
+
+// Update Inline Policy for IAM group.
+//
+// group_inline_policy: GroupInlinePolicy to update
+func (managementClient *ManagementClient) UpdateGroupInlinePolicy(groupInlinePolicy *GroupInlinePolicy) (bool, error) {
+	msg := C.RCString{}
+	groupInlinePolicyJson, err := json.Marshal(groupInlinePolicy)
+	if err != nil {
+		return false, err
+	}
+	cGroupInlinePolicy := intoRCString(string(groupInlinePolicyJson))
+
+	state, errFn := C.management_client_update_group_inline_policy(managementClient.managementClient, cGroupInlinePolicy, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Delete specific inlinePolicy for IAM User.
+//
+// group_name: Name of the group
+// policy_name: Name of the policy
+// namespace: Namespace of the group
+func (managementClient *ManagementClient) DeleteGroupInlinePolicy(groupName string, policyName string, namespace string) error {
+	msg := C.RCString{}
+	cGroupName := intoRCString(groupName)
+	cPolicyName := intoRCString(policyName)
+	cNamespace := intoRCString(namespace)
+
+	_, errFn := C.management_client_delete_group_inline_policy(managementClient.managementClient, cGroupName, cPolicyName, cNamespace, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// Lists all group inline policies.
+func (managementClient *ManagementClient) ListGroupInlinePolicies(groupName string, namespace string) ([]GroupInlinePolicy, error) {
+	msg := C.RCString{}
+	cGroupName := intoRCString(groupName)
+	cNamespace := intoRCString(namespace)
+
+	cGroupInlinePolicysFn, errFn := C.management_client_list_group_inline_policies(managementClient.managementClient, cGroupName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	groupInlinePolicysYamlFn := fromRCString(cGroupInlinePolicysFn)
+	var groupInlinePolicysFn []GroupInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(groupInlinePolicysYamlFn), &groupInlinePolicysFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return groupInlinePolicysFn, nil
+}
+
 // Gets the list of buckets for the specified namespace.
 //
 // namespace: Namespace for which buckets should be listed. Cannot be empty.

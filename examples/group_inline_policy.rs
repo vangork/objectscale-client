@@ -9,7 +9,7 @@
 //
 
 use objectscale_client::client::ManagementClient;
-use objectscale_client::iam::UserInlinePolicyBuilder;
+use objectscale_client::iam::GroupInlinePolicyBuilder;
 
 fn main() {
     let endpoint = "https://10.225.108.217:4443";
@@ -17,7 +17,7 @@ fn main() {
     let password = "Password123!";
     let insecure = true;
 
-    let user_name = "luis_user";
+    let group_name = "luis_group";
     let namespace = "ns1";
 
     let policy_name = "inline_policy_1";
@@ -27,42 +27,42 @@ fn main() {
     let mut client: ManagementClient =
         ManagementClient::new(endpoint, username, password, insecure).expect("management client");
 
-    let user_inline_policy = UserInlinePolicyBuilder::default()
-        .user_name(user_name)
+    let group_inline_policy = GroupInlinePolicyBuilder::default()
+        .group_name(group_name)
         .policy_name(policy_name)
         .policy_document(policy_document)
         .namespace(namespace)
         .build()
-        .expect("build user inline policy");
+        .expect("build group inline policy");
 
-    let mut user_inline_policy = client
-        .create_user_inline_policy(user_inline_policy)
-        .expect("create user inline policy");
-    println!("Created user inline policy: {:?}", user_inline_policy);
+    let mut group_inline_policy = client
+        .create_group_inline_policy(group_inline_policy)
+        .expect("create group inline policy");
+    println!("Created group inline policy: {:?}", group_inline_policy);
 
-    user_inline_policy.policy_document = new_policy_document.to_string();
+    group_inline_policy.policy_document = new_policy_document.to_string();
     let state = client
-        .update_user_inline_policy(user_inline_policy)
-        .expect("update user inline policy");
-    println!("Update user inline policy: {}", state);
+        .update_group_inline_policy(group_inline_policy)
+        .expect("update group inline policy");
+    println!("Update group inline policy: {}", state);
 
-    let user_inline_policy = client
-        .get_user_inline_policy(user_name, policy_name, namespace)
-        .expect("get user inline policy");
-    println!("Got user inline policy: {:?}", user_inline_policy);
+    let group_inline_policy = client
+        .get_group_inline_policy(group_name, policy_name, namespace)
+        .expect("get group inline policy");
+    println!("Got group inline policy: {:?}", group_inline_policy);
 
-    let user_inline_policies = client
-        .list_user_inline_policies(user_name, namespace)
-        .expect("list user inline policies");
-    println!("List user inline policies: {:?}", user_inline_policies);
+    let group_inline_policies = client
+        .list_group_inline_policies(group_name, namespace)
+        .expect("list group inline policies");
+    println!("List group inline policies: {:?}", group_inline_policies);
 
     client
-        .delete_user_inline_policy(user_name, policy_name, namespace)
-        .expect("delete user inline policy");
-    println!("Deleted user inline policy");
+        .delete_group_inline_policy(group_name, policy_name, namespace)
+        .expect("delete group inline policy");
+    println!("Deleted group inline policy");
 
-    let user_inline_policies = client
-        .list_user_inline_policies(user_name, namespace)
-        .expect("list user inline policies");
-    println!("List user inline policies: {:?}", user_inline_policies);
+    let group_inline_policies = client
+        .list_group_inline_policies(group_name, namespace)
+        .expect("list group inline policies");
+    println!("List group inline policies: {:?}", group_inline_policies);
 }

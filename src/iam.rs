@@ -2831,3 +2831,198 @@ impl UserInlinePolicy {
         Ok(policies)
     }
 }
+
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "PascalCase")]
+#[builder(setter(skip))]
+pub struct GroupInlinePolicy {
+    /// Simple name identifying the group. Required
+    #[builder(setter(into))]
+    pub group_name: String,
+    /// Simple name identifying the policy. Required
+    #[builder(setter(into))]
+    pub policy_name: String,
+    /// The policy document in JSON format. Required
+    #[builder(setter(into))]
+    pub policy_document: String,
+    /// Namespace. Required
+    #[builder(setter(into))]
+    #[serde(default)]
+    pub namespace: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct GetGroupPolicyResponse {
+    pub response_metadata: ResponseMetadata,
+    pub get_group_policy_result: GroupInlinePolicy,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListGroupPoliciesResult {
+    pub policy_names: Vec<String>,
+    pub is_truncated: bool,
+    pub marker: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListGroupPoliciesResponse {
+    pub response_metadata: ResponseMetadata,
+    pub list_group_policies_result: ListGroupPoliciesResult,
+}
+
+impl GroupInlinePolicy {
+    pub(crate) fn create(client: &mut ManagementClient, group_inline_policy: &Self) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=PutGroupPolicy&GroupName={}&PolicyDocument={}&PolicyName={}",
+            client.endpoint,
+            group_inline_policy.group_name,
+            group_inline_policy.policy_document,
+            group_inline_policy.policy_name,
+        );
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", &group_inline_policy.namespace)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to create group inline policy")?;
+        Ok(())
+    }
+
+    pub(crate) fn get(
+        client: &mut ManagementClient,
+        group_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<Self> {
+        let request_url = format!(
+            "{}iam?Action=GetGroupPolicy&GroupName={}&PolicyName={}",
+            client.endpoint, group_name, policy_name,
+        );
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get group inline policy")?;
+        let mut resp: GetGroupPolicyResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise GetGroupPolicyResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        resp.get_group_policy_result.namespace = namespace.to_string();
+        Ok(resp.get_group_policy_result)
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, policy: &Self) -> Result<bool> {
+        let current_policy = Self::get(
+            client,
+            &policy.group_name,
+            &policy.policy_name,
+            &policy.namespace,
+        )?;
+        // TODO: compare after pretty-printing format
+        let url_string = format!(
+            "http://example.com/?param={}",
+            current_policy.policy_document
+        );
+        let url = Url::parse(&url_string).expect("Failed to parse policy document");
+        let (_, value) = url.query_pairs().next().expect("policy document");
+        if value != current_policy.policy_document {
+            // create and update share the same request URL
+            Self::create(client, policy)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub(crate) fn delete(
+        client: &mut ManagementClient,
+        group_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=DeleteGroupPolicy&GroupName={}&PolicyName={}",
+            client.endpoint, group_name, policy_name,
+        );
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to delete group inline policy")?;
+        Ok(())
+    }
+
+    pub(crate) fn list(
+        client: &mut ManagementClient,
+        group_name: &str,
+        namespace: &str,
+    ) -> Result<Vec<Self>> {
+        let request_url = format!(
+            "{}iam?Action=ListGroupPolicies&GroupName={}",
+            client.endpoint, group_name,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text =
+            get_content_text(resp).with_context(|| "Failed to list group inline policies")?;
+        let mut resp: ListGroupPoliciesResponse =
+            serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListGroupPoliciesResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+        let mut policies: Vec<Self> = vec![];
+        for policy_name in resp.list_group_policies_result.policy_names.iter() {
+            let policy = Self::get(client, group_name, policy_name, namespace)?;
+            policies.push(policy);
+        }
+        while let Some(marker) = resp.list_group_policies_result.marker {
+            let request_url = format!(
+                "{}iam?Action=ListUserPolicies&UserName={}&Marker={}",
+                client.endpoint, group_name, marker,
+            );
+            let response = client
+                .http_client
+                .post(request_url)
+                .header(ACCEPT, "application/json")
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+                .header("x-emc-namespace", namespace)
+                .send()?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list user inline policies")?;
+            resp = serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListGroupPoliciesResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+            for policy_name in resp.list_group_policies_result.policy_names.iter() {
+                let policy = Self::get(client, group_name, policy_name, namespace)?;
+                policies.push(policy);
+            }
+        }
+        Ok(policies)
+    }
+}

@@ -11,9 +11,9 @@
 #![allow(unused_imports)]
 
 use crate::iam::{
-    AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, IamTag, PermissionsBoundary,
-    Policy, Role, RolePolicyAttachment, SamlProvider, User, UserGroupMembership, UserInlinePolicy,
-    UserPolicyAttachment,
+    AccessKey, EntitiesForPolicy, Group, GroupInlinePolicy, GroupPolicyAttachment, IamTag,
+    PermissionsBoundary, Policy, Role, RolePolicyAttachment, SamlProvider, User,
+    UserGroupMembership, UserInlinePolicy, UserPolicyAttachment,
 };
 use crate::provisioning::{
     Bucket, BucketTag, MetaData, MinMaxGovernor, ProvisioningLink, SearchMetaData, StoragePool,
@@ -806,6 +806,103 @@ impl ManagementClient {
             Ok(user_inline_policys) => Ok(user_inline_policys
                 .into_iter()
                 .map(UserInlinePolicy::from)
+                .collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Add Inline Policy for IAM Group.
+    ///
+    /// group_inline_policy: GroupInlinePolicy to create
+    ///
+    pub fn create_group_inline_policy(
+        &mut self,
+        group_inline_policy: &GroupInlinePolicy,
+    ) -> PyResult<GroupInlinePolicy> {
+        let group_inline_policy = iam::GroupInlinePolicy::from(group_inline_policy.clone());
+        let result = self
+            .management_client
+            .create_group_inline_policy(group_inline_policy);
+        match result {
+            Ok(group_inline_policy) => Ok(GroupInlinePolicy::from(group_inline_policy)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Get specific inlinePolicy for IAM Group.
+    ///
+    /// group_name: Name of the group
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the group
+    ///
+    pub fn get_group_inline_policy(
+        &mut self,
+        group_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> PyResult<GroupInlinePolicy> {
+        let result =
+            self.management_client
+                .get_group_inline_policy(group_name, policy_name, namespace);
+        match result {
+            Ok(group_inline_policy) => Ok(GroupInlinePolicy::from(group_inline_policy)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Update Inline Policy for IAM group.
+    ///
+    /// group_inline_policy: GroupInlinePolicy to update
+    ///
+    pub fn update_group_inline_policy(
+        &mut self,
+        group_inline_policy: &GroupInlinePolicy,
+    ) -> PyResult<bool> {
+        let group_inline_policy = iam::GroupInlinePolicy::from(group_inline_policy.clone());
+        let result = self
+            .management_client
+            .update_group_inline_policy(group_inline_policy);
+        match result {
+            Ok(state) => Ok(state),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Delete specific inlinePolicy for IAM User.
+    ///
+    /// group_name: Name of the group
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the group
+    ///
+    pub fn delete_group_inline_policy(
+        &mut self,
+        group_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> PyResult<()> {
+        let result =
+            self.management_client
+                .delete_group_inline_policy(group_name, policy_name, namespace);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Lists all group inline policies.
+    ///
+    pub fn list_group_inline_policies(
+        &mut self,
+        group_name: &str,
+        namespace: &str,
+    ) -> PyResult<Vec<GroupInlinePolicy>> {
+        let result = self
+            .management_client
+            .list_group_inline_policies(group_name, namespace);
+        match result {
+            Ok(group_inline_policys) => Ok(group_inline_policys
+                .into_iter()
+                .map(GroupInlinePolicy::from)
                 .collect()),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }

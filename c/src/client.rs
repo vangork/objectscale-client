@@ -1889,6 +1889,206 @@ pub unsafe extern "C" fn management_client_list_user_inline_policies(
     }
 }
 
+/// Add Inline Policy for IAM Group.
+///
+/// group_inline_policy: GroupInlinePolicy to create
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_create_group_inline_policy(
+    management_client: *mut ManagementClient,
+    group_inline_policy: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let group_inline_policy = group_inline_policy.to_string();
+        let group_inline_policy: objectscale_client::iam::GroupInlinePolicy =
+            serde_json::from_str(&group_inline_policy).expect("deserialize group_inline_policy");
+
+        management_client
+            .management_client
+            .create_group_inline_policy(group_inline_policy)
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|group_inline_policy| {
+                serde_yaml::to_string(&group_inline_policy).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(group_inline_policy) => RCString::from_str(group_inline_policy.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during create group inline policy", err);
+            RCString::null()
+        }
+    }
+}
+
+/// Get specific inlinePolicy for IAM Group.
+///
+/// group_name: Name of the group
+/// policy_name: Name of the policy
+/// namespace: Namespace of the group
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_get_group_inline_policy(
+    management_client: *mut ManagementClient,
+    group_name: RCString,
+    policy_name: RCString,
+    namespace: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let group_name = group_name.to_string();
+        let policy_name = policy_name.to_string();
+        let namespace = namespace.to_string();
+
+        management_client.management_client.get_group_inline_policy(
+            &group_name,
+            &policy_name,
+            &namespace,
+        )
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|group_inline_policy| {
+                serde_yaml::to_string(&group_inline_policy).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(group_inline_policy) => RCString::from_str(group_inline_policy.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during get group inline policy", err);
+            RCString::null()
+        }
+    }
+}
+
+/// Update Inline Policy for IAM group.
+///
+/// group_inline_policy: GroupInlinePolicy to update
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_update_group_inline_policy(
+    management_client: *mut ManagementClient,
+    group_inline_policy: RCString,
+    err: Option<&mut RCString>,
+) -> bool {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let group_inline_policy = group_inline_policy.to_string();
+        let group_inline_policy: objectscale_client::iam::GroupInlinePolicy =
+            serde_json::from_str(&group_inline_policy).expect("deserialize group_inline_policy");
+
+        management_client
+            .management_client
+            .update_group_inline_policy(group_inline_policy)
+    })) {
+        Ok(result) => {
+            clear_error();
+            match result {
+                Ok(state) => return state,
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    false
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during update group inline policy", err);
+            false
+        }
+    }
+}
+
+/// Delete specific inlinePolicy for IAM User.
+///
+/// group_name: Name of the group
+/// policy_name: Name of the policy
+/// namespace: Namespace of the group
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_delete_group_inline_policy(
+    management_client: *mut ManagementClient,
+    group_name: RCString,
+    policy_name: RCString,
+    namespace: RCString,
+    err: Option<&mut RCString>,
+) {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let group_name = group_name.to_string();
+        let policy_name = policy_name.to_string();
+        let namespace = namespace.to_string();
+
+        management_client
+            .management_client
+            .delete_group_inline_policy(&group_name, &policy_name, &namespace)
+    })) {
+        Ok(result) => {
+            clear_error();
+            match result {
+                Ok(_) => return,
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during delete group inline policy", err);
+        }
+    }
+}
+
+/// Lists all group inline policies.
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_list_group_inline_policies(
+    management_client: *mut ManagementClient,
+    group_name: RCString,
+    namespace: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let group_name = group_name.to_string();
+        let namespace = namespace.to_string();
+
+        management_client
+            .management_client
+            .list_group_inline_policies(&group_name, &namespace)
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|group_inline_policys| {
+                serde_yaml::to_string(&group_inline_policys).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(group_inline_policys) => RCString::from_str(group_inline_policys.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during list group inline policies", err);
+            RCString::null()
+        }
+    }
+}
+
 /// Gets the list of buckets for the specified namespace.
 ///
 /// namespace: Namespace for which buckets should be listed. Cannot be empty.

@@ -10,9 +10,9 @@
 
 mod common;
 use objectscale_client::iam::{
-    AccessKeyBuilder, GroupBuilder, GroupPolicyAttachmentBuilder, IamTag, PermissionsBoundary,
-    PolicyBuilder, RoleBuilder, RolePolicyAttachmentBuilder, UserBuilder, UserInlinePolicyBuilder,
-    UserPolicyAttachmentBuilder,
+    AccessKeyBuilder, GroupBuilder, GroupInlinePolicyBuilder, GroupPolicyAttachmentBuilder, IamTag,
+    PermissionsBoundary, PolicyBuilder, RoleBuilder, RolePolicyAttachmentBuilder, UserBuilder,
+    UserInlinePolicyBuilder, UserPolicyAttachmentBuilder,
 };
 use objectscale_client::tenancy::NamespaceBuilder;
 
@@ -522,6 +522,74 @@ fn test_user_inline_policy() {
     client
         .delete_user(user_name, namespace_name)
         .expect("delete user");
+
+    client
+        .delete_namespace(&namespace.id)
+        .expect("delete namespace");
+}
+
+#[test]
+fn test_group_inline_policy() {
+    let mut client = common::create_management_client();
+
+    let namespace_name = "iam_test_group_inline_policy";
+    let namespace = NamespaceBuilder::default()
+        .name(namespace_name)
+        .default_data_services_vpool(REPLICATION_GROUP)
+        .build()
+        .expect("new namespace");
+    let namespace: objectscale_client::tenancy::Namespace = client
+        .create_namespace(namespace)
+        .expect("create namespace");
+
+    let group_name = "iam_test_group_inline_policy";
+    let group = GroupBuilder::default()
+        .group_name(group_name)
+        .namespace(&namespace.id)
+        .build()
+        .expect("build group");
+    let _ = client.create_group(group).expect("create group");
+
+    let policy_document = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22iam%3AListAttachedGroupPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUsers%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUserPolicies%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D";
+    let policy_name = "iam_test_group_inline_policy";
+    let group_inline_policy = GroupInlinePolicyBuilder::default()
+        .group_name(group_name)
+        .policy_name(policy_name)
+        .policy_document(policy_document)
+        .namespace(namespace_name)
+        .build()
+        .expect("build group inline policy");
+    let mut group_inline_policy = client
+        .create_group_inline_policy(group_inline_policy)
+        .expect("create group inline policy");
+    assert_eq!(group_inline_policy.group_name, group_name);
+    assert_eq!(group_inline_policy.policy_name, policy_name);
+    assert_eq!(group_inline_policy.namespace, namespace.id);
+
+    let group_inline_policies = client
+        .list_group_inline_policies(group_name, namespace_name)
+        .expect("list group inline policy");
+    assert!(group_inline_policies.contains(&group_inline_policy));
+
+    group_inline_policy.policy_document = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22iam%3AListUsers%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUserPolicies%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D".to_string();
+    let state = client
+        .update_group_inline_policy(group_inline_policy)
+        .expect("update group inline policy");
+    assert!(state);
+    let group_inline_policy = client
+        .get_group_inline_policy(group_name, policy_name, namespace_name)
+        .expect("get group inline policy");
+    assert_eq!(group_inline_policy.group_name, group_name);
+    assert_eq!(group_inline_policy.policy_name, policy_name);
+    assert_eq!(group_inline_policy.namespace, namespace.id);
+
+    client
+        .delete_group_inline_policy(group_name, policy_name, namespace_name)
+        .expect("delete group policy attachment");
+
+    client
+        .delete_group(group_name, namespace_name)
+        .expect("delete group");
 
     client
         .delete_namespace(&namespace.id)

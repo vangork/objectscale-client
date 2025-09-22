@@ -179,6 +179,58 @@ impl Group {
 //
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
+pub(crate) struct GroupInlinePolicy {
+    // Simple name identifying the group. Required
+    #[pyo3(set)]
+    group_name: String,
+    // Simple name identifying the policy. Required
+    #[pyo3(set)]
+    policy_name: String,
+    // The policy document in JSON format. Required
+    #[pyo3(set)]
+    policy_document: String,
+    // Namespace. Required
+    #[pyo3(set)]
+    namespace: String,
+}
+
+impl From<iam::GroupInlinePolicy> for GroupInlinePolicy {
+    fn from(group_inline_policy: iam::GroupInlinePolicy) -> Self {
+        Self {
+            group_name: group_inline_policy.group_name,
+            policy_name: group_inline_policy.policy_name,
+            policy_document: group_inline_policy.policy_document,
+            namespace: group_inline_policy.namespace,
+        }
+    }
+}
+
+impl From<GroupInlinePolicy> for iam::GroupInlinePolicy {
+    fn from(group_inline_policy: GroupInlinePolicy) -> Self {
+        Self {
+            group_name: group_inline_policy.group_name,
+            policy_name: group_inline_policy.policy_name,
+            policy_document: group_inline_policy.policy_document,
+            namespace: group_inline_policy.namespace,
+        }
+    }
+}
+
+#[pymethods]
+impl GroupInlinePolicy {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", serde_json::to_string(self).unwrap())
+    }
+}
+
+//
+#[derive(Clone, Debug, Default, Serialize)]
+#[pyclass(get_all)]
 pub(crate) struct GroupPolicyAttachment {
     // Name of the group to attach the policy. Required
     #[pyo3(set)]
