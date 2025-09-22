@@ -10,7 +10,6 @@
 
 //! Defines identity and access resources details.
 //!
-
 use crate::client::{ManagementClient, AUTH_HEADER_KEY};
 use crate::response::get_content_text;
 use anyhow::{Context as _, Result};

@@ -1,6 +1,6 @@
 # ObjectScale client auto bindgen
 
-Auto generate Objectscale golang & python client from rust client codebase.
+Auto generate Objectscale Golang & Python client from Rust client codebase.
 
 ```
 cargo run

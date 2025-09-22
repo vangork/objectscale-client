@@ -1,8 +1,6 @@
 # ObjectScale-Client
 
-This repo implements a Rust client for Dell ObjectScale management based on [ObjectScale 4.0.0.0 REST API Guide](https://dl.dell.com/downloads/400K3_ObjectScale-4.0.0.0---REST-API-Reference.zip).
-
-It can also automatically genetate the according golang & python client via Rust FFI binding.
+An [ObjectScale](https://www.dell.com/en-sg/shop/storage-servers-and-networking-for-business/sf/objectscale) REST API client library written in Rust, binding to different languages(Python, Golang, C) via foreign function interface.
 
 ## Examples
 
