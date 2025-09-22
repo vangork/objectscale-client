@@ -1372,6 +1372,16 @@ impl Bindgen {
                 let mut w = file_writers.get_mut(&file_name).unwrap();
                 let header = formatdoc!(
                     r#"
+                    //
+                    // Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+                    //
+                    // Licensed under the Apache License, Version 2.0 (the "License");
+                    // you may not use this file except in compliance with the License.
+                    // You may obtain a copy of the License at
+                    //
+                    // http://www.apache.org/licenses/LICENSE-2.0
+                    //
+
                     use objectscale_client::{};
                     use pyo3::prelude::*;
                     use serde::Serialize;
@@ -1629,6 +1639,16 @@ impl Bindgen {
 
                 let header = formatdoc!(
                     r#"
+                    //
+                    // Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+                    //
+                    // Licensed under the Apache License, Version 2.0 (the "License");
+                    // you may not use this file except in compliance with the License.
+                    // You may obtain a copy of the License at
+                    //
+                    // http://www.apache.org/licenses/LICENSE-2.0
+                    //
+
                     #![allow(unused_imports)]
 
                     {}{}
@@ -1853,6 +1873,22 @@ impl Bindgen {
             .truncate(true)
             .open(file_path)
             .unwrap();
+
+        let license_header = formatdoc!(
+            r#"
+            //
+            // Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+            //
+            // Licensed under the Apache License, Version 2.0 (the "License");
+            // you may not use this file except in compliance with the License.
+            // You may obtain a copy of the License at
+            //
+            // http://www.apache.org/licenses/LICENSE-2.0
+            //
+            
+            "#
+        );
+        writeln!(&mut file_writer, "{}", license_header).unwrap();
 
         let mut mods = String::new();
         for key in objects.keys() {
