@@ -51,7 +51,7 @@ dependencies = [
 
 [[package]]
 name = "auto-bindgen"
-version = "0.2.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "convert_case",
@@ -843,7 +843,7 @@ dependencies = [
 
 [[package]]
 name = "objectscale-client"
-version = "0.2.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -856,7 +856,7 @@ dependencies = [
 
 [[package]]
 name = "objectscale-client-c"
-version = "0.2.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "cbindgen",
@@ -868,7 +868,7 @@ dependencies = [
 
 [[package]]
 name = "objectscale-client-python"
-version = "0.2.1"
+version = "1.0.0"
 dependencies = [
  "objectscale-client",
  "pyo3",
