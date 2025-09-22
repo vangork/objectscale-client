@@ -1,6 +1,6 @@
 # ObjectScale-Client
 
-An [ObjectScale](https://www.dell.com/en-sg/shop/storage-servers-and-networking-for-business/sf/objectscale) REST API client library written in Rust, binding to different languages(Python, Golang, C) via foreign function interface.
+An [ObjectScale](https://www.dell.com/en-sg/shop/storage-servers-and-networking-for-business/sf/objectscale) REST API Rust client library, binding to different languages(Python, Golang, C) via foreign function interface.
 
 ## Examples
 

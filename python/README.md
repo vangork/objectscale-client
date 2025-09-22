@@ -1,6 +1,5 @@
 # ObjectScale Python client
-
-This project provides a way to interact with [ObjectScale](https://www.dell.com/en-hk/dt/storage/objectscale.htm) using Python client.
+[ObjectScale](https://www.dell.com/en-sg/shop/storage-servers-and-networking-for-business/sf/objectscale) Python client, binden from Rust interface.
 
 ## Build & Install
 Build the wheels package
