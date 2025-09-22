@@ -1,4 +1,3 @@
-
 //
 // Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
 //
@@ -8,6 +7,7 @@
 //
 // http://www.apache.org/licenses/LICENSE-2.0
 //
+
 use objectscale_client::client::ManagementClient;
 
 fn main() {

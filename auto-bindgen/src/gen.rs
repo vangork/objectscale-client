@@ -490,6 +490,29 @@ impl Bindgen {
                     .unwrap();
                 file_writers.insert(file_name.clone(), file);
                 let mut w = file_writers.get_mut(&file_name).unwrap();
+                writeln!(&mut w, "//").unwrap();
+                writeln!(
+                    &mut w,
+                    "// Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved."
+                )
+                .unwrap();
+                writeln!(&mut w, "//").unwrap();
+                writeln!(
+                    &mut w,
+                    r#"// Licensed under the Apache License, Version 2.0 (the "License");"#
+                )
+                .unwrap();
+                writeln!(
+                    &mut w,
+                    "// you may not use this file except in compliance with the License."
+                )
+                .unwrap();
+                writeln!(&mut w, "// You may obtain a copy of the License at").unwrap();
+                writeln!(&mut w, "//").unwrap();
+                writeln!(&mut w, "// http://www.apache.org/licenses/LICENSE-2.0").unwrap();
+                writeln!(&mut w, "//").unwrap();
+                writeln!(&mut w, "").unwrap();
+
                 writeln!(&mut w, "use crate::error::{{clear_error, set_error}};").unwrap();
                 writeln!(&mut w, "use crate::ffi::RCString;").unwrap();
                 writeln!(&mut w, "use anyhow::anyhow;").unwrap();
@@ -857,6 +880,16 @@ impl Bindgen {
                 let mut w = file_writers.get_mut(&file_name).unwrap();
                 let header = formatdoc!(
                     r#"
+                    //
+                    // Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
+                    //
+                    // Licensed under the Apache License, Version 2.0 (the "License");
+                    // you may not use this file except in compliance with the License.
+                    // You may obtain a copy of the License at
+                    //
+                    // http://www.apache.org/licenses/LICENSE-2.0
+                    //
+
                     package pkg
 
                     // #include "objectscale_client.h"
