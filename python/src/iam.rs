@@ -610,7 +610,7 @@ pub(crate) struct User {
     // Simple name identifying the User. Required
     #[pyo3(set)]
     user_name: String,
-    // List of Tags associated with the User. Default: [] Updatable
+    // List of Tags associated with the User. Default: []. Updatable
     #[pyo3(set)]
     tags: Vec<IamTag>,
     // Namespace. Required
@@ -697,6 +697,58 @@ impl From<UserGroupMembership> for iam::UserGroupMembership {
 
 #[pymethods]
 impl UserGroupMembership {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", serde_json::to_string(self).unwrap())
+    }
+}
+
+//
+#[derive(Clone, Debug, Default, Serialize)]
+#[pyclass(get_all)]
+pub(crate) struct UserInlinePolicy {
+    // Simple name identifying the user. Required
+    #[pyo3(set)]
+    user_name: String,
+    // Simple name identifying the policy. Required
+    #[pyo3(set)]
+    policy_name: String,
+    // The policy document in JSON format. Required
+    #[pyo3(set)]
+    policy_document: String,
+    // Namespace. Required
+    #[pyo3(set)]
+    namespace: String,
+}
+
+impl From<iam::UserInlinePolicy> for UserInlinePolicy {
+    fn from(user_inline_policy: iam::UserInlinePolicy) -> Self {
+        Self {
+            user_name: user_inline_policy.user_name,
+            policy_name: user_inline_policy.policy_name,
+            policy_document: user_inline_policy.policy_document,
+            namespace: user_inline_policy.namespace,
+        }
+    }
+}
+
+impl From<UserInlinePolicy> for iam::UserInlinePolicy {
+    fn from(user_inline_policy: UserInlinePolicy) -> Self {
+        Self {
+            user_name: user_inline_policy.user_name,
+            policy_name: user_inline_policy.policy_name,
+            policy_document: user_inline_policy.policy_document,
+            namespace: user_inline_policy.namespace,
+        }
+    }
+}
+
+#[pymethods]
+impl UserInlinePolicy {
     #[new]
     fn new() -> Self {
         Self::default()

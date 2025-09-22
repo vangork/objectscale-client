@@ -13,7 +13,7 @@
 
 use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, Policy, Role, RolePolicyAttachment,
-    SamlProvider, User, UserGroupMembership, UserPolicyAttachment,
+    SamlProvider, User, UserGroupMembership, UserInlinePolicy, UserPolicyAttachment,
 };
 use crate::provisioning::{Bucket, StoragePool, Vdc, VdcKeystore};
 use crate::replication::ReplicationGroup;
@@ -671,6 +671,79 @@ impl ManagementClient {
     ) -> Result<Vec<UserGroupMembership>> {
         self.auth()?;
         UserGroupMembership::list_by_group(self, group_name, namespace)
+    }
+
+    /// Add Inline Policy for IAM User.
+    ///
+    /// user_inline_policy: UserInlinePolicy to create
+    ///
+    pub fn create_user_inline_policy(
+        &mut self,
+        user_inline_policy: UserInlinePolicy,
+    ) -> Result<UserInlinePolicy> {
+        self.auth()?;
+        UserInlinePolicy::create(self, &user_inline_policy)?;
+        UserInlinePolicy::get(
+            self,
+            &user_inline_policy.user_name,
+            &user_inline_policy.policy_name,
+            &user_inline_policy.namespace,
+        )
+    }
+
+    /// Get specific inlinePolicy for IAM User.
+    ///
+    /// user_name: Name of the user
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the user
+    ///
+    pub fn get_user_inline_policy(
+        &mut self,
+        user_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<UserInlinePolicy> {
+        self.auth()?;
+        UserInlinePolicy::get(self, user_name, policy_name, namespace)
+    }
+
+    /// Update Inline Policy for IAM User.
+    ///
+    /// user_inline_policy: UserInlinePolicy to update
+    ///
+    pub fn update_user_inline_policy(
+        &mut self,
+        user_inline_policy: UserInlinePolicy,
+    ) -> Result<bool> {
+        self.auth()?;
+        UserInlinePolicy::update(self, &user_inline_policy)
+    }
+
+    /// Delete specific inlinePolicy for IAM User.
+    ///
+    /// user_name: Name of the user
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the user
+    ///
+    pub fn delete_user_inline_policy(
+        &mut self,
+        user_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        self.auth()?;
+        UserInlinePolicy::delete(self, user_name, policy_name, namespace)
+    }
+
+    /// Lists all user inline policies.
+    ///
+    pub fn list_user_inline_policies(
+        &mut self,
+        user_name: &str,
+        namespace: &str,
+    ) -> Result<Vec<UserInlinePolicy>> {
+        self.auth()?;
+        UserInlinePolicy::list(self, user_name, namespace)
     }
 
     /// Gets the list of buckets for the specified namespace.

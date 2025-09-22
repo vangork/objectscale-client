@@ -921,6 +921,111 @@ func (managementClient *ManagementClient) ListUserGroupMembershipsByGroup(groupN
 	return userGroupMembershipsFn, nil
 }
 
+// Add Inline Policy for IAM User.
+//
+// user_inline_policy: UserInlinePolicy to create
+func (managementClient *ManagementClient) CreateUserInlinePolicy(userInlinePolicy *UserInlinePolicy) (*UserInlinePolicy, error) {
+	msg := C.RCString{}
+	userInlinePolicyJson, err := json.Marshal(userInlinePolicy)
+	if err != nil {
+		return nil, err
+	}
+	cUserInlinePolicy := intoRCString(string(userInlinePolicyJson))
+
+	cUserInlinePolicyFn, errFn := C.management_client_create_user_inline_policy(managementClient.managementClient, cUserInlinePolicy, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	userInlinePolicyYamlFn := fromRCString(cUserInlinePolicyFn)
+	var userInlinePolicyFn UserInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(userInlinePolicyYamlFn), &userInlinePolicyFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &userInlinePolicyFn, nil
+}
+
+// Get specific inlinePolicy for IAM User.
+//
+// user_name: Name of the user
+// policy_name: Name of the policy
+// namespace: Namespace of the user
+func (managementClient *ManagementClient) GetUserInlinePolicy(userName string, policyName string, namespace string) (*UserInlinePolicy, error) {
+	msg := C.RCString{}
+	cUserName := intoRCString(userName)
+	cPolicyName := intoRCString(policyName)
+	cNamespace := intoRCString(namespace)
+
+	cUserInlinePolicyFn, errFn := C.management_client_get_user_inline_policy(managementClient.managementClient, cUserName, cPolicyName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	userInlinePolicyYamlFn := fromRCString(cUserInlinePolicyFn)
+	var userInlinePolicyFn UserInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(userInlinePolicyYamlFn), &userInlinePolicyFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &userInlinePolicyFn, nil
+}
+
+// Update Inline Policy for IAM User.
+//
+// user_inline_policy: UserInlinePolicy to update
+func (managementClient *ManagementClient) UpdateUserInlinePolicy(userInlinePolicy *UserInlinePolicy) (bool, error) {
+	msg := C.RCString{}
+	userInlinePolicyJson, err := json.Marshal(userInlinePolicy)
+	if err != nil {
+		return false, err
+	}
+	cUserInlinePolicy := intoRCString(string(userInlinePolicyJson))
+
+	state, errFn := C.management_client_update_user_inline_policy(managementClient.managementClient, cUserInlinePolicy, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Delete specific inlinePolicy for IAM User.
+//
+// user_name: Name of the user
+// policy_name: Name of the policy
+// namespace: Namespace of the user
+func (managementClient *ManagementClient) DeleteUserInlinePolicy(userName string, policyName string, namespace string) error {
+	msg := C.RCString{}
+	cUserName := intoRCString(userName)
+	cPolicyName := intoRCString(policyName)
+	cNamespace := intoRCString(namespace)
+
+	_, errFn := C.management_client_delete_user_inline_policy(managementClient.managementClient, cUserName, cPolicyName, cNamespace, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// Lists all user inline policies.
+func (managementClient *ManagementClient) ListUserInlinePolicies(userName string, namespace string) ([]UserInlinePolicy, error) {
+	msg := C.RCString{}
+	cUserName := intoRCString(userName)
+	cNamespace := intoRCString(namespace)
+
+	cUserInlinePolicysFn, errFn := C.management_client_list_user_inline_policies(managementClient.managementClient, cUserName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	userInlinePolicysYamlFn := fromRCString(cUserInlinePolicysFn)
+	var userInlinePolicysFn []UserInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(userInlinePolicysYamlFn), &userInlinePolicysFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return userInlinePolicysFn, nil
+}
+
 // Gets the list of buckets for the specified namespace.
 //
 // namespace: Namespace for which buckets should be listed. Cannot be empty.

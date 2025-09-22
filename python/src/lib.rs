@@ -18,7 +18,7 @@ mod user;
 use client::ManagementClient;
 use iam::{
     AccessKey, EntitiesForPolicy, Group, GroupPolicyAttachment, IamTag, PermissionsBoundary,
-    Policy, Role, RolePolicyAttachment, SamlProvider, User, UserGroupMembership,
+    Policy, Role, RolePolicyAttachment, SamlProvider, User, UserGroupMembership, UserInlinePolicy,
     UserPolicyAttachment,
 };
 use provisioning::{
@@ -50,6 +50,7 @@ fn objectscale_client(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<SamlProvider>()?;
     module.add_class::<User>()?;
     module.add_class::<UserGroupMembership>()?;
+    module.add_class::<UserInlinePolicy>()?;
     module.add_class::<UserPolicyAttachment>()?;
     m.add_submodule(&module)?;
 

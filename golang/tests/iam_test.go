@@ -754,3 +754,83 @@ func TestEntitiesForPolicy(t *testing.T) {
 	err = client.DeleteNamespace(namespaceName)
 	assert.Nil(t, err)
 }
+
+func TestUserInlinePolicy(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_user_inline_policy"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	userName := "iam_test_user_inline_policy"
+	user := &objectscale.User{
+		UserName:  userName,
+		Namespace: namespaceName,
+		Tags:      []objectscale.IamTag{},
+	}
+	_, err = client.CreateUser(user)
+	assert.Nil(t, err)
+
+	policyDocument := "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22iam%3AListAttachedGroupPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUsers%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUserPolicies%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D"
+	policyName := "iam_test_user_inline_policy"
+	userInlinePolicy := &objectscale.UserInlinePolicy{
+		UserName:       userName,
+		PolicyName:     policyName,
+		PolicyDocument: policyDocument,
+		Namespace:      namespaceName,
+	}
+	policy, err := client.CreateUserInlinePolicy(userInlinePolicy)
+	assert.Nil(t, err)
+	assert.Equal(t, userName, policy.UserName)
+	assert.Equal(t, policyName, policy.PolicyName)
+	assert.Equal(t, namespaceName, policy.Namespace)
+
+	policies, err := client.ListUserInlinePolicies(userName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(policies))
+	assert.Equal(t, userName, policies[0].UserName)
+	assert.Equal(t, policyName, policies[0].PolicyName)
+	assert.Equal(t, namespaceName, policies[0].Namespace)
+
+	policy.PolicyDocument = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22iam%3AListUsers%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUserPolicies%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D"
+	state, err := client.UpdateUserInlinePolicy(policy)
+	assert.Nil(t, err)
+	assert.Equal(t, true, state)
+
+	policy, err = client.GetUserInlinePolicy(userName, policyName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, userName, policy.UserName)
+	assert.Equal(t, policyName, policy.PolicyName)
+	assert.Equal(t, namespaceName, policy.Namespace)
+
+	err = client.DeleteUserInlinePolicy(userName, policyName, namespaceName)
+	assert.Nil(t, err)
+
+	policies, err = client.ListUserInlinePolicies(userName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(policies))
+
+	err = client.DeleteUser(userName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}

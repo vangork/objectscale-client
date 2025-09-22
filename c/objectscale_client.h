@@ -509,6 +509,63 @@ struct RCString management_client_list_user_group_memberships_by_group(struct Ma
                                                                        struct RCString *err);
 
 /**
+ * Add Inline Policy for IAM User.
+ *
+ * user_inline_policy: UserInlinePolicy to create
+ *
+ */
+struct RCString management_client_create_user_inline_policy(struct ManagementClient *management_client,
+                                                            struct RCString user_inline_policy,
+                                                            struct RCString *err);
+
+/**
+ * Get specific inlinePolicy for IAM User.
+ *
+ * user_name: Name of the user
+ * policy_name: Name of the policy
+ * namespace: Namespace of the user
+ *
+ */
+struct RCString management_client_get_user_inline_policy(struct ManagementClient *management_client,
+                                                         struct RCString user_name,
+                                                         struct RCString policy_name,
+                                                         struct RCString namespace_,
+                                                         struct RCString *err);
+
+/**
+ * Update Inline Policy for IAM User.
+ *
+ * user_inline_policy: UserInlinePolicy to update
+ *
+ */
+bool management_client_update_user_inline_policy(struct ManagementClient *management_client,
+                                                 struct RCString user_inline_policy,
+                                                 struct RCString *err);
+
+/**
+ * Delete specific inlinePolicy for IAM User.
+ *
+ * user_name: Name of the user
+ * policy_name: Name of the policy
+ * namespace: Namespace of the user
+ *
+ */
+void management_client_delete_user_inline_policy(struct ManagementClient *management_client,
+                                                 struct RCString user_name,
+                                                 struct RCString policy_name,
+                                                 struct RCString namespace_,
+                                                 struct RCString *err);
+
+/**
+ * Lists all user inline policies.
+ *
+ */
+struct RCString management_client_list_user_inline_policies(struct ManagementClient *management_client,
+                                                            struct RCString user_name,
+                                                            struct RCString namespace_,
+                                                            struct RCString *err);
+
+/**
  * Gets the list of buckets for the specified namespace.
  *
  * namespace: Namespace for which buckets should be listed. Cannot be empty.

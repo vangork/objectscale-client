@@ -11,7 +11,7 @@
 mod common;
 use objectscale_client::iam::{
     AccessKeyBuilder, GroupBuilder, GroupPolicyAttachmentBuilder, IamTag, PermissionsBoundary,
-    PolicyBuilder, RoleBuilder, RolePolicyAttachmentBuilder, UserBuilder,
+    PolicyBuilder, RoleBuilder, RolePolicyAttachmentBuilder, UserBuilder, UserInlinePolicyBuilder,
     UserPolicyAttachmentBuilder,
 };
 use objectscale_client::tenancy::NamespaceBuilder;
@@ -454,6 +454,74 @@ fn test_role_policy_attachment() {
     client
         .delete_role(role_name, namespace_name)
         .expect("delete role");
+
+    client
+        .delete_namespace(&namespace.id)
+        .expect("delete namespace");
+}
+
+#[test]
+fn test_user_inline_policy() {
+    let mut client = common::create_management_client();
+
+    let namespace_name = "iam_test_user_inline_policy";
+    let namespace = NamespaceBuilder::default()
+        .name(namespace_name)
+        .default_data_services_vpool(REPLICATION_GROUP)
+        .build()
+        .expect("new namespace");
+    let namespace: objectscale_client::tenancy::Namespace = client
+        .create_namespace(namespace)
+        .expect("create namespace");
+
+    let user_name = "iam_test_user_inline_policy";
+    let user = UserBuilder::default()
+        .user_name(user_name)
+        .namespace(&namespace.id)
+        .build()
+        .expect("build user");
+    let _ = client.create_user(user).expect("create user");
+
+    let policy_document = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22iam%3AListAttachedGroupPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUsers%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUserPolicies%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D";
+    let policy_name = "iam_test_user_inline_policy";
+    let user_inline_policy = UserInlinePolicyBuilder::default()
+        .user_name(user_name)
+        .policy_name(policy_name)
+        .policy_document(policy_document)
+        .namespace(namespace_name)
+        .build()
+        .expect("build user inline policy");
+    let mut user_inline_policy = client
+        .create_user_inline_policy(user_inline_policy)
+        .expect("create user inline policy");
+    assert_eq!(user_inline_policy.user_name, user_name);
+    assert_eq!(user_inline_policy.policy_name, policy_name);
+    assert_eq!(user_inline_policy.namespace, namespace.id);
+
+    let user_inline_policies = client
+        .list_user_inline_policies(user_name, namespace_name)
+        .expect("list user inline policy");
+    assert!(user_inline_policies.contains(&user_inline_policy));
+
+    user_inline_policy.policy_document = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22iam%3AListUsers%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListPolicies%22%2C%0A%20%20%20%20%20%20%20%20%22iam%3AListUserPolicies%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D".to_string();
+    let state = client
+        .update_user_inline_policy(user_inline_policy)
+        .expect("update user inline policy");
+    assert!(state);
+    let user_inline_policy = client
+        .get_user_inline_policy(user_name, policy_name, namespace_name)
+        .expect("get user inline policy");
+    assert_eq!(user_inline_policy.user_name, user_name);
+    assert_eq!(user_inline_policy.policy_name, policy_name);
+    assert_eq!(user_inline_policy.namespace, namespace.id);
+
+    client
+        .delete_user_inline_policy(user_name, policy_name, namespace_name)
+        .expect("delete user policy attachment");
+
+    client
+        .delete_user(user_name, namespace_name)
+        .expect("delete user");
 
     client
         .delete_namespace(&namespace.id)

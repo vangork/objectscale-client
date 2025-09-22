@@ -177,7 +177,7 @@ type User struct {
 	UserId string `json:"UserId" yaml:"UserId" tf:"user_id"`
 	// Simple name identifying the User. Required
 	UserName string `json:"UserName" yaml:"UserName" tf:"user_name"`
-	// List of Tags associated with the User. Default: [] Updatable
+	// List of Tags associated with the User. Default: []. Updatable
 	Tags []IamTag `json:"Tags" yaml:"Tags" tf:"tags"`
 	// Namespace. Required
 	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
@@ -189,6 +189,17 @@ type UserGroupMembership struct {
 	//
 	GroupName string `json:"GroupName" yaml:"GroupName" tf:"group_name"`
 	//
+	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
+}
+
+type UserInlinePolicy struct {
+	// Simple name identifying the user. Required
+	UserName string `json:"UserName" yaml:"UserName" tf:"user_name"`
+	// Simple name identifying the policy. Required
+	PolicyName string `json:"PolicyName" yaml:"PolicyName" tf:"policy_name"`
+	// The policy document in JSON format. Required
+	PolicyDocument string `json:"PolicyDocument" yaml:"PolicyDocument" tf:"policy_document"`
+	// Namespace. Required
 	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
 }
 
