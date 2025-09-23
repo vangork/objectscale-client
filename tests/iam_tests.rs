@@ -11,8 +11,8 @@
 mod common;
 use objectscale_client::iam::{
     AccessKeyBuilder, GroupBuilder, GroupInlinePolicyBuilder, GroupPolicyAttachmentBuilder, IamTag,
-    PermissionsBoundary, PolicyBuilder, RoleBuilder, RolePolicyAttachmentBuilder, UserBuilder,
-    UserInlinePolicyBuilder, UserPolicyAttachmentBuilder,
+    PermissionsBoundary, PolicyBuilder, RoleBuilder, RoleInlinePolicyBuilder,
+    RolePolicyAttachmentBuilder, UserBuilder, UserInlinePolicyBuilder, UserPolicyAttachmentBuilder,
 };
 use objectscale_client::tenancy::NamespaceBuilder;
 
@@ -590,6 +590,76 @@ fn test_group_inline_policy() {
     client
         .delete_group(group_name, namespace_name)
         .expect("delete group");
+
+    client
+        .delete_namespace(&namespace.id)
+        .expect("delete namespace");
+}
+
+#[test]
+fn test_role_inline_policy() {
+    let mut client = common::create_management_client();
+
+    let namespace_name = "iam_test_role_inline_policy";
+    let namespace = NamespaceBuilder::default()
+        .name(namespace_name)
+        .default_data_services_vpool(REPLICATION_GROUP)
+        .build()
+        .expect("new namespace");
+    let namespace: objectscale_client::tenancy::Namespace = client
+        .create_namespace(namespace)
+        .expect("create namespace");
+
+    let role_name = "iam_test_role_inline_policy";
+    let assume_doc = r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:root"]},"Action":"sts:AssumeRole"}]}"#;
+    let role = RoleBuilder::default()
+        .role_name(role_name)
+        .assume_role_policy_document(assume_doc)
+        .namespace(&namespace.id)
+        .build()
+        .expect("build role");
+    let _ = client.create_role(role).expect("create role");
+
+    let policy_document = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22s3%3AGetObject%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D";
+    let policy_name = "iam_test_role_inline_policy";
+    let role_inline_policy = RoleInlinePolicyBuilder::default()
+        .role_name(role_name)
+        .policy_name(policy_name)
+        .policy_document(policy_document)
+        .namespace(namespace_name)
+        .build()
+        .expect("build role inline policy");
+    let mut role_inline_policy = client
+        .create_role_inline_policy(role_inline_policy)
+        .expect("create role inline policy");
+    assert_eq!(role_inline_policy.role_name, role_name);
+    assert_eq!(role_inline_policy.policy_name, policy_name);
+    assert_eq!(role_inline_policy.namespace, namespace.id);
+
+    let role_inline_policies = client
+        .list_role_inline_policies(role_name, namespace_name)
+        .expect("list role inline policy");
+    assert!(role_inline_policies.contains(&role_inline_policy));
+
+    role_inline_policy.policy_document = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22s3%3AListAllMyBuckets%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D".to_string();
+    let state = client
+        .update_role_inline_policy(role_inline_policy)
+        .expect("update role inline policy");
+    assert!(state);
+    let role_inline_policy = client
+        .get_role_inline_policy(role_name, policy_name, namespace_name)
+        .expect("get role inline policy");
+    assert_eq!(role_inline_policy.role_name, role_name);
+    assert_eq!(role_inline_policy.policy_name, policy_name);
+    assert_eq!(role_inline_policy.namespace, namespace.id);
+
+    client
+        .delete_role_inline_policy(role_name, policy_name, namespace_name)
+        .expect("delete role policy attachment");
+
+    client
+        .delete_role(role_name, namespace_name)
+        .expect("delete role");
 
     client
         .delete_namespace(&namespace.id)

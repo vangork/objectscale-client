@@ -913,3 +913,85 @@ func TestGroupInlinePolicy(t *testing.T) {
 	err = client.DeleteNamespace(namespaceName)
 	assert.Nil(t, err)
 }
+
+func TestRoleInlinePolicy(t *testing.T) {
+	client := CreateManagementClient(t)
+	defer client.Close()
+
+	namespaceName := "iam_test_role_inline_policy"
+	namespace := &objectscale.Namespace{
+		Name:                     namespaceName,
+		DefaultDataServicesVpool: REPLICATION_GROUP,
+
+		DefaultBucketBlockSize:  -1,
+		NotificationSize:        -1,
+		BlockSize:               -1,
+		NotificationSizeInCount: -1,
+		BlockSizeInCount:        -1,
+
+		RetentionClasses: objectscale.RetentionClasses{
+			RetentionClass: []objectscale.RetentionClass{},
+		},
+		UserMapping:          []objectscale.UserMapping{},
+		AllowedVpoolsList:    []string{},
+		DisallowedVpoolsList: []string{},
+	}
+	_, err := client.CreateNamespace(namespace)
+	assert.Nil(t, err)
+
+	roleName := "iam_test_role_inline_policy"
+	assume_doc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["urn:ecs:iam::ns1:root"]},"Action":"sts:AssumeRole"}]}`
+	role := &objectscale.Role{
+		RoleName:                 roleName,
+		AssumeRolePolicyDocument: assume_doc,
+		Namespace:                namespaceName,
+		Tags:                     []objectscale.IamTag{},
+	}
+	_, err = client.CreateRole(role)
+	assert.Nil(t, err)
+
+	policyDocument := "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22s3%3AGetObject%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D"
+	policyName := "iam_test_role_inline_policy"
+	roleInlinePolicy := &objectscale.RoleInlinePolicy{
+		RoleName:       roleName,
+		PolicyName:     policyName,
+		PolicyDocument: policyDocument,
+		Namespace:      namespaceName,
+	}
+	policy, err := client.CreateRoleInlinePolicy(roleInlinePolicy)
+	assert.Nil(t, err)
+	assert.Equal(t, roleName, policy.RoleName)
+	assert.Equal(t, policyName, policy.PolicyName)
+	assert.Equal(t, namespaceName, policy.Namespace)
+
+	policies, err := client.ListRoleInlinePolicies(roleName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(policies))
+	assert.Equal(t, roleName, policies[0].RoleName)
+	assert.Equal(t, policyName, policies[0].PolicyName)
+	assert.Equal(t, namespaceName, policies[0].Namespace)
+
+	policy.PolicyDocument = "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22VisualEditor0%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%22s3%3AListAllMyBuckets%22%0A%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%22Resource%22%3A%20%22*%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D"
+	state, err := client.UpdateRoleInlinePolicy(policy)
+	assert.Nil(t, err)
+	assert.Equal(t, true, state)
+
+	policy, err = client.GetRoleInlinePolicy(roleName, policyName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, roleName, policy.RoleName)
+	assert.Equal(t, policyName, policy.PolicyName)
+	assert.Equal(t, namespaceName, policy.Namespace)
+
+	err = client.DeleteRoleInlinePolicy(roleName, policyName, namespaceName)
+	assert.Nil(t, err)
+
+	policies, err = client.ListRoleInlinePolicies(roleName, namespaceName)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(policies))
+
+	err = client.DeleteRole(roleName, namespaceName)
+	assert.Nil(t, err)
+
+	err = client.DeleteNamespace(namespaceName)
+	assert.Nil(t, err)
+}

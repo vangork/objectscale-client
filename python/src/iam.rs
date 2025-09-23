@@ -537,6 +537,58 @@ impl Role {
 //
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
+pub(crate) struct RoleInlinePolicy {
+    // Simple name identifying the role. Required
+    #[pyo3(set)]
+    role_name: String,
+    // Simple name identifying the policy. Required
+    #[pyo3(set)]
+    policy_name: String,
+    // The policy document in JSON format. Required
+    #[pyo3(set)]
+    policy_document: String,
+    // Namespace. Required
+    #[pyo3(set)]
+    namespace: String,
+}
+
+impl From<iam::RoleInlinePolicy> for RoleInlinePolicy {
+    fn from(role_inline_policy: iam::RoleInlinePolicy) -> Self {
+        Self {
+            role_name: role_inline_policy.role_name,
+            policy_name: role_inline_policy.policy_name,
+            policy_document: role_inline_policy.policy_document,
+            namespace: role_inline_policy.namespace,
+        }
+    }
+}
+
+impl From<RoleInlinePolicy> for iam::RoleInlinePolicy {
+    fn from(role_inline_policy: RoleInlinePolicy) -> Self {
+        Self {
+            role_name: role_inline_policy.role_name,
+            policy_name: role_inline_policy.policy_name,
+            policy_document: role_inline_policy.policy_document,
+            namespace: role_inline_policy.namespace,
+        }
+    }
+}
+
+#[pymethods]
+impl RoleInlinePolicy {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", serde_json::to_string(self).unwrap())
+    }
+}
+
+//
+#[derive(Clone, Debug, Default, Serialize)]
+#[pyclass(get_all)]
 pub(crate) struct RolePolicyAttachment {
     // Simple name identifying the role. Required
     #[pyo3(set)]

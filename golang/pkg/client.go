@@ -1131,6 +1131,111 @@ func (managementClient *ManagementClient) ListGroupInlinePolicies(groupName stri
 	return groupInlinePolicysFn, nil
 }
 
+// Add Inline Policy for IAM Role.
+//
+// role_inline_policy: RoleInlinePolicy to create
+func (managementClient *ManagementClient) CreateRoleInlinePolicy(roleInlinePolicy *RoleInlinePolicy) (*RoleInlinePolicy, error) {
+	msg := C.RCString{}
+	roleInlinePolicyJson, err := json.Marshal(roleInlinePolicy)
+	if err != nil {
+		return nil, err
+	}
+	cRoleInlinePolicy := intoRCString(string(roleInlinePolicyJson))
+
+	cRoleInlinePolicyFn, errFn := C.management_client_create_role_inline_policy(managementClient.managementClient, cRoleInlinePolicy, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	roleInlinePolicyYamlFn := fromRCString(cRoleInlinePolicyFn)
+	var roleInlinePolicyFn RoleInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(roleInlinePolicyYamlFn), &roleInlinePolicyFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &roleInlinePolicyFn, nil
+}
+
+// Get specific inlinePolicy for IAM Role.
+//
+// role_name: Name of the role
+// policy_name: Name of the policy
+// namespace: Namespace of the role
+func (managementClient *ManagementClient) GetRoleInlinePolicy(roleName string, policyName string, namespace string) (*RoleInlinePolicy, error) {
+	msg := C.RCString{}
+	cRoleName := intoRCString(roleName)
+	cPolicyName := intoRCString(policyName)
+	cNamespace := intoRCString(namespace)
+
+	cRoleInlinePolicyFn, errFn := C.management_client_get_role_inline_policy(managementClient.managementClient, cRoleName, cPolicyName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	roleInlinePolicyYamlFn := fromRCString(cRoleInlinePolicyFn)
+	var roleInlinePolicyFn RoleInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(roleInlinePolicyYamlFn), &roleInlinePolicyFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return &roleInlinePolicyFn, nil
+}
+
+// Update Inline Policy for IAM role.
+//
+// role_inline_policy: RoleInlinePolicy to update
+func (managementClient *ManagementClient) UpdateRoleInlinePolicy(roleInlinePolicy *RoleInlinePolicy) (bool, error) {
+	msg := C.RCString{}
+	roleInlinePolicyJson, err := json.Marshal(roleInlinePolicy)
+	if err != nil {
+		return false, err
+	}
+	cRoleInlinePolicy := intoRCString(string(roleInlinePolicyJson))
+
+	state, errFn := C.management_client_update_role_inline_policy(managementClient.managementClient, cRoleInlinePolicy, &msg)
+	if errFn != nil {
+		return false, errorWithMessage(errFn, msg)
+	}
+	return bool(state), nil
+
+}
+
+// Delete specific inlinePolicy for IAM User.
+//
+// role_name: Name of the role
+// policy_name: Name of the policy
+// namespace: Namespace of the role
+func (managementClient *ManagementClient) DeleteRoleInlinePolicy(roleName string, policyName string, namespace string) error {
+	msg := C.RCString{}
+	cRoleName := intoRCString(roleName)
+	cPolicyName := intoRCString(policyName)
+	cNamespace := intoRCString(namespace)
+
+	_, errFn := C.management_client_delete_role_inline_policy(managementClient.managementClient, cRoleName, cPolicyName, cNamespace, &msg)
+	if errFn != nil {
+		return errorWithMessage(errFn, msg)
+	}
+	return nil
+
+}
+
+// Lists all role inline policies.
+func (managementClient *ManagementClient) ListRoleInlinePolicies(roleName string, namespace string) ([]RoleInlinePolicy, error) {
+	msg := C.RCString{}
+	cRoleName := intoRCString(roleName)
+	cNamespace := intoRCString(namespace)
+
+	cRoleInlinePolicysFn, errFn := C.management_client_list_role_inline_policies(managementClient.managementClient, cRoleName, cNamespace, &msg)
+	if errFn != nil {
+		return nil, errorWithMessage(errFn, msg)
+	}
+	roleInlinePolicysYamlFn := fromRCString(cRoleInlinePolicysFn)
+	var roleInlinePolicysFn []RoleInlinePolicy
+	errUnmarshal := yaml.Unmarshal([]byte(roleInlinePolicysYamlFn), &roleInlinePolicysFn)
+	if errUnmarshal != nil {
+		return nil, errUnmarshal
+	}
+	return roleInlinePolicysFn, nil
+}
+
 // Gets the list of buckets for the specified namespace.
 //
 // namespace: Namespace for which buckets should be listed. Cannot be empty.

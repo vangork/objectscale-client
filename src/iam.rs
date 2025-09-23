@@ -3026,3 +3026,197 @@ impl GroupInlinePolicy {
         Ok(policies)
     }
 }
+
+#[derive(Builder, Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "PascalCase")]
+#[builder(setter(skip))]
+pub struct RoleInlinePolicy {
+    /// Simple name identifying the role. Required
+    #[builder(setter(into))]
+    pub role_name: String,
+    /// Simple name identifying the policy. Required
+    #[builder(setter(into))]
+    pub policy_name: String,
+    /// The policy document in JSON format. Required
+    #[builder(setter(into))]
+    pub policy_document: String,
+    /// Namespace. Required
+    #[builder(setter(into))]
+    #[serde(default)]
+    pub namespace: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct GetRolePolicyResponse {
+    pub response_metadata: ResponseMetadata,
+    pub get_role_policy_result: RoleInlinePolicy,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListRolePoliciesResult {
+    pub policy_names: Vec<String>,
+    pub is_truncated: bool,
+    pub marker: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct ListRolePoliciesResponse {
+    pub response_metadata: ResponseMetadata,
+    pub list_role_policies_result: ListRolePoliciesResult,
+}
+
+impl RoleInlinePolicy {
+    pub(crate) fn create(client: &mut ManagementClient, role_inline_policy: &Self) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=PutRolePolicy&RoleName={}&PolicyDocument={}&PolicyName={}",
+            client.endpoint,
+            role_inline_policy.role_name,
+            role_inline_policy.policy_document,
+            role_inline_policy.policy_name,
+        );
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", &role_inline_policy.namespace)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to create role inline policy")?;
+        Ok(())
+    }
+
+    pub(crate) fn get(
+        client: &mut ManagementClient,
+        role_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<Self> {
+        let request_url = format!(
+            "{}iam?Action=GetRolePolicy&RoleName={}&PolicyName={}",
+            client.endpoint, role_name, policy_name,
+        );
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to get role inline policy")?;
+        let mut resp: GetRolePolicyResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Unable to deserialise GetRolePolicyResponse. Body was: \"{}\"",
+                text
+            )
+        })?;
+        resp.get_role_policy_result.namespace = namespace.to_string();
+        Ok(resp.get_role_policy_result)
+    }
+
+    pub(crate) fn update(client: &mut ManagementClient, policy: &Self) -> Result<bool> {
+        let current_policy = Self::get(
+            client,
+            &policy.role_name,
+            &policy.policy_name,
+            &policy.namespace,
+        )?;
+        // TODO: compare after pretty-printing format
+        let url_string = format!(
+            "http://example.com/?param={}",
+            current_policy.policy_document
+        );
+        let url = Url::parse(&url_string).expect("Failed to parse policy document");
+        let (_, value) = url.query_pairs().next().expect("policy document");
+        if value != current_policy.policy_document {
+            // create and update share the same request URL
+            Self::create(client, policy)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub(crate) fn delete(
+        client: &mut ManagementClient,
+        role_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        let request_url = format!(
+            "{}iam?Action=DeleteRolePolicy&RoleName={}&PolicyName={}",
+            client.endpoint, role_name, policy_name,
+        );
+
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        get_content_text(resp).with_context(|| "Failed to delete role inline policy")?;
+        Ok(())
+    }
+
+    pub(crate) fn list(
+        client: &mut ManagementClient,
+        role_name: &str,
+        namespace: &str,
+    ) -> Result<Vec<Self>> {
+        let request_url = format!(
+            "{}iam?Action=ListRolePolicies&RoleName={}",
+            client.endpoint, role_name,
+        );
+        let resp = client
+            .http_client
+            .post(request_url)
+            .header(ACCEPT, "application/json")
+            .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+            .header("x-emc-namespace", namespace)
+            .send()?;
+        let text = get_content_text(resp).with_context(|| "Failed to list role inline policies")?;
+        let mut resp: ListRolePoliciesResponse =
+            serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListRolePoliciesResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+        let mut policies: Vec<Self> = vec![];
+        for policy_name in resp.list_role_policies_result.policy_names.iter() {
+            let policy = Self::get(client, role_name, policy_name, namespace)?;
+            policies.push(policy);
+        }
+        while let Some(marker) = resp.list_role_policies_result.marker {
+            let request_url = format!(
+                "{}iam?Action=ListUserPolicies&UserName={}&Marker={}",
+                client.endpoint, role_name, marker,
+            );
+            let response = client
+                .http_client
+                .post(request_url)
+                .header(ACCEPT, "application/json")
+                .header(AUTH_HEADER_KEY, client.access_token.as_ref().unwrap())
+                .header("x-emc-namespace", namespace)
+                .send()?;
+            let text = get_content_text(response)
+                .with_context(|| "Failed to list user inline policies")?;
+            resp = serde_json::from_str(&text).with_context(|| {
+                format!(
+                    "Unable to deserialise ListRolePoliciesResponse. Body was: \"{}\"",
+                    text
+                )
+            })?;
+            for policy_name in resp.list_role_policies_result.policy_names.iter() {
+                let policy = Self::get(client, role_name, policy_name, namespace)?;
+                policies.push(policy);
+            }
+        }
+        Ok(policies)
+    }
+}

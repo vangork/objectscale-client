@@ -2089,6 +2089,206 @@ pub unsafe extern "C" fn management_client_list_group_inline_policies(
     }
 }
 
+/// Add Inline Policy for IAM Role.
+///
+/// role_inline_policy: RoleInlinePolicy to create
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_create_role_inline_policy(
+    management_client: *mut ManagementClient,
+    role_inline_policy: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let role_inline_policy = role_inline_policy.to_string();
+        let role_inline_policy: objectscale_client::iam::RoleInlinePolicy =
+            serde_json::from_str(&role_inline_policy).expect("deserialize role_inline_policy");
+
+        management_client
+            .management_client
+            .create_role_inline_policy(role_inline_policy)
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|role_inline_policy| {
+                serde_yaml::to_string(&role_inline_policy).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(role_inline_policy) => RCString::from_str(role_inline_policy.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during create role inline policy", err);
+            RCString::null()
+        }
+    }
+}
+
+/// Get specific inlinePolicy for IAM Role.
+///
+/// role_name: Name of the role
+/// policy_name: Name of the policy
+/// namespace: Namespace of the role
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_get_role_inline_policy(
+    management_client: *mut ManagementClient,
+    role_name: RCString,
+    policy_name: RCString,
+    namespace: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let role_name = role_name.to_string();
+        let policy_name = policy_name.to_string();
+        let namespace = namespace.to_string();
+
+        management_client.management_client.get_role_inline_policy(
+            &role_name,
+            &policy_name,
+            &namespace,
+        )
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|role_inline_policy| {
+                serde_yaml::to_string(&role_inline_policy).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(role_inline_policy) => RCString::from_str(role_inline_policy.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during get role inline policy", err);
+            RCString::null()
+        }
+    }
+}
+
+/// Update Inline Policy for IAM role.
+///
+/// role_inline_policy: RoleInlinePolicy to update
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_update_role_inline_policy(
+    management_client: *mut ManagementClient,
+    role_inline_policy: RCString,
+    err: Option<&mut RCString>,
+) -> bool {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let role_inline_policy = role_inline_policy.to_string();
+        let role_inline_policy: objectscale_client::iam::RoleInlinePolicy =
+            serde_json::from_str(&role_inline_policy).expect("deserialize role_inline_policy");
+
+        management_client
+            .management_client
+            .update_role_inline_policy(role_inline_policy)
+    })) {
+        Ok(result) => {
+            clear_error();
+            match result {
+                Ok(state) => return state,
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    false
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during update role inline policy", err);
+            false
+        }
+    }
+}
+
+/// Delete specific inlinePolicy for IAM User.
+///
+/// role_name: Name of the role
+/// policy_name: Name of the policy
+/// namespace: Namespace of the role
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_delete_role_inline_policy(
+    management_client: *mut ManagementClient,
+    role_name: RCString,
+    policy_name: RCString,
+    namespace: RCString,
+    err: Option<&mut RCString>,
+) {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let role_name = role_name.to_string();
+        let policy_name = policy_name.to_string();
+        let namespace = namespace.to_string();
+
+        management_client
+            .management_client
+            .delete_role_inline_policy(&role_name, &policy_name, &namespace)
+    })) {
+        Ok(result) => {
+            clear_error();
+            match result {
+                Ok(_) => return,
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during delete role inline policy", err);
+        }
+    }
+}
+
+/// Lists all role inline policies.
+///
+#[no_mangle]
+pub unsafe extern "C" fn management_client_list_role_inline_policies(
+    management_client: *mut ManagementClient,
+    role_name: RCString,
+    namespace: RCString,
+    err: Option<&mut RCString>,
+) -> RCString {
+    let management_client = &mut *management_client;
+    match catch_unwind(AssertUnwindSafe(move || {
+        let role_name = role_name.to_string();
+        let namespace = namespace.to_string();
+
+        management_client
+            .management_client
+            .list_role_inline_policies(&role_name, &namespace)
+    })) {
+        Ok(result) => {
+            let result = result.and_then(|role_inline_policys| {
+                serde_yaml::to_string(&role_inline_policys).map_err(|e| anyhow!(e))
+            });
+            clear_error();
+            match result {
+                Ok(role_inline_policys) => RCString::from_str(role_inline_policys.as_str()),
+                Err(e) => {
+                    set_error(&format!("{:?}", e), err);
+                    RCString::null()
+                }
+            }
+        }
+        Err(_) => {
+            set_error("caught panic during list role inline policies", err);
+            RCString::null()
+        }
+    }
+}
+
 /// Gets the list of buckets for the specified namespace.
 ///
 /// namespace: Namespace for which buckets should be listed. Cannot be empty.

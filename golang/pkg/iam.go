@@ -147,6 +147,17 @@ type Role struct {
 	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
 }
 
+type RoleInlinePolicy struct {
+	// Simple name identifying the role. Required
+	RoleName string `json:"RoleName" yaml:"RoleName" tf:"role_name"`
+	// Simple name identifying the policy. Required
+	PolicyName string `json:"PolicyName" yaml:"PolicyName" tf:"policy_name"`
+	// The policy document in JSON format. Required
+	PolicyDocument string `json:"PolicyDocument" yaml:"PolicyDocument" tf:"policy_document"`
+	// Namespace. Required
+	Namespace string `json:"Namespace" yaml:"Namespace" tf:"namespace"`
+}
+
 type RolePolicyAttachment struct {
 	// Simple name identifying the role. Required
 	RoleName string `json:"RoleName" yaml:"RoleName" tf:"role_name"`

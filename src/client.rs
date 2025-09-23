@@ -13,8 +13,8 @@
 
 use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupInlinePolicy, GroupPolicyAttachment, Policy, Role,
-    RolePolicyAttachment, SamlProvider, User, UserGroupMembership, UserInlinePolicy,
-    UserPolicyAttachment,
+    RoleInlinePolicy, RolePolicyAttachment, SamlProvider, User, UserGroupMembership,
+    UserInlinePolicy, UserPolicyAttachment,
 };
 use crate::provisioning::{Bucket, StoragePool, Vdc, VdcKeystore};
 use crate::replication::ReplicationGroup;
@@ -818,6 +818,79 @@ impl ManagementClient {
     ) -> Result<Vec<GroupInlinePolicy>> {
         self.auth()?;
         GroupInlinePolicy::list(self, group_name, namespace)
+    }
+
+    /// Add Inline Policy for IAM Role.
+    ///
+    /// role_inline_policy: RoleInlinePolicy to create
+    ///
+    pub fn create_role_inline_policy(
+        &mut self,
+        role_inline_policy: RoleInlinePolicy,
+    ) -> Result<RoleInlinePolicy> {
+        self.auth()?;
+        RoleInlinePolicy::create(self, &role_inline_policy)?;
+        RoleInlinePolicy::get(
+            self,
+            &role_inline_policy.role_name,
+            &role_inline_policy.policy_name,
+            &role_inline_policy.namespace,
+        )
+    }
+
+    /// Get specific inlinePolicy for IAM Role.
+    ///
+    /// role_name: Name of the role
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the role
+    ///
+    pub fn get_role_inline_policy(
+        &mut self,
+        role_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<RoleInlinePolicy> {
+        self.auth()?;
+        RoleInlinePolicy::get(self, role_name, policy_name, namespace)
+    }
+
+    /// Update Inline Policy for IAM role.
+    ///
+    /// role_inline_policy: RoleInlinePolicy to update
+    ///
+    pub fn update_role_inline_policy(
+        &mut self,
+        role_inline_policy: RoleInlinePolicy,
+    ) -> Result<bool> {
+        self.auth()?;
+        RoleInlinePolicy::update(self, &role_inline_policy)
+    }
+
+    /// Delete specific inlinePolicy for IAM User.
+    ///
+    /// role_name: Name of the role
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the role
+    ///
+    pub fn delete_role_inline_policy(
+        &mut self,
+        role_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> Result<()> {
+        self.auth()?;
+        RoleInlinePolicy::delete(self, role_name, policy_name, namespace)
+    }
+
+    /// Lists all role inline policies.
+    ///
+    pub fn list_role_inline_policies(
+        &mut self,
+        role_name: &str,
+        namespace: &str,
+    ) -> Result<Vec<RoleInlinePolicy>> {
+        self.auth()?;
+        RoleInlinePolicy::list(self, role_name, namespace)
     }
 
     /// Gets the list of buckets for the specified namespace.

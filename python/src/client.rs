@@ -12,7 +12,7 @@
 
 use crate::iam::{
     AccessKey, EntitiesForPolicy, Group, GroupInlinePolicy, GroupPolicyAttachment, IamTag,
-    PermissionsBoundary, Policy, Role, RolePolicyAttachment, SamlProvider, User,
+    PermissionsBoundary, Policy, Role, RoleInlinePolicy, RolePolicyAttachment, SamlProvider, User,
     UserGroupMembership, UserInlinePolicy, UserPolicyAttachment,
 };
 use crate::provisioning::{
@@ -903,6 +903,103 @@ impl ManagementClient {
             Ok(group_inline_policys) => Ok(group_inline_policys
                 .into_iter()
                 .map(GroupInlinePolicy::from)
+                .collect()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Add Inline Policy for IAM Role.
+    ///
+    /// role_inline_policy: RoleInlinePolicy to create
+    ///
+    pub fn create_role_inline_policy(
+        &mut self,
+        role_inline_policy: &RoleInlinePolicy,
+    ) -> PyResult<RoleInlinePolicy> {
+        let role_inline_policy = iam::RoleInlinePolicy::from(role_inline_policy.clone());
+        let result = self
+            .management_client
+            .create_role_inline_policy(role_inline_policy);
+        match result {
+            Ok(role_inline_policy) => Ok(RoleInlinePolicy::from(role_inline_policy)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Get specific inlinePolicy for IAM Role.
+    ///
+    /// role_name: Name of the role
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the role
+    ///
+    pub fn get_role_inline_policy(
+        &mut self,
+        role_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> PyResult<RoleInlinePolicy> {
+        let result =
+            self.management_client
+                .get_role_inline_policy(role_name, policy_name, namespace);
+        match result {
+            Ok(role_inline_policy) => Ok(RoleInlinePolicy::from(role_inline_policy)),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Update Inline Policy for IAM role.
+    ///
+    /// role_inline_policy: RoleInlinePolicy to update
+    ///
+    pub fn update_role_inline_policy(
+        &mut self,
+        role_inline_policy: &RoleInlinePolicy,
+    ) -> PyResult<bool> {
+        let role_inline_policy = iam::RoleInlinePolicy::from(role_inline_policy.clone());
+        let result = self
+            .management_client
+            .update_role_inline_policy(role_inline_policy);
+        match result {
+            Ok(state) => Ok(state),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Delete specific inlinePolicy for IAM User.
+    ///
+    /// role_name: Name of the role
+    /// policy_name: Name of the policy
+    /// namespace: Namespace of the role
+    ///
+    pub fn delete_role_inline_policy(
+        &mut self,
+        role_name: &str,
+        policy_name: &str,
+        namespace: &str,
+    ) -> PyResult<()> {
+        let result =
+            self.management_client
+                .delete_role_inline_policy(role_name, policy_name, namespace);
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
+        }
+    }
+
+    /// Lists all role inline policies.
+    ///
+    pub fn list_role_inline_policies(
+        &mut self,
+        role_name: &str,
+        namespace: &str,
+    ) -> PyResult<Vec<RoleInlinePolicy>> {
+        let result = self
+            .management_client
+            .list_role_inline_policies(role_name, namespace);
+        match result {
+            Ok(role_inline_policys) => Ok(role_inline_policys
+                .into_iter()
+                .map(RoleInlinePolicy::from)
                 .collect()),
             Err(e) => Err(exceptions::PyValueError::new_err(format!("{:?}", e))),
         }

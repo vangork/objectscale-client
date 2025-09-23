@@ -623,6 +623,63 @@ struct RCString management_client_list_group_inline_policies(struct ManagementCl
                                                              struct RCString *err);
 
 /**
+ * Add Inline Policy for IAM Role.
+ *
+ * role_inline_policy: RoleInlinePolicy to create
+ *
+ */
+struct RCString management_client_create_role_inline_policy(struct ManagementClient *management_client,
+                                                            struct RCString role_inline_policy,
+                                                            struct RCString *err);
+
+/**
+ * Get specific inlinePolicy for IAM Role.
+ *
+ * role_name: Name of the role
+ * policy_name: Name of the policy
+ * namespace: Namespace of the role
+ *
+ */
+struct RCString management_client_get_role_inline_policy(struct ManagementClient *management_client,
+                                                         struct RCString role_name,
+                                                         struct RCString policy_name,
+                                                         struct RCString namespace_,
+                                                         struct RCString *err);
+
+/**
+ * Update Inline Policy for IAM role.
+ *
+ * role_inline_policy: RoleInlinePolicy to update
+ *
+ */
+bool management_client_update_role_inline_policy(struct ManagementClient *management_client,
+                                                 struct RCString role_inline_policy,
+                                                 struct RCString *err);
+
+/**
+ * Delete specific inlinePolicy for IAM User.
+ *
+ * role_name: Name of the role
+ * policy_name: Name of the policy
+ * namespace: Namespace of the role
+ *
+ */
+void management_client_delete_role_inline_policy(struct ManagementClient *management_client,
+                                                 struct RCString role_name,
+                                                 struct RCString policy_name,
+                                                 struct RCString namespace_,
+                                                 struct RCString *err);
+
+/**
+ * Lists all role inline policies.
+ *
+ */
+struct RCString management_client_list_role_inline_policies(struct ManagementClient *management_client,
+                                                            struct RCString role_name,
+                                                            struct RCString namespace_,
+                                                            struct RCString *err);
+
+/**
  * Gets the list of buckets for the specified namespace.
  *
  * namespace: Namespace for which buckets should be listed. Cannot be empty.
