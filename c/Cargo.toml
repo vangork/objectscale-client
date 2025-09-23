@@ -1,0 +1,28 @@
+[package]
+name = "objectscale-client-c"
+version = "1.0.0"
+edition = "2021"
+categories = ["network-programming"]
+keywords = ["objectscale", "REST", "client"]
+description = "Dell ObjectScale C REST client."
+authors = ["Luis Liu <luis_liu@dell.com>"]
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/dell/objectscale-client"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+errno = "0.2"
+objectscale-client = { path = "../" }
+serde_json = "1.0"
+serde_yaml = "0.9.33"
+
+[build-dependencies]
+cbindgen = "0.26.0"
+
+[lib]
+name = "objectscale_client"
+crate-type = ["cdylib"]

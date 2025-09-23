@@ -1,0 +1,22 @@
+[package]
+name = "auto-bindgen"
+version = "1.0.0"
+edition = "2021"
+categories = ["network-programming"]
+keywords = ["bindgen", "REST", "client"]
+description = "Auto generate REST client for multiple languages with Rust codebase"
+authors = ["Luis Liu <luis_liu@dell.com>"]
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/dell/objectscale-client"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "auto_bindgen"
+
+[dependencies]
+anyhow = "1.0"
+convert_case = "0.6.0"
+indoc = "2.0"
+syn = { version = "2.0.68", features = ["extra-traits", "full"] }
