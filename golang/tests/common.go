@@ -13,8 +13,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	objectscale "github.com/dell/objectscale-client/golang/pkg"
+	"github.com/stretchr/testify/assert"
 )
 
 const REPLICATION_GROUP string = "urn:storageos:ReplicationGroupInfo:0e953ad1-94a5-4eb1-825a-d58d29e85434:global"

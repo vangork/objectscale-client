@@ -2028,8 +2028,11 @@ impl RolePolicyAttachment {
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct EntitiesForPolicy {
+    /// List of user names
     pub users: Vec<String>,
+    /// List of group names
     pub groups: Vec<String>,
+    /// List of role names
     pub roles: Vec<String>,
 }
 

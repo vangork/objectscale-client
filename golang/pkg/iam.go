@@ -30,11 +30,11 @@ type AccessKey struct {
 }
 
 type EntitiesForPolicy struct {
-	//
+	// List of user names
 	Users []string `json:"Users" yaml:"Users" tf:"users"`
-	//
+	// List of group names
 	Groups []string `json:"Groups" yaml:"Groups" tf:"groups"`
-	//
+	// List of role names
 	Roles []string `json:"Roles" yaml:"Roles" tf:"roles"`
 }
 

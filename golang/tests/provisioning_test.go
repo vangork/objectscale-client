@@ -13,8 +13,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	objectscale "github.com/dell/objectscale-client/golang/pkg"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBucket(t *testing.T) {

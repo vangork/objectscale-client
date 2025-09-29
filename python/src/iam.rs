@@ -75,13 +75,13 @@ impl AccessKey {
 #[derive(Clone, Debug, Default, Serialize)]
 #[pyclass(get_all)]
 pub(crate) struct EntitiesForPolicy {
-    //
+    // List of user names
     #[pyo3(set)]
     users: Vec<String>,
-    //
+    // List of group names
     #[pyo3(set)]
     groups: Vec<String>,
-    //
+    // List of role names
     #[pyo3(set)]
     roles: Vec<String>,
 }
